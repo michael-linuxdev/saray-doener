@@ -1545,8 +1545,12 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         ersetzen["%%CSS_EINBINDEN%%"] = f"<style>{css}</style>"
         ersetzen["%%JS_EINBINDEN%%"] = f"<script>{js}</script>"
     else:
-        ersetzen["%%CSS_EINBINDEN%%"] = '<link rel="stylesheet" href="css/style.css">'
-        ersetzen["%%JS_EINBINDEN%%"] = '<script src="js/main.js"></script>'
+        # Versionskennung aus dem Inhalt: nach jeder Änderung lädt der Browser die neue Datei statt der zwischengespeicherten
+        import hashlib
+        v_css = hashlib.sha1(css.encode()).hexdigest()[:8]
+        v_js = hashlib.sha1(js.encode()).hexdigest()[:8]
+        ersetzen["%%CSS_EINBINDEN%%"] = f'<link rel="stylesheet" href="css/style.css?v={v_css}">'
+        ersetzen["%%JS_EINBINDEN%%"] = f'<script src="js/main.js?v={v_js}"></script>'
     seite = SEITE
     for k, v in ersetzen.items():
         seite = seite.replace(k, v)
