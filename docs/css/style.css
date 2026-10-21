@@ -290,6 +290,14 @@ body.mit-zettel .nach-oben{bottom:calc(140px + env(safe-area-inset-bottom))}
 .z-optionen{grid-column:1/-1;display:grid;gap:12px;padding:12px;border-radius:14px;background:var(--gelb-blass)}
 .z-gruppe-titel{display:block;font-weight:700;font-size:.88rem;margin-bottom:6px}
 .z-chips{display:flex;flex-wrap:wrap;gap:6px}
+.marke-verf{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;font:700 .72rem/1.6 var(--text);vertical-align:middle;white-space:nowrap}
+li.nicht-da .name,li.nicht-da .tipp-name{color:#a8949f}
+li.nicht-da .preis,li.nicht-da .tipp-preis,li.nicht-da .beschreibung,li.nicht-da .tipp-info,li.nicht-da .marke-beliebt{opacity:.45}
+li.nicht-da .plus{opacity:.35;cursor:not-allowed}
+.verf-hinweis{color:var(--paprika);font-weight:700}
+.z-gesperrt .z-name{text-decoration:line-through}
+.chip:disabled{opacity:.5;cursor:not-allowed}
+.chip[data-o=ohne][aria-pressed=false]{text-decoration:line-through;color:#8d7486;border-color:#c9b8c3}
 .chip{min-height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font:700 .88rem var(--text);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--tinte);color:var(--gelb)}
 .chip:disabled{opacity:.35;cursor:not-allowed}

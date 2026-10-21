@@ -117,14 +117,13 @@
   PAARE.forEach(function(pq){OHNE_K[pq[0]]=pq[1];MIT_K[pq[1]]=pq[0];});
   /* Varianten: Form, Füllung, extra Fleisch (Super), Käse, Beilage.
      Die Schalter im Zettel suchen damit das passende Gericht der Karte. */
-  var VAR={},FUELL=['kalb','huhn','veg','falafel','halloumi','schnitzel','nuggets','hack'];
+  var VAR={},FUELL=['kalb','huhn','veg','falafel','halloumi','hack'];
   var F_NAME={kalb:['Dönerfleisch','Döner meat'],huhn:['Hähnchen','Chicken'],veg:['ohne Fleisch','No meat'],falafel:['Falafel','Falafel'],
-    halloumi:['Halloumi','Halloumi'],schnitzel:['Schnitzel','Schnitzel'],nuggets:['Nuggets','Nuggets'],hack:['Hackfleisch','Minced meat']};
+    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat']};
   [ /* k, Form, Füllung, Super, Käse, Beilage */
     ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
     ['30','doener','huhn',0,0],['31','doener','huhn',0,1],['32','doener','huhn',1,0],['33','doener','huhn',1,1],
     ['3','doener','veg',0,0],['4','doener','veg',0,1],['5','doener','halloumi',0,0],['11','doener','falafel',0,0],['12','doener','falafel',0,1],
-    ['9','doener','schnitzel',0,0],['10','doener','schnitzel',0,1],['60','doener','nuggets',0,0],['61','doener','nuggets',0,1],
     ['50','duerum','kalb',0,0],['51','duerum','kalb',0,1],['54','duerum','kalb',1,0],['55','duerum','kalb',1,1],
     ['40','duerum','huhn',0,0],['41','duerum','huhn',0,1],['42','duerum','huhn',1,0],['43','duerum','huhn',1,1],
     ['52','duerum','veg',0,0],['53','duerum','veg',0,1],['57','duerum','halloumi',0,0],['58','duerum','falafel',0,0],
@@ -143,6 +142,58 @@
     return best===k?null:best;
   }
   function kaesePartner(k){return VAR[k]?variante(k,{kae:VAR[k].kae?0:1},true):(OHNE_K[k]||MIT_K[k]||null);}
+  /* Verfügbarkeit: feste Regeln aus build.py + tagesaktuelle aus status.json */
+  var SPERR={"doener": {"de": "Döner", "en": "Döner", "nr": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "30", "31", "32", "33", "34", "35", "36", "37", "38"]}, "duerum": {"de": "Dürüm", "en": "Dürüm", "nr": ["50", "51", "52", "53", "54", "55", "56", "57", "58", "40", "41", "42", "43"]}, "teller": {"de": "Box & Teller", "en": "Boxes & plates", "nr": ["13", "14", "15", "16", "21", "22", "23", "24", "25", "26", "28"]}, "pizza": {"de": "Pizza", "en": "Pizza", "nr": ["80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "125"]}, "lahmacun": {"de": "Lahmacun", "en": "Lahmacun", "nr": ["120", "121", "122", "123", "124"]}, "baguette": {"de": "Baguette", "en": "Baguette", "nr": ["150", "151", "152", "153", "154", "156", "157", "158", "159", "160"]}, "salate": {"de": "Salate", "en": "Salads", "nr": ["130", "131", "132", "133", "134", "135", "136", "137", "138", "139", "140", "141", "142", "143"]}, "schnitzel": {"de": "Schnitzel & Nuggets", "en": "Schnitzel & nuggets", "nr": ["70", "71", "72", "73", "60", "61", "62", "63", "64", "65"]}, "kinder": {"de": "Für Kinder", "en": "For kids", "nr": ["17", "18", "19", "20"]}, "getraenke": {"de": "Getränke", "en": "Drinks", "nr": []}, "huhn": {"de": "Hähnchen", "en": "Chicken", "nr": ["30", "31", "32", "33", "34", "35", "36", "37", "38", "40", "41", "42", "43", "15", "16", "26", "102", "105", "134", "135", "19"]}, "nuggets": {"de": "Nuggets", "en": "Nuggets", "nr": ["60", "61", "62", "63", "64", "65", "20"]}, "falafel": {"de": "Falafel", "en": "Falafel", "nr": ["11", "12", "58", "24", "142"]}, "halloumi": {"de": "Halloumi", "en": "Halloumi", "nr": ["5", "57", "24", "26", "98", "99", "158", "141"]}, "schnitzel-fleisch": {"de": "Schnitzel", "en": "Schnitzel", "nr": ["9", "10", "159", "70"]}, "fisch": {"de": "Fisch", "en": "Fish", "nr": ["71"]}},REGELN_FEST=[],REGELN=REGELN_FEST.slice(),LADEN_N={freital:'Freital',altenberg:'Altenberg'};
+  function datumISO(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+off*864e5));}
+  function minAus(t){var q=String(t).split(':');return (+q[0])*60+(+q[1]||0);}
+  function trifft(r,k){var w=[].concat(r.was||[]);return w.some(function(v){v=String(v);return v===k||(SPERR[v]&&SPERR[v].nr.indexOf(k)>-1);});}
+  /* null = verfügbar, sonst {art:'aus'|'ab'|'bis', zeit} für Laden, Tag (0 = heute) und Uhrzeit (Minuten) */
+  function sperre(k,laden,off,min){
+    var tag=(jetzt().tag+off)%7,d=datumISO(off),res=null;
+    REGELN.forEach(function(r){
+      if(res&&res.art==='aus')return;if(!trifft(r,k))return;
+      if(r.laden&&r.laden!=='alle'&&r.laden!==laden)return;
+      if(r.datum&&[].concat(r.datum).indexOf(d)<0)return;
+      if(r.tage&&r.tage.indexOf(tag)<0)return;
+      if(r.ab&&min<minAus(r.ab))res={art:'ab',zeit:r.ab};
+      else if(r.bis&&min>=minAus(r.bis))res={art:'bis',zeit:r.bis};
+      else if(!r.ab&&!r.bis)res={art:'aus'};
+    });
+    return res;
+  }
+  function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP==='en'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
+  function sperrText(sp,heute){
+    if(sp.art==='aus')return heute===false?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
+    if(sp.art==='ab')return L('erst ab ','only from ')+uhrK(sp.zeit);
+    return L('nur bis ','only until ')+uhrK(sp.zeit);
+  }
+  /* Abholzeitpunkt aus der Auswahl im Zettel */
+  var ZINFO={};
+  function abholung(){return abh.laden&&ZINFO[abh.zeit]?{laden:abh.laden,off:ZINFO[abh.zeit].off,min:ZINFO[abh.zeit].min}:null;}
+  function sperreZettel(k){var a=abholung();return a?sperre(k,a.laden,a.off,a.min):null;}
+  /* Speisekarte: Hinweis am Gericht, ausgegraut, wenn heute in keinem Laden zu haben */
+  function verfZeigen(){
+    var n=jetzt();
+    document.querySelectorAll('li[data-k]').forEach(function(li){
+      var k=li.dataset.k,sp={};Object.keys(LADEN_N).forEach(function(l){sp[l]=sperre(k,l,0,n.min);});
+      var gesperrt=Object.keys(sp).filter(function(l){return sp[l];}),txt='';
+      if(gesperrt.length===2&&sperrText(sp.freital)===sperrText(sp.altenberg))txt=sperrText(sp.freital);
+      else txt=gesperrt.map(function(l){return LADEN_N[l]+': '+sperrText(sp[l]);}).join(' · ');
+      var aus=gesperrt.length===2&&sp.freital.art==='aus'&&sp.altenberg.art==='aus';
+      li.classList.toggle('nicht-da',aus);
+      var pk=li.querySelector('.plus');if(pk){pk.disabled=aus;}
+      var m=li.querySelector('.marke-verf');
+      if(!txt){if(m)m.remove();return;}
+      if(!m){m=el('span','marke-verf');var ziel=li.querySelector('.name, .tipp-name');if(ziel)ziel.appendChild(m);else return;}
+      m.textContent=txt;
+    });
+  }
+  function regelnLaden(){
+    if(!window.fetch)return;
+    fetch('status.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():{};}).then(function(d){
+      REGELN=REGELN_FEST.concat(Array.isArray(d.regeln)?d.regeln:[]);verfZeigen();zeichnen();waAktualisieren();
+    }).catch(function(){});
+  }
   function wechseln(x,ziel){var li=gerichtLi(ziel);if(!li)return;x.k=li.dataset.k;x.n=li.dataset.n;x.d=li.dataset.d;x.c=+li.dataset.p;}
   function preisDiff(x,ziel){var li=gerichtLi(ziel);if(!li)return '';var d=(+li.dataset.p)-x.c;return d?' ('+(d<0?'−':'+')+euro(Math.abs(d))+')':'';}
   var W={'Knoblauch':'garlic','Kräuter':'herb','Chili':'chili','Zwiebeln':'onions','Tomaten':'tomatoes','Gurken':'cucumber','Rotkohl':'red cabbage',
@@ -201,7 +252,9 @@
       var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',L('Füllung','Filling')));var fw=el('div','z-chips');
       FUELL.forEach(function(f){
         var ziel=f===va.f?x.k:variante(x.k,{f:f});if(!ziel)return;
-        fw.appendChild(knopf(L(F_NAME[f][0],F_NAME[f][1])+(f===va.f?'':preisDiff(x,ziel)),{'class':'chip','aria-pressed':String(f===va.f),'data-fuell':f,'data-u':x.u}));
+        var spF=f===va.f?null:(sperreZettel(ziel)||(function(){var nn=jetzt();var a=sperre(ziel,'freital',0,nn.min),b=sperre(ziel,'altenberg',0,nn.min);return a&&b&&a.art==='aus'&&b.art==='aus'?a:null;})());
+        var fk=knopf(L(F_NAME[f][0],F_NAME[f][1])+(f===va.f?'':spF?' – '+sperrText(spF):preisDiff(x,ziel)),{'class':'chip','aria-pressed':String(f===va.f),'data-fuell':f,'data-u':x.u});
+        if(spF)fk.disabled=true;fw.appendChild(fk);
       });
       if(fw.children.length>1){fg.appendChild(fw);box.appendChild(fg);}
       var su=variante(x.k,{sup:va.sup?0:1},true);
@@ -216,7 +269,12 @@
       kw.appendChild(knopf(L('mit Käse','with cheese')+(mit?'':preisDiff(x,kp)),{'class':'chip','aria-pressed':String(mit),'data-kaese':x.u}));
       kg.appendChild(kw);box.appendChild(kg);
     }
-    if(x.t==='D')box.appendChild(chips(L('Ohne','Without'),OHNE,o.ohne,'ohne',x.u));
+    if(x.t==='D'){
+      /* Gemüse: alles drin, Abgewähltes geht als „ohne …“ an den Laden */
+      var gg=chips(L('Gemüse – abwählen, was nicht rein soll','Vegetables – tap to leave out'),OHNE,[],'ohne',x.u);
+      gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(o.ohne.indexOf(c.dataset.w)<0));});
+      box.appendChild(gg);
+    }
     if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
     if(x.t==='R')box.appendChild(chips(L('Variante','Option'),(x.v||'').split('|').filter(Boolean),[o.va],'va',x.u));
     if(x.t==='P'||x.t==='S'||x.t==='R'){
@@ -237,6 +295,10 @@
       var na=nameA(x);
       kopf.appendChild(el('span','z-name',na+(x.g?' ('+x.g+')':'')));
       var wt=x.t?wuensche(x,SP==='en'):beschrA(x);if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
+      var spZ=sperreZettel(x.k);
+      if(spZ){var a0=abholung();kopf.appendChild(el('span','z-info z-fehlt',
+        spZ.art==='aus'?L((a0.off?'':'heute ')+'in '+LADEN_N[a0.laden]+' nicht verfügbar – bitte entfernen',(a0.off?'':'today ')+'not available in '+LADEN_N[a0.laden]+' – please remove')
+        :sperrText(spZ)+L(' – bitte andere Abholzeit wählen',' – please choose another pickup time')));li.classList.add('z-gesperrt');}
       li.appendChild(kopf);li.appendChild(el('span','z-preis',euro(stueck(x)*x.q)));
       var st=el('div','z-steuer'),q=el('span','z-menge',String(x.q));
       var m=knopf('−',{'data-a':'minus','data-u':x.u,'aria-label':(x.q===1?L('Entfernen: ','Remove: '):L('Eins weniger: ','One less: '))+na});
@@ -339,7 +401,7 @@
   var selZeit=document.getElementById('abhol-zeit'),eName=document.getElementById('abhol-name'),hinweisZ=document.getElementById('abhol-hinweis');
   function zeitText(m,en){var h=Math.floor(m/60),r=m%60;return h+':'+(r<10?'0':'')+r+(en?'':' Uhr');}
   function zeitenFuellen(){
-    selZeit.textContent='';hinweisZ.hidden=true;
+    selZeit.textContent='';hinweisZ.hidden=true;ZINFO={};
     if(!abh.laden){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';selZeit.appendChild(o);selZeit.disabled=true;return;}
     selZeit.disabled=false;
     var z=ZEITEN[abh.laden],n=jetzt(),optionen=[];
@@ -348,18 +410,25 @@
       var start=h[0]+15;if(i===0)start=Math.max(start,Math.ceil((n.min+20)/15)*15);
       var ende=h[1]-15;if(start>ende)continue;
       var vor=i===0?'heute':i===1?'morgen':TAGE[tag],en=SP==='en',vorA=en?(i===0?'today':i===1?'tomorrow':TAGE_E[tag]):vor;
-      if(i===0&&n.min>=h[0]&&n.min<h[1])optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});
-      for(var m=start;m<=ende;m+=15)optionen.push({v:vor+', '+zeitText(m),t:(i===0?'':vorA.charAt(0).toUpperCase()+vorA.slice(1)+', ')+zeitText(m,en)});
+      if(i===0&&n.min>=h[0]&&n.min<h[1]){optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20};}
+      for(var m=start;m<=ende;m+=15){optionen.push({v:vor+', '+zeitText(m),t:(i===0?'':vorA.charAt(0).toUpperCase()+vorA.slice(1)+', ')+zeitText(m,en)});ZINFO[vor+', '+zeitText(m)]={off:i,min:m};}
       if(i>0){hinweisZ.textContent=L('Heute ist keine Abholung mehr möglich. Sie können für '+vor+' vorbestellen.','Pickup is no longer possible today. You can pre-order for '+vorA+'.');hinweisZ.hidden=false;}
     }
     optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
-    abhSpeichern();
+    abhSpeichern();zeichnenSpaeter();
   }
+  var zsp=false;function zeichnenSpaeter(){if(zsp)return;zsp=true;setTimeout(function(){zsp=false;zeichnen();waAktualisieren();},0);}
   var WA={"freital": "491601836249", "altenberg": "491601836249"},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
+  var verfHinweis=document.getElementById('verf-hinweis');
+  function konflikte(){return zettel.filter(function(x){return sperreZettel(x.k);}).length;}
   function waAktualisieren(){
-    var nr=abh.laden&&WA[abh.laden];
-    waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!Object.keys(WA).length;
+    var nr=abh.laden&&WA[abh.laden],kf=konflikte();
+    verfHinweis.hidden=!kf;
+    verfHinweis.textContent=kf===1?L('Ein Gericht ist zur gewählten Zeit nicht zu haben. Bitte oben ändern.','One dish is not available at the chosen time. Please change it above.')
+      :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
+    if(kf)nr=null;
+    waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!!kf||!Object.keys(WA).length;
     if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText());
   }
   function ladenZeigen(){
@@ -368,7 +437,7 @@
     zeitenFuellen();waAktualisieren();
   }
   document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();});});
-  selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();waAktualisieren();});
+  selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();zeichnen();waAktualisieren();});
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
   ladenZeigen();
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
@@ -427,7 +496,8 @@
     leeren.dataset.sicher='1';leeren.textContent=L('Wirklich alles löschen? Nochmal tippen.','Really delete everything? Tap again.');
     clearTimeout(leerenTimer);leerenTimer=setTimeout(function(){delete leeren.dataset.sicher;leeren.textContent=L('Zettel leeren','Clear list');},4000);
   });
-  zeichnen();
+  zeichnen();verfZeigen();regelnLaden();
+  setInterval(function(){try{verfZeigen();zeitenFuellen();}catch(e){}},60000);
 
   if(feld){
     feld.addEventListener('input',suchen);

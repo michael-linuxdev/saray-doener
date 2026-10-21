@@ -34,6 +34,31 @@ Nur Python 3, keine Pakete nötig. Nach jeder Änderung `python3 build.py` laufe
 - **Hinweis oben (Urlaub, Feiertag, Angebot):** `HINWEISE` in `build.py`, mit `von`/`bis` als Datum. Außerhalb des Zeitraums blendet sich das Band von selbst aus.
 - **Empfehlung und „Beliebt“:** `EMPFEHLUNG` und `BELIEBT` in `build.py`.
 
+## Verfügbarkeit („heute kein Hähnchen“, „Nuggets ab 17 Uhr“)
+
+Tagesaktuelle Sperren stehen in **`docs/status.json`**. Die Seite lädt die Datei bei jedem Aufruf neu; `build.py` überschreibt sie nicht.
+
+```json
+{"regeln": [
+  {"was": "huhn", "datum": "2026-10-21"},
+  {"was": "nuggets", "ab": "17:00"},
+  {"was": "baguette", "laden": "altenberg"},
+  {"was": ["80", "81"], "bis": "14:00", "tage": [1, 2, 3, 4, 5]}
+]}
+```
+
+| Feld | Bedeutung |
+|---|---|
+| `was` | Gruppe oder Gerichtsnummer, auch als Liste. Gruppen: jede Kategorie (`doener`, `duerum`, `teller`, `pizza`, `lahmacun`, `baguette`, `salate`, `schnitzel`, `kinder`) und Zutaten (`huhn`, `nuggets`, `falafel`, `halloumi`, `schnitzel-fleisch`, `fisch`) |
+| `ab` / `bis` | erst ab / nur bis Uhrzeit. Ohne beides: nicht verfügbar |
+| `datum` | nur an diesem Tag (oder Liste von Tagen) – verfällt danach von selbst |
+| `tage` | nur an diesen Wochentagen (0 = Sonntag) |
+| `laden` | nur `freital` oder `altenberg`; ohne: beide Läden |
+
+Auf der Seite: Hinweis am Gericht („heute nicht verfügbar“, „erst ab 17 Uhr“, „Altenberg: …“), ganz gesperrte Gerichte sind ausgegraut. Im Bestellzettel wird gegen Laden **und Abholzeit** geprüft – Nuggets um 15 Uhr für 17:30 Uhr vorbestellen geht, für „so schnell wie möglich“ nicht. Solange etwas nicht passt, ist der WhatsApp-Knopf ausgeblendet.
+
+Feste Regeln, die immer gelten, können stattdessen in `VERFUEGBARKEIT` in `build.py` stehen.
+
 ## WhatsApp-Bestellung
 
 Die Nummern stehen bei `whatsapp` in `STANDORTE` (`build.py`), international ohne `+`, z. B. `4917612345678`. Zurzeit ist dort zum Testen **Michaels Nummer** eingetragen – vor dem Livegang durch die Nummer des jeweiligen Ladens ersetzen. Ist das Feld leer, wird der WhatsApp-Knopf ausgeblendet; Anrufen und „Zettel kopieren“ funktionieren immer.
