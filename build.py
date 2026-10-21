@@ -522,7 +522,8 @@ p{margin:0}
 .app-tipp{opacity:.8}
 /* Kontrast: Rot auf Gelb ist zu schwach (3,6:1) – auf gelben Karten dunkleres Rot (5,2:1) */
 .tipp-gross .preis,.tipp-gross .tipp-preis{color:#9E2A10}
-/* Linkshänder-Modus (nur Handy): Bedienknöpfe auf die linke Seite */
+/* Linkshänder-Modus (nur Handy): Plus und Mengen-Regler der Speisekarte auf die linke Seite.
+   Karten (Empfehlung/Beliebt), Bestellzettel und Nach-oben-Pfeil bleiben unverändert. */
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .hand-zeile{list-style:none;margin:-2px 0 6px;font-size:.88rem;color:var(--tinte-weich)}
 @media (min-width:720px){.hand-zeile{display:none}}
@@ -533,8 +534,6 @@ p{margin:0}
   html.links .zwei .groessen{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) 3rem 3rem}
   html.links .plus{justify-self:start}
   html.links .mengen{justify-content:flex-start}
-  html.links .z-steuer .z-anpassen{order:-1;margin-left:0;margin-right:auto}
-  html.links .zettel-kopf{flex-direction:row-reverse}
 }
 .vorschau-band .stand{opacity:.7;white-space:nowrap}
 #debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
@@ -1543,7 +1542,6 @@ SEITE = r"""<!doctype html>
         %%ZETTEL_ANRUF%%
         <button type="button" class="knopf knopf-linie" id="zettel-kopieren" data-en="Copy list">Zettel kopieren</button>
         <button type="button" class="knopf-klein" id="zettel-leeren" data-en="Clear list">Zettel leeren</button>
-        <button type="button" class="knopf-klein hand-knopf" data-hand>Linkshänder: Knöpfe links</button>
       </div>
     </div>
   </section>
