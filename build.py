@@ -568,12 +568,15 @@ p{margin:0}
 @media (min-width:720px){.zettel-leiste{left:auto;right:24px;bottom:24px}.zl-summe{margin-left:12px}}
 body.mit-zettel .fuss{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 @media (min-width:720px){body.mit-zettel .fuss{padding-bottom:100px}}
-.zettel-huelle{position:fixed;inset:0;z-index:60;display:flex;justify-content:flex-end;align-items:flex-end}
+.zettel-huelle{position:fixed;inset:0;height:100vh;height:100dvh;z-index:60;display:flex;justify-content:flex-end;align-items:flex-end}
 .zettel-hinter{position:absolute;inset:0;background:rgba(42,14,35,.45)}
-.zettel{position:relative;width:100%;max-height:88vh;display:flex;flex-direction:column;background:#fff;border-radius:20px 20px 0 0;
-  border-top:6px solid var(--gelb);padding:18px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}
+/* Höhe am sichtbaren Bereich messen (iPhone: vh zählt die Adressleiste nicht ab) */
+.zettel{position:relative;width:100%;max-height:calc(100% - 24px - env(safe-area-inset-top));display:flex;flex-direction:column;background:#fff;border-radius:20px 20px 0 0;
+  border-top:6px solid var(--gelb);padding:0 18px calc(18px + env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain}
 @media (min-width:720px){.zettel-huelle{align-items:stretch}.zettel{width:430px;max-height:none;border-radius:0;border-top:0;border-left:6px solid var(--gelb)}}
-.zettel-kopf{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+/* Kopf mit dem X bleibt beim Scrollen im Zettel immer sichtbar */
+.zettel-kopf{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;margin:0 -18px 10px;padding:14px 18px 10px;background:#fff;border-bottom:1px solid transparent}
+.zettel-kopf h2{margin:0}
 .zettel-kopf h2{font-size:1.7rem}
 .zettel-zu{width:44px;height:44px;border-radius:50%;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font:700 1.5rem/1 var(--text);cursor:pointer}
 .zettel-leer{color:var(--tinte-weich);padding:12px 0 20px}
@@ -1314,7 +1317,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%HINWEISE%%": hinweise_html(HINWEISE if hinweise is None else hinweise),
         "%%WA_ICON%%": '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3 2.5 6 6 6.5l1.2-1.4-2-1-.9.8c-1-.4-1.9-1.3-2.3-2.3l.8-.9-1-2L9.4 8.4"/></svg>',
         "%%LADEN_CHIPS%%": "".join(f'<button type="button" class="chip" data-laden="{st["id"]}" aria-pressed="false">{e(st["name"])}</button>' for st in STANDORTE),
-        "%%ZETTEL_ANRUF%%": "".join(f'<a class="knopf knopf-dunkel" data-anruf="{st["id"]}" href="tel:{st["tel_href"]}">{TEL_ICON}{t(st["name"] + " anrufen", "Call " + st["name"])}: {e(st["tel"])}</a>' for st in STANDORTE),
+        "%%ZETTEL_ANRUF%%": "".join(f'<a class="knopf knopf-dunkel" data-anruf="{st["id"]}" href="tel:{st["tel_href"]}">{TEL_ICON}{t(st["name"] + " anrufen: " + st["tel"], "Call " + st["name"] + ": " + st["tel"])}</a>' for st in STANDORTE),
 
         "%%ROBOTS%%": '<meta name="robots" content="noindex">\n' if VORSCHAU and not einzeln else "",
     }
