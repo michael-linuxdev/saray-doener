@@ -66,17 +66,19 @@
   /* Klebt das Band? Dann liegt es tiefer als die unsichtbare Marke direkt davor.
      Solange es klebt, liegt eine feste weiße Fläche dahinter (.deckel-oben): Safari 26 färbt danach den Bereich
      unter der gläsernen Adressleiste weiß. Wichtig: kein anderes festes Element darf ganz oben darüber liegen. */
-  var marke=document.querySelector('.kat-marke'),deckel=null;
+  var marke=document.querySelector('.kat-marke'),deckel=null,glas=null;
   function klebtPruefen(){if(!nav||!marke)return;
     var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
     if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);
+    if(k&&glas){glas.remove();glas=null;}
+    if(!k&&!glas){glas=document.createElement('div');glas.className='glas-oben';glas.setAttribute('aria-hidden','true');document.body.appendChild(glas);}
     if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
     if(deckel)deckel.style.height=nav.offsetHeight+'px';
     if(!k&&deckel){deckel.remove();deckel=null;}
     if(dbg){var vv=window.visualViewport;dbg.textContent='scrollY '+Math.round(scrollY)+'\ninnerH '+innerHeight+' vv.h '+(vv?Math.round(vv.height):'-')+' vv.top '+(vv?Math.round(vv.offsetTop):'-')+
       '\nnav.top '+Math.round(nav.getBoundingClientRect().top)+' marke.bottom '+Math.round(marke.getBoundingClientRect().bottom)+
       '\nposition '+getComputedStyle(nav).position+' top '+getComputedStyle(nav).top+'\nklebt '+nav.classList.contains('klebt')+
-      '\ndeckel '+(deckel?deckel.style.height:'-')+'\nsafe-top '+getComputedStyle(document.documentElement).getPropertyValue('--sat');}}
+      '\ndeckel '+(deckel?deckel.style.height:'-')+' glas '+(glas?'ja':'-')+'\nsafe-top '+getComputedStyle(document.documentElement).getPropertyValue('--sat');}}
   var dbg=null;
   if(/[?&]debug/.test(location.search)){dbg=document.createElement('div');dbg.id='debug-info';document.body.appendChild(dbg);
     document.documentElement.style.setProperty('--sat','env(safe-area-inset-top)');
