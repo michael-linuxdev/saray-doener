@@ -483,10 +483,10 @@ p{margin:0}
 /* Safari 26 färbt den Bereich unter der gläsernen Adressleiste nach festen Elementen am oberen Rand ein.
    Solange das Band klebt, liegt deshalb eine feste weiße Fläche genau dahinter. */
 .deckel-oben{position:fixed;top:0;left:0;right:0;background:#fff;z-index:19;pointer-events:none}
-/* Gegenstück, solange das Band nicht klebt: fast unsichtbares Muster am oberen Rand.
+/* Gegenstück, solange das Band nicht klebt: bildschirmfüllende, praktisch unsichtbare Ebene (wie früher das Wasserzeichen).
    Ohne festes Element nimmt Safari 26 (große Adressleiste) die Hintergrundfarbe – Weiß statt Glas. */
-.glas-oben{position:fixed;top:0;left:0;right:0;height:120px;z-index:18;pointer-events:none;
-  background-image:repeating-linear-gradient(45deg,rgba(58,21,49,.012) 0 2px,transparent 2px 6px)}
+.glas-oben{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.02;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3E%C2%B7%3C/text%3E%3C/svg%3E") repeat}
 .vorschau-band .stand{opacity:.7;white-space:nowrap}
 #debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
