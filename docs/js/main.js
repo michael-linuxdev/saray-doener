@@ -63,16 +63,19 @@
     return id;
   }
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
-  var themeF=document.getElementById('theme-farbe');
-  function klebtPruefen(){if(!nav||getComputedStyle(nav).position!=='sticky')return;var k=nav.getBoundingClientRect().top<=0.5;
-    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);document.documentElement.classList.toggle('kat-klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
+  /* Die weiße Fläche existiert nur, solange das Band klebt – Safari färbt sonst die Glasleiste danach ein */
+  var deckel=null;
+  function klebtPruefen(){if(!nav)return;var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top<=0.5;
+    if(k===nav.classList.contains('klebt'))return;nav.classList.toggle('klebt',k);
+    if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
+    else if(!k&&deckel){deckel.remove();deckel=null;}}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
     if(geplant)return;geplant=true;
     requestAnimationFrame(function(){geplant=false;verfolgen();});
   },{passive:true});
-  window.addEventListener('resize',verfolgen);
+  window.addEventListener('resize',verfolgen);window.addEventListener('pageshow',verfolgen);window.addEventListener('load',verfolgen);
   window.addEventListener('wheel',loesen,{passive:true});
   window.addEventListener('touchmove',loesen,{passive:true});
   window.addEventListener('mousedown',function(ev){if(!(nav&&nav.contains(ev.target)))loesen();});

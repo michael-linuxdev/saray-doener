@@ -479,8 +479,7 @@ p{margin:0}
 /* iOS 26 Safari zeigt über dem Sichtbereich (unter der gläsernen Adressleiste) die Seite durchscheinend.
    Solange das Kategorie-Band oben klebt, deckt eine feste weiße Fläche direkt oberhalb des Sichtbereichs das ab;
    im oberen Teil der Seite (Bild, Läden) darf es durchscheinen. */
-.deckel-oben{display:none;position:fixed;left:0;right:0;bottom:100%;height:300px;background:#fff;z-index:19;pointer-events:none}
-html.kat-klebt .deckel-oben{display:block}
+.deckel-oben{position:fixed;left:0;right:0;bottom:100%;height:300px;background:#fff;z-index:19;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
 .kategorien.klebt{box-shadow:0 -120px 0 0 #fff;padding-top:calc(10px + env(safe-area-inset-top))}
 .kategorien ul{list-style:none;margin:0;padding:0 var(--rand);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
@@ -1178,16 +1177,19 @@ JS = r"""
     return id;
   }
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
-  var themeF=document.getElementById('theme-farbe');
-  function klebtPruefen(){if(!nav||getComputedStyle(nav).position!=='sticky')return;var k=nav.getBoundingClientRect().top<=0.5;
-    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);document.documentElement.classList.toggle('kat-klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
+  /* Die weiße Fläche existiert nur, solange das Band klebt – Safari färbt sonst die Glasleiste danach ein */
+  var deckel=null;
+  function klebtPruefen(){if(!nav)return;var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top<=0.5;
+    if(k===nav.classList.contains('klebt'))return;nav.classList.toggle('klebt',k);
+    if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
+    else if(!k&&deckel){deckel.remove();deckel=null;}}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
     if(geplant)return;geplant=true;
     requestAnimationFrame(function(){geplant=false;verfolgen();});
   },{passive:true});
-  window.addEventListener('resize',verfolgen);
+  window.addEventListener('resize',verfolgen);window.addEventListener('pageshow',verfolgen);window.addEventListener('load',verfolgen);
   window.addEventListener('wheel',loesen,{passive:true});
   window.addEventListener('touchmove',loesen,{passive:true});
   window.addEventListener('mousedown',function(ev){if(!(nav&&nav.contains(ev.target)))loesen();});
@@ -1286,7 +1288,7 @@ SEITE = r"""<!doctype html>
 <title>%%TITEL_PRAEFIX%%Saray Döner Freital &amp; Altenberg – Döner, Pizza und Salate seit 1997</title>
 <meta name="description" content="Saray Döner in Freital (Dresdner Str. 87) und Altenberg (Dresdner Str. 23): Döner, Dürüm, Pizza, Lahmacun und Salate. Speisekarte mit Preisen, Öffnungszeiten und Telefonnummern.">
 <link rel="canonical" href="%%DOMAIN%%">
-<meta name="theme-color" content="#FFD21F" id="theme-farbe">
+<meta name="theme-color" content="#FFD21F">
 <meta name="format-detection" content="telephone=no">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
@@ -1299,7 +1301,6 @@ SEITE = r"""<!doctype html>
 <script type="application/ld+json">%%LD%%</script>
 </head>
 <body%%BODY_KLASSE%%>
-<div class="deckel-oben" aria-hidden="true"></div>
 %%VORSCHAU_BAND%%
 <a class="skip" href="#speisekarte" data-en="Skip to menu">Zur Speisekarte springen</a>
 
