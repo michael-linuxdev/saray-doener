@@ -65,7 +65,7 @@
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
   var themeF=document.getElementById('theme-farbe');
   function klebtPruefen(){if(!nav||getComputedStyle(nav).position!=='sticky')return;var k=nav.getBoundingClientRect().top<=0.5;
-    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
+    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);document.documentElement.classList.toggle('kat-klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){

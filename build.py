@@ -476,6 +476,11 @@ p{margin:0}
 
 .kategorien{position:sticky;top:0;z-index:20;background:#fff;margin-inline:calc(-1 * var(--rand));
   padding:10px 0;border-bottom:1px solid var(--linie);margin-bottom:24px}
+/* iOS 26 Safari zeigt über dem Sichtbereich (unter der gläsernen Adressleiste) die Seite durchscheinend.
+   Solange das Kategorie-Band oben klebt, deckt eine feste weiße Fläche direkt oberhalb des Sichtbereichs das ab;
+   im oberen Teil der Seite (Bild, Läden) darf es durchscheinen. */
+.deckel-oben{display:none;position:fixed;left:0;right:0;bottom:100%;height:300px;background:#fff;z-index:19;pointer-events:none}
+html.kat-klebt .deckel-oben{display:block}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
 .kategorien.klebt{box-shadow:0 -120px 0 0 #fff;padding-top:calc(10px + env(safe-area-inset-top))}
 .kategorien ul{list-style:none;margin:0;padding:0 var(--rand);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
@@ -1175,7 +1180,7 @@ JS = r"""
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
   var themeF=document.getElementById('theme-farbe');
   function klebtPruefen(){if(!nav||getComputedStyle(nav).position!=='sticky')return;var k=nav.getBoundingClientRect().top<=0.5;
-    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
+    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);document.documentElement.classList.toggle('kat-klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
@@ -1294,6 +1299,7 @@ SEITE = r"""<!doctype html>
 <script type="application/ld+json">%%LD%%</script>
 </head>
 <body%%BODY_KLASSE%%>
+<div class="deckel-oben" aria-hidden="true"></div>
 %%VORSCHAU_BAND%%
 <a class="skip" href="#speisekarte" data-en="Skip to menu">Zur Speisekarte springen</a>
 
