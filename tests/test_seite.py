@@ -271,6 +271,25 @@ def qr_waehlt_laden_vor(b, url):
     s.schliessen()
 
 
+@test
+def laden_karte_springt_zu_zeiten(b, url):
+    for vp, mobil in ((HANDY, True), (DESKTOP, False)):
+        s = Seite(b, url, vp, mobil=mobil)
+        for laden in ("freital", "altenberg"):
+            s.js("window.scrollTo(0,0)")
+            s.p.click(f'.schild:has(a[href="#ort-{laden}"]) .schild-adresse', force=True)
+            s.p.wait_for_timeout(300)
+            top = s.js(f"document.getElementById('ort-{laden}').getBoundingClientRect().top")
+            assert 0 <= top < 120, f"{vp['width']}px {laden}: Abschnitt nicht oben (top {top})"
+        # Telefon-Knopf bleibt ein Anruf-Link und liegt über der Karte
+        s.js("window.scrollTo(0,0)")
+        s.p.wait_for_timeout(100)
+        ziel = s.js("(()=>{const t=document.querySelector('.schild-tel');t.scrollIntoView({block:'center'});const r=t.getBoundingClientRect();"
+                    "return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2).closest('a').getAttribute('href')})()")
+        assert ziel.startswith("tel:"), ziel
+        s.schliessen()
+
+
 def chef_oeffnen(b, url, anp=None, gespeichert=None):
     """Öffnet die Chef-App mit nachgebildeter GitHub-API (es wird nichts wirklich gespeichert)."""
     import base64

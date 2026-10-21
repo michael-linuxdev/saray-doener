@@ -257,7 +257,7 @@ def status_html(s, klasse="status"):
 
 STATUS_KARTEN = "\n".join(
     f'''<li class="schild">
-  <p class="schild-ort">{e(s["name"])}</p>
+  <p class="schild-ort"><a class="schild-link" href="#ort-{s["id"]}" data-en-aria="{e(s["name"])}: opening hours and directions" aria-label="{e(s["name"])}: Öffnungszeiten und Anfahrt">{e(s["name"])}</a></p>
   <p class="schild-adresse">{e(s["strasse"])}</p>
   {status_html(s)}
   <a class="schild-tel" href="tel:{s["tel_href"]}" aria-label="{e(s["name"])} anrufen: {e(s["tel"])}" title="{e(s["tel"])}">{TEL_ICON}</a>
@@ -398,6 +398,15 @@ p{margin:0}
 .schild{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ort tel" "adr tel" "status status";
   column-gap:12px;background:#fff;border:2px solid var(--tinte);border-radius:16px;padding:14px 14px 14px 16px}
 .schild-ort{grid-area:ort;font:700 1.3rem/1.15 var(--slab)}
+/* ganze Karte führt zu Öffnungszeiten und Anfahrt (Telefon-Knopf bleibt eigener Link) */
+.schild{position:relative;cursor:pointer}
+.schild-link{color:inherit;text-decoration:none}
+.schild-link::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.schild-link:focus-visible{outline:none}
+.schild:has(.schild-link:focus-visible){outline:3px solid var(--paprika);outline-offset:3px}
+@media (hover:hover){.schild:has(.schild-link:hover){box-shadow:0 8px 20px -10px rgba(58,21,49,.45)}}
+.schild-tel{position:relative;z-index:1}
+.ort{scroll-margin-top:16px}
 .schild-adresse{grid-area:adr;color:var(--tinte-weich);font-size:.98rem}
 .schild .status{grid-area:status;margin-top:8px}
 .schild-tel{grid-area:tel;align-self:center;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;
