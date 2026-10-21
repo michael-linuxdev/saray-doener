@@ -196,6 +196,24 @@ p{margin:0}
    Nach-oben-Pfeil ebenfalls links. Karten (Empfehlung/Beliebt) und Bestellzettel bleiben unverändert. */
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .fuss-hand{margin:0}
+/* Sammelbestellung */
+.sammel-start{margin:4px 0 0}
+/* Teilnehmer einer Sammelbestellung: Laden, Tag und Uhrzeit wählt der Sammler */
+.im-sammel .abholung legend,.im-sammel .abholung .z-chips,.im-sammel label[for=abhol-tag],.im-sammel #abhol-tag,
+.im-sammel label[for=abhol-zeit],.im-sammel #abhol-zeit,.im-sammel #abhol-hinweis,.im-sammel #wa-hinweis,.im-sammel .zettel-hinweis,
+.im-sammel #verf-hinweis,.im-sammel [data-anruf]{display:none!important}
+.sammel-band{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--gelb-blass);border:2px solid var(--tinte)}
+.sammel-band p{margin:0;font-weight:700;line-height:1.35}
+.z-fuer{display:inline-block;margin-top:2px;padding:0 8px;border-radius:999px;background:var(--gelb-blass);font-size:.82rem;font-weight:700}
+.sammel-dialog{position:fixed;inset:0;z-index:90;background:rgba(58,21,49,.5);display:flex;align-items:flex-end;justify-content:center}
+.sammel-box{background:#fff;width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
+@media (min-width:720px){.sammel-dialog{align-items:center}.sammel-box{border-radius:20px}}
+.sammel-box h2{margin:0 0 8px;font-size:1.3rem}
+.sammel-box label{display:block;font-weight:700;margin:12px 0 4px}
+.sammel-box input{width:100%;min-height:46px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit}
+.sammel-liste{margin:6px 0;padding-left:18px}
+.sammel-summe{font-weight:700}
+.sammel-knoepfe{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 @media (min-width:720px){.fuss-hand{display:none}}
 /* einmaliger Hinweis beim ersten „+“ (nur Handy) */
 .hand-tipp{position:fixed;left:10px;right:10px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:71;background:var(--tinte);color:#fff;

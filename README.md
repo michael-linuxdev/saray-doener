@@ -64,6 +64,10 @@ Auf der Seite: Hinweis am Gericht („heute nicht verfügbar“, „erst ab 17 U
 
 Feste Regeln, die immer gelten, können stattdessen in `VERFUEGBARKEIT` in `build.py` stehen.
 
+## Sammelbestellung (ohne Server)
+
+„👥 Sammelbestellung starten“ (unter „Speisekarte“ oder in „Meine Bestellung“) teilt eine Einladung (`…/#sammel=<daten>`). Wer sie öffnet, wählt sein Essen und schickt mit „Meinen Teil an … schicken“ einen Link (`…/#teil=<daten>`) zurück – Laden, Zeit und WhatsApp an den Laden sind für Teilnehmer ausgeblendet. Der Sammler öffnet die Links nacheinander und fügt sie mit einem Tipp hinzu; beim Laden kommt z. B. „1× Nr. 7 … (für Anna)“ an. Alle Daten stehen nur im Link (Base64-JSON), es wird nichts gespeichert oder übertragen außer über die gewählte App. Preise werden beim Hinzufügen neu aus der aktuellen Karte genommen.
+
 ## Chef-App (für den Inhaber)
 
 Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für Suchmaschinen gesperrt. Große Schaltflächen, fürs Handy gemacht:

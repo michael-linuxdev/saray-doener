@@ -332,6 +332,60 @@ def tastatur_bleibt_im_zettel(b, url):
 
 
 @test
+def sammelbestellung(b, url):
+    geteilt = "window.__geteilt=[];navigator.share=function(d){window.__geteilt.push(d.text);return Promise.resolve();};0"
+    # Michael startet die Sammelbestellung
+    m = Seite(b, url)
+    m.js(geteilt)
+    m.p.click("#nr-1 .plus")
+    m.p.click("[data-sammel-start]")
+    m.p.fill("#sammel-name", "Michael")
+    m.p.click("#sammel-knoepfe >> text=Einladung teilen")
+    einladung = m.js("window.__geteilt[0]")
+    link = einladung.split("\n")[-1]
+    assert "#sammel=" in link, einladung
+    # Anna öffnet die Einladung auf ihrem Handy
+    a = Seite(b, link.replace(url.rstrip("/"), url.rstrip("/")))
+    a.js(geteilt)
+    assert not a.js("document.getElementById('sammel-band').hidden"), "Sammel-Hinweis fehlt"
+    assert "Michael" in a.p.text_content("#sammel-titel")
+    a.p.click("#sammel-knoepfe >> text=Los geht")
+    a.p.click("#nr-7 .plus")
+    a.p.click("#zettel-leiste")
+    a.p.click("[data-anpassen]")
+    a.p.click('[data-o="ohne"][data-w="Zwiebeln"]')
+    a.p.click("[data-fertig]")
+    a.p.click("[data-laden=freital]")
+    assert a.js("document.getElementById('zettel-whatsapp').hidden"), "Teilnehmerin soll nicht selbst beim Laden bestellen"
+    a.p.click("#sammel-teil")
+    assert "Namen" in a.p.text_content("#zettel-meldung")
+    a.p.fill("#abhol-name", "Anna")
+    a.p.click("#sammel-teil")
+    teil = a.js("window.__geteilt[0]")
+    assert "Nr. 7 Super Döner mit Käse" in teil and "ohne Zwiebeln" in teil, teil
+    teil_link = teil.split("\n")[-1]
+    assert "#teil=" in teil_link, teil
+    a.schliessen()
+    # Michael öffnet Annas Teil
+    m.p.goto(teil_link)
+    m.p.wait_for_timeout(300)
+    assert "Anna" in m.p.text_content("#sammel-titel")
+    assert "Super Döner mit Käse" in m.p.text_content("#sammel-inhalt")
+    m.p.click("#sammel-knoepfe >> text=Zur Bestellung hinzufügen")
+    assert not m.js("location.hash"), "Link-Daten nicht aus der Adresse entfernt"
+    m.p.click("[data-laden=freital]")
+    text = m.wa_text()
+    assert "1× Nr. 1 Döner Kebap, Kräuter-Soße: 7,00 €" in text, text
+    assert "1× Nr. 7 Super Döner mit Käse, Kräuter-Soße, ohne Zwiebeln (für Anna): 9,50 €" in text, text
+    assert "Summe: 16,50 €" in text, text
+    # derselbe Link noch einmal: Warnung
+    m.p.goto(teil_link)
+    m.p.wait_for_timeout(300)
+    assert "schon hinzugefügt" in m.p.text_content("#sammel-inhalt")
+    m.schliessen()
+
+
+@test
 def linkshaender_hinweis(b, url):
     s = Seite(b, url, hand_tipp=True)
     s.p.click("#nr-1 .plus")

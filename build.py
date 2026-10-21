@@ -522,6 +522,24 @@ p{margin:0}
    Nach-oben-Pfeil ebenfalls links. Karten (Empfehlung/Beliebt) und Bestellzettel bleiben unverändert. */
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .fuss-hand{margin:0}
+/* Sammelbestellung */
+.sammel-start{margin:4px 0 0}
+/* Teilnehmer einer Sammelbestellung: Laden, Tag und Uhrzeit wählt der Sammler */
+.im-sammel .abholung legend,.im-sammel .abholung .z-chips,.im-sammel label[for=abhol-tag],.im-sammel #abhol-tag,
+.im-sammel label[for=abhol-zeit],.im-sammel #abhol-zeit,.im-sammel #abhol-hinweis,.im-sammel #wa-hinweis,.im-sammel .zettel-hinweis,
+.im-sammel #verf-hinweis,.im-sammel [data-anruf]{display:none!important}
+.sammel-band{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--gelb-blass);border:2px solid var(--tinte)}
+.sammel-band p{margin:0;font-weight:700;line-height:1.35}
+.z-fuer{display:inline-block;margin-top:2px;padding:0 8px;border-radius:999px;background:var(--gelb-blass);font-size:.82rem;font-weight:700}
+.sammel-dialog{position:fixed;inset:0;z-index:90;background:rgba(58,21,49,.5);display:flex;align-items:flex-end;justify-content:center}
+.sammel-box{background:#fff;width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
+@media (min-width:720px){.sammel-dialog{align-items:center}.sammel-box{border-radius:20px}}
+.sammel-box h2{margin:0 0 8px;font-size:1.3rem}
+.sammel-box label{display:block;font-weight:700;margin:12px 0 4px}
+.sammel-box input{width:100%;min-height:46px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit}
+.sammel-liste{margin:6px 0;padding-left:18px}
+.sammel-summe{font-weight:700}
+.sammel-knoepfe{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 @media (min-width:720px){.fuss-hand{display:none}}
 /* einmaliger Hinweis beim ersten „+“ (nur Handy) */
 .hand-tipp{position:fixed;left:10px;right:10px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:71;background:var(--tinte);color:#fff;
@@ -869,7 +887,7 @@ ZETTEL_JS = r'''
   function grund(t){return {s:(t==='D'||t==='SA')?['Kräuter']:[],ohne:[],ex:[],wahl:[],va:''};}
   function exPreis(o){return (o.ex||[]).reduce(function(a,e){return a+(GEMUESE.indexOf(e)>-1?150:200);},0);}
   function stueck(x){return x.c+exPreis(x.o);}
-  function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||''].join('|');}
+  function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
   function wuensche(x,en){
@@ -953,7 +971,8 @@ ZETTEL_JS = r'''
       var li=el('li','z-eintrag'),kopf=el('div');
       var na=nameA(x);
       kopf.appendChild(el('span','z-name',na+(x.g?' ('+x.g+')':'')));
-      var wt=x.t?wuensche(x,SP==='en'):beschrA(x);if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
+      var wt=x.t?wuensche(x,SP==='en'):beschrA(x);if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
+      if(x.fuer)kopf.appendChild(el('span','z-fuer',L('für ','for ')+x.fuer));if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
       var spZ=sperreZettel(x.k);
       if(spZ){var a0=abholung();kopf.appendChild(el('span','z-info z-fehlt',
         spZ.art==='aus'?L((a0.off?'':'heute ')+'in '+LADEN_N[a0.laden]+' nicht verfügbar – bitte entfernen',(a0.off?'':'today ')+'not available in '+LADEN_N[a0.laden]+' – please remove')
@@ -974,7 +993,7 @@ ZETTEL_JS = r'''
     });
     zsumme.textContent=euro(summe());
     huelle.querySelector('.zettel-leer').hidden=n>0;huelle.querySelector('.zettel-voll').hidden=n===0;
-    abgleichen();letzteZeigen();
+    abgleichen();letzteZeigen();if(typeof sammelZeigen==='function'&&sTeil)sammelZeigen();
   }
   function finde(u){return zettel.find(function(x){return x.u===+u;});}
   function abgleichen(){
@@ -1117,7 +1136,7 @@ ZETTEL_JS = r'''
     verfHinweis.hidden=!kf;document.getElementById('zettel-kopieren').disabled=!!kf;
     verfHinweis.textContent=kf===1?L('Ein Gericht ist zur gewählten Zeit nicht zu haben. Bitte oben ändern.','One dish is not available at the chosen time. Please change it above.')
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
-    if(kf)nr=null;
+    if(kf||sammel)nr=null;
     waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!!kf||!Object.keys(WA).length;
     if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText());
   }
@@ -1153,14 +1172,18 @@ ZETTEL_JS = r'''
     var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP==='en'&&li.dataset.ne||li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
     document.getElementById('letzte-liste').textContent=Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');
   }
+  /* Eintrag aus gespeicherten/geteilten Daten mit aktuellem Preis; null, wenn es das Gericht nicht mehr gibt */
+  function ausDaten(p,fuer){
+    var li=p&&typeof p.k==='string'&&gerichtLi(p.k);if(!li)return null;
+    var gs=li.dataset.g?li.dataset.g.split('|'):[''],i=gs.indexOf(p.g||'');if(i<0)return null;
+    var pr=li.dataset.p.split('|').map(Number),o=Object.assign(grund(li.dataset.t),JSON.parse(JSON.stringify(p.o||{})));
+    ['s','ohne','ex','wahl'].forEach(function(a){if(!Array.isArray(o[a]))o[a]=[];o[a]=o[a].filter(function(v){return typeof v==='string';}).slice(0,12);});
+    if(typeof o.va!=='string')o.va='';
+    return {k:p.k,n:li.dataset.n,d:li.dataset.d,g:p.g||'',c:pr[i],q:Math.min(50,Math.max(1,+p.q||1)),t:li.dataset.t||'',v:li.dataset.v||'',o:o,
+      notiz:String(p.notiz||'').slice(0,200),fuer:fuer?String(fuer).slice(0,40):(p.fuer?String(p.fuer).slice(0,40):''),u:uidZ++};
+  }
   document.getElementById('letzte-knopf').addEventListener('click',function(){
-    letzteGueltig().forEach(function(p){
-      var li=gerichtLi(p.k),gs=li.dataset.g?li.dataset.g.split('|'):[''],pr=li.dataset.p.split('|').map(Number);
-      var o=Object.assign(grund(li.dataset.t),JSON.parse(JSON.stringify(p.o||{})));
-      ['s','ohne','ex','wahl'].forEach(function(a){if(!Array.isArray(o[a]))o[a]=[];});
-      zettel.push({k:p.k,n:li.dataset.n,d:li.dataset.d,g:p.g||'',c:pr[Math.max(0,gs.indexOf(p.g||''))],q:Math.max(1,+p.q||1),
-        t:li.dataset.t||'',v:li.dataset.v||'',o:o,notiz:p.notiz||'',u:uidZ++});
-    });
+    letzteGueltig().forEach(function(p){var x=ausDaten(p);if(x)zettel.push(x);});
     zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
@@ -1171,30 +1194,113 @@ ZETTEL_JS = r'''
     if(abh.zeit)z.push('Abholung: '+abh.zeit);
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
-    zettel.forEach(function(x){var w=x.t?wuensche(x):'';
-      z.push(x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:''));});
+    zettel.forEach(function(x){z.push(zeileText(x));});
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
+  function zeileText(x){var w=x.t?wuensche(x):'';
+    return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
   /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
-  document.getElementById('zettel-kopieren').addEventListener('click',function(){
-    var t=zettelText();
-    letzteMerken();
+  function teilen(t,titel){
     var kopiert=L('Bestellung kopiert – jetzt in WhatsApp, SMS, E-Mail oder Teams einfügen.','Order copied – now paste it into WhatsApp, a text message, e-mail or Teams.');
     function notfall(){var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';
       document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();
       melden(ok?kopiert:L('Kopieren hat nicht geklappt. Bitte die Bestellung abschreiben.','Copying did not work. Please write the order down.'));}
     function kopieren(){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){melden(kopiert);},notfall);else notfall();}
     if(navigator.share&&(window.matchMedia&&matchMedia('(pointer:coarse)').matches)){
-      navigator.share({title:'Bestellung Saray Döner',text:t}).catch(function(e){if(!e||e.name!=='AbortError')kopieren();});
+      navigator.share({title:titel||'Bestellung Saray Döner',text:t}).catch(function(e){if(!e||e.name!=='AbortError')kopieren();});
     }else kopieren();
-  });
+  }
+  document.getElementById('zettel-kopieren').addEventListener('click',function(){letzteMerken();teilen(zettelText());});
+
+  /* ---------- Sammelbestellung (ohne Server) ----------
+     Einladung:  …/#sammel=<daten>  -> Teilnehmer wählen und schicken „ihren Teil“ zurück
+     Teil:       …/#teil=<daten>    -> Sammler fügt ihn mit Namen („für Anna“) zur eigenen Bestellung hinzu */
+  function kodieren(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  function dekodieren(t){t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return JSON.parse(decodeURIComponent(escape(atob(t))));}
+  function basisUrl(){return location.origin+location.pathname;}
+  var SK='saray-sammel',SIK='saray-sammel-import',sammel=null;
+  try{sammel=JSON.parse(localStorage.getItem(SK)||'null');}catch(e){sammel=null;}
+  function sammelSpeichern(){try{if(sammel)localStorage.setItem(SK,JSON.stringify(sammel));else localStorage.removeItem(SK);}catch(e){}}
+  var sDlg=document.getElementById('sammel-dialog'),sBand=document.getElementById('sammel-band'),sTeil=document.getElementById('sammel-teil');
+  function dialog(titel,inhalt,knoepfe){
+    document.getElementById('sammel-titel').textContent=titel;
+    var box=document.getElementById('sammel-inhalt');box.textContent='';inhalt.forEach(function(x){box.appendChild(x);});
+    var r=document.getElementById('sammel-knoepfe');r.textContent='';
+    knoepfe.forEach(function(k,i){var b=knopf(k[0],{'class':i?'knopf knopf-linie':'knopf knopf-dunkel'});b.addEventListener('click',k[1]);r.appendChild(b);});
+    sDlg.hidden=false;var f=sDlg.querySelector('input,button');if(f)f.focus();
+  }
+  function dialogZu(){sDlg.hidden=true;}
+  sDlg.addEventListener('click',function(ev){if(ev.target===sDlg)dialogZu();});
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!sDlg.hidden)dialogZu();});
+  function nameFeld(){var f=document.createElement('input');f.type='text';f.id='sammel-name';f.autocomplete='given-name';f.maxLength=40;f.value=abh.name||'';
+    var lb=el('label',null,L('Ihr Name','Your name'));lb.htmlFor='sammel-name';return [lb,f];}
+  function einladen(){
+    var nf=nameFeld(),fehler=el('p','abhol-hinweis');fehler.hidden=true;
+    dialog(L('Sammelbestellung starten','Start a group order'),[el('p',null,L('Sie laden andere ein. Jeder sucht sich sein Essen aus und schickt Ihnen seinen Teil zurück. Sie bestellen dann alles zusammen.','You invite others. Everyone picks their food and sends their part back to you. You then order everything together.'))].concat(nf,[fehler]),
+      [[L('Einladung teilen','Share invitation'),function(){var name=nf[1].value.trim();
+          if(!name){fehler.textContent=L('Bitte Ihren Namen eintragen.','Please enter your name.');fehler.hidden=false;nf[1].focus();return;}
+          abh.name=name;eName.value=name;abhSpeichern();dialogZu();
+          var link=basisUrl()+'#sammel='+kodieren({an:name,l:abh.laden||''});
+          teilen('Ich bestelle bei Saray Döner für mehrere. Such dir dein Essen aus und schick mir deinen Teil zurück:\n'+link,'Sammelbestellung Saray Döner');}],
+       [L('Abbrechen','Cancel'),dialogZu]]);
+  }
+  document.querySelectorAll('[data-sammel-start]').forEach(function(b){b.addEventListener('click',einladen);});
+  function teilSchicken(){
+    var name=(eName.value||'').trim();
+    if(!name){eName.focus();melden(L('Bitte zuerst Ihren Namen eintragen.','Please enter your name first.'));return;}
+    if(!zettel.length)return;
+    var link=basisUrl()+'#teil='+kodieren({von:name,p:zettel.map(function(x){return {k:x.k,g:x.g,q:x.q,o:x.o,notiz:x.notiz||''};})});
+    var z=['Mein Teil für die Sammelbestellung bei Saray Döner ('+name+'):'];zettel.forEach(function(x){z.push(zeileText(x));});
+    z.push('Summe: '+euro(summe()),'','Zum Hinzufügen öffnen:',link);
+    teilen(z.join('\n'),'Mein Teil – Saray Döner');
+  }
+  sTeil.addEventListener('click',teilSchicken);
+  function sammelZeigen(){
+    sBand.hidden=!sammel;
+    document.querySelectorAll('.sammel-start').forEach(function(x){x.hidden=!!sammel;});
+    if(sammel)document.getElementById('sammel-band-text').textContent=L('👥 Sammelbestellung für ','👥 Group order for ')+sammel.an+
+      L(': Essen mit „+“ wählen, dann in „Meine Bestellung“ Ihren Teil zurückschicken.',': pick your food with “+”, then send your part back from “My order”.');
+    sTeil.hidden=!sammel||!zettel.length;
+    if(sammel){var sp=sTeil.querySelector('span')||sTeil;sp.textContent=L('Meinen Teil an ','Send my part to ')+sammel.an+L(' schicken','');}
+    document.getElementById('sammel-einladen').hidden=!!sammel;
+    document.getElementById('zettel').classList.toggle('im-sammel',!!sammel);
+  }
+  document.getElementById('sammel-ende').addEventListener('click',function(){sammel=null;sammelSpeichern();sammelZeigen();waAktualisieren();});
+  document.getElementById('sammel-einladen').addEventListener('click',einladen);
+  function linkPruefen(){
+    var m=/^#(sammel|teil)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;
+    history.replaceState(null,'',location.pathname+location.search);
+    var d;try{d=dekodieren(m[2]);}catch(e){melden(L('Der Link ist unvollständig. Bitte noch einmal schicken lassen.','The link is incomplete. Please ask for it again.'));return;}
+    if(m[1]==='sammel'){
+      if(!d||!d.an)return;
+      sammel={an:String(d.an).slice(0,40)};sammelSpeichern();
+      if(d.l&&ZEITEN[d.l]&&!abh.laden){abh.laden=d.l;abhSpeichern();ladenZeigen();}
+      sammelZeigen();waAktualisieren();
+      dialog(L('Sammelbestellung von ','Group order from ')+sammel.an,[el('p',null,L(sammel.an+' sammelt die Bestellung. Wählen Sie Ihr Essen mit „+“, öffnen Sie „Meine Bestellung“ und tippen Sie auf „Meinen Teil an '+sammel.an+' schicken“.',
+        sammel.an+' is collecting the order. Pick your food with “+”, open “My order” and tap “Send my part to '+sammel.an+'”.'))],[[L('Los geht’s','Let’s go'),dialogZu]]);
+      return;
+    }
+    var von=String(d&&d.von||'?').slice(0,40),teile=(d&&Array.isArray(d.p)?d.p:[]).slice(0,60).map(function(p){return ausDaten(p,von);}).filter(Boolean);
+    var schon=[];try{schon=JSON.parse(localStorage.getItem(SIK)||'[]');}catch(e){}
+    var ist=schon.indexOf(m[2].slice(0,80))>-1,summeT=teile.reduce(function(a,x){return a+x.q*stueck(x);},0);
+    var liste=el('ul','sammel-liste');teile.forEach(function(x){liste.appendChild(el('li',null,x.q+'× '+nameA(x)+(x.g?' ('+x.g+')':'')+': '+euro(stueck(x)*x.q)));});
+    var inhalt=[liste,el('p','sammel-summe',L('Summe: ','Total: ')+euro(summeT))];
+    if(ist)inhalt.push(el('p','abhol-hinweis',L('Diesen Teil haben Sie schon hinzugefügt.','You have already added this part.')));
+    if(!teile.length){dialog(L('Teil von ','Part from ')+von,[el('p',null,L('Der Teil enthält keine Gerichte aus der aktuellen Karte.','This part contains no dishes from the current menu.'))],[[L('OK','OK'),dialogZu]]);return;}
+    dialog(von+L(' schickt den eigenen Teil',' sent their part'),inhalt,[[L('Zur Bestellung hinzufügen','Add to my order'),function(){
+        teile.forEach(function(x){zettel.push(x);});zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();
+        schon.push(m[2].slice(0,80));try{localStorage.setItem(SIK,JSON.stringify(schon.slice(-50)));}catch(e){}
+        dialogZu();oeffnen();melden(L('Teil von ','Part from ')+von+L(' hinzugefügt.',' added.'));}],
+      [L('Verwerfen','Discard'),dialogZu]]);
+  }
   var leeren=document.getElementById('zettel-leeren'),leerenTimer=null;
   leeren.addEventListener('click',function(){
     if(leeren.dataset.sicher){zettel=[];offen=null;speichern();zeichnen();schliessen();melden(L('Bestellung geleert.','Order cleared.'));delete leeren.dataset.sicher;leeren.textContent=L('Bestellung leeren','Clear order');return;}
     leeren.dataset.sicher='1';leeren.textContent=L('Wirklich alles löschen? Nochmal tippen.','Really delete everything? Tap again.');
     clearTimeout(leerenTimer);leerenTimer=setTimeout(function(){delete leeren.dataset.sicher;leeren.textContent=L('Bestellung leeren','Clear order');},4000);
   });
-  zeichnen();verfZeigen();regelnLaden();
+  zeichnen();verfZeigen();regelnLaden();sammelZeigen();linkPruefen();
+  window.addEventListener('hashchange',linkPruefen);
   setInterval(function(){try{verfZeigen();zeitenFuellen();}catch(e){}},60000);
 '''
 
@@ -1481,6 +1587,8 @@ SEITE = r"""<!doctype html>
       <h2 id="karte-titel" data-en="Menu">Speisekarte</h2>
       <p data-en="All prices in euros. Every dish comes with your choice of sauce: garlic, herb or chili.">Alle Preise in Euro. Zu jedem Gericht gibt es Soße nach Wahl: Knoblauch, Kräuter oder Chili.</p>
       <p data-en="The menu applies in Freital and Altenberg.">Die Karte gilt in Freital und Altenberg.</p>
+      <p class="sammel-start"><button type="button" class="hand-knopf" data-sammel-start data-en="👥 Ordering for several people? Start a group order">👥 Für mehrere bestellen? Sammelbestellung starten</button></p>
+      <div class="sammel-band" id="sammel-band" hidden><p id="sammel-band-text"></p><button type="button" class="knopf-klein" id="sammel-ende" data-en="End">Beenden</button></div>
     </header>
     <div class="karte-layout">
       <div class="karte-seite">
@@ -1552,6 +1660,8 @@ SEITE = r"""<!doctype html>
 <button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><svg class="ico tuete" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1.2 12.5H6.7z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg><span data-en="My order">Meine Bestellung</span><span class="zl-summe"></span></button>
 <p class="zettel-meldung" id="zettel-meldung" role="status" hidden></p>
 <div class="hand-tipp" id="hand-tipp" role="status" hidden></div>
+<div class="sammel-dialog" id="sammel-dialog" hidden><div class="sammel-box" role="dialog" aria-modal="true" aria-labelledby="sammel-titel">
+  <h2 id="sammel-titel"></h2><div id="sammel-inhalt"></div><div class="sammel-knoepfe" id="sammel-knoepfe"></div></div></div>
 <div class="zettel-huelle" id="zettel" hidden>
   <div class="zettel-hinter" data-zu></div>
   <section class="zettel" role="dialog" aria-modal="true" aria-labelledby="zettel-titel">
@@ -1574,11 +1684,13 @@ SEITE = r"""<!doctype html>
       </fieldset>
       <p class="zettel-hinweis" data-en="Order via WhatsApp or call and read it out. Your order is saved on this device.">Bestellen Sie per WhatsApp oder rufen Sie an und lesen Sie die Bestellung vor. Sie bleibt auf diesem Gerät gespeichert.</p>
       <div class="zettel-knoepfe">
+        <button type="button" class="knopf knopf-dunkel" id="sammel-teil" hidden><span></span></button>
         <a class="knopf knopf-whatsapp" id="zettel-whatsapp" href="#" target="_blank" rel="noopener">%%WA_ICON%%<span data-en="Order via WhatsApp">Per WhatsApp bestellen</span></a>
         <p class="abhol-hinweis verf-hinweis" id="verf-hinweis" hidden></p>
         <p class="abhol-hinweis" id="wa-hinweis" hidden data-en="Choose the shop above to order via WhatsApp.">Bitte oben den Laden wählen, dann können Sie per WhatsApp bestellen.</p>
         %%ZETTEL_ANRUF%%
         <button type="button" class="knopf knopf-linie" id="zettel-kopieren"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7.5h14V12"/></svg><span data-en="Share order">Bestellung teilen</span></button>
+        <button type="button" class="knopf knopf-linie" id="sammel-einladen"><span data-en="👥 Invite others (group order)">👥 Andere einladen (Sammelbestellung)</span></button>
         <button type="button" class="knopf-klein" id="zettel-leeren" data-en="Clear order">Bestellung leeren</button>
       </div>
     </div>
