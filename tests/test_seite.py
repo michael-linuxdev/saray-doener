@@ -339,8 +339,7 @@ def linkshaender(b, url):
     # Empfehlungs-/Beliebt-Karten bleiben unverändert (sonst verdeckt das Plus den Preis)
     tipp = s.js("(()=>{const c=document.querySelector('.tipps:not(.tipps-empfehlung) .tipp'),p=c.querySelector('.plus').getBoundingClientRect(),r=c.getBoundingClientRect();return p.right>r.right-30})()")
     assert tipp, "Plus der Beliebt-Karte nicht mehr rechts"
-    oben = s.js("getComputedStyle(document.getElementById('nach-oben')).right")
-    assert oben != "auto", "Nach-oben-Pfeil sollte rechts bleiben"
+    assert s.js("getComputedStyle(document.getElementById('nach-oben')).left") == "14px", "Nach-oben-Pfeil nicht links"
     s.p.reload()
     s.p.wait_for_timeout(200)
     assert s.js("document.documentElement.classList.contains('links')"), "Linkshänder-Modus nicht gemerkt"
