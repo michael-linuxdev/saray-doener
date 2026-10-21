@@ -14,7 +14,7 @@
   var HK='saray-hand',linkshand=false;
   try{linkshand=localStorage.getItem(HK)==='links';}catch(e){}
   function handZeigen(){document.documentElement.classList.toggle('links',linkshand);
-    document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('Rechtshänder: Knöpfe rechts','Right-handed: buttons on the right'):L('Linkshänder: Knöpfe links','Left-handed: buttons on the left');
+    document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('✋ Rechtshänder? Knöpfe nach rechts','✋ Right-handed? Buttons to the right'):L('✋ Linkshänder? Knöpfe nach links','✋ Left-handed? Buttons to the left');
       b.setAttribute('aria-pressed',String(linkshand));});}
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
     try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
@@ -134,6 +134,7 @@
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
     var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0;
+    document.querySelectorAll('.hand-zeile').forEach(function(h){h.hidden=teile.length>0;});
     if(typeof letzteZeigen==='function')letzteZeigen();
     fest=null;verfolgen();
   }

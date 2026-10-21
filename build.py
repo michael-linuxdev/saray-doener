@@ -184,6 +184,9 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     return "".join(teile)
 
 
+HAND_GESETZT = []
+
+
 def gruppe_html(gr):
     out = [f'<section class="gruppe" id="{gr["id"]}" aria-labelledby="g-{gr["id"]}">',
            f'<h3 class="band" id="g-{gr["id"]}"><svg class="band-icon" viewBox="0 0 40 40" aria-hidden="true">{ICONS[gr["id"]]}</svg>{t(gr["titel"], EN.titel(gr["titel"]))}</h3>']
@@ -205,7 +208,12 @@ def gruppe_html(gr):
         if not any(g[0] for g in ab["gerichte"]):
             klasse += " ohne-nr"
         out.append(f'<ul class="{klasse}" style="--zeilen:{math.ceil(n / 2)}">')
-        out += [gericht_html(g, gr["titel"], ab["titel"], groessen) for g in ab["gerichte"]]
+        zeilen = [gericht_html(g, gr["titel"], ab["titel"], groessen) for g in ab["gerichte"]]
+        if not HAND_GESETZT and zeilen:
+            # Umschalter für Linkshänder direkt unter der ersten Bestellmöglichkeit (nur Handy)
+            zeilen.insert(1, '<li class="hand-zeile"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button></li>')
+            HAND_GESETZT.append(True)
+        out += zeilen
         out.append("</ul>")
         if ab.get("notiz"):
             out.append(f'<p class="notiz" data-en="{e(EN.titel(ab["notiz"]))}">{e(ab["notiz"])}</p>')
@@ -515,7 +523,9 @@ p{margin:0}
 /* Kontrast: Rot auf Gelb ist zu schwach (3,6:1) – auf gelben Karten dunkleres Rot (5,2:1) */
 .tipp-gross .preis,.tipp-gross .tipp-preis{color:#9E2A10}
 /* Linkshänder-Modus (nur Handy): Bedienknöpfe auf die linke Seite */
-.hand-knopf{background:none;border:0;padding:6px 0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.hand-zeile{list-style:none;margin:-2px 0 6px;font-size:.88rem;color:var(--tinte-weich)}
+@media (min-width:720px){.hand-zeile{display:none}}
 @media (max-width:719px){
   html.links .gericht{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) auto;grid-template-areas:"plus nr zeile p1" ". . info ."}
   html.links .ohne-nr .gericht{grid-template-columns:2.6rem minmax(0,1fr) auto;grid-template-areas:"plus zeile p1" ". info ."}
@@ -523,13 +533,8 @@ p{margin:0}
   html.links .zwei .groessen{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) 3rem 3rem}
   html.links .plus{justify-self:start}
   html.links .mengen{justify-content:flex-start}
-  html.links .tipp .plus{right:auto;left:12px}
-  html.links .tipp .mengen{right:auto;left:10px}
-  html.links .tipp-gross .plus{left:12px}
-  html.links .tipp-gross .mengen{left:10px}
   html.links .z-steuer .z-anpassen{order:-1;margin-left:0;margin-right:auto}
   html.links .zettel-kopf{flex-direction:row-reverse}
-  html.links .nach-oben{right:auto;left:14px}
 }
 .vorschau-band .stand{opacity:.7;white-space:nowrap}
 #debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
@@ -1200,7 +1205,7 @@ JS = r"""
   var HK='saray-hand',linkshand=false;
   try{linkshand=localStorage.getItem(HK)==='links';}catch(e){}
   function handZeigen(){document.documentElement.classList.toggle('links',linkshand);
-    document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('Rechtshänder: Knöpfe rechts','Right-handed: buttons on the right'):L('Linkshänder: Knöpfe links','Left-handed: buttons on the left');
+    document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('✋ Rechtshänder? Knöpfe nach rechts','✋ Right-handed? Buttons to the right'):L('✋ Linkshänder? Knöpfe nach links','✋ Left-handed? Buttons to the left');
       b.setAttribute('aria-pressed',String(linkshand));});}
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
     try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
@@ -1320,6 +1325,7 @@ JS = r"""
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
     var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0;
+    document.querySelectorAll('.hand-zeile').forEach(function(h){h.hidden=teile.length>0;});
     if(typeof letzteZeigen==='function')letzteZeigen();
     fest=null;verfolgen();
   }
@@ -1424,7 +1430,6 @@ SEITE = r"""<!doctype html>
       <ul class="schilder" aria-label="Unsere Läden">
 %%SCHILDER%%
       </ul>
-      <a class="knopf knopf-dunkel" href="#speisekarte" data-en="View menu">Speisekarte ansehen</a>
     </div>
     <div class="bilder">
       <figure class="foto"><img src="%%IMG_LADEN%%" width="894" height="700"
@@ -1486,7 +1491,6 @@ SEITE = r"""<!doctype html>
         <img class="logo" src="%%IMG_KOPF%%" width="76" height="76" alt="">
         <p class="motto" data-en="Quality is no accident.">Qualität ist kein Zufall.</p>
         <p><span lang="tr">Afiyet olsun</span> – <span data-en="enjoy your meal!">guten Appetit!</span></p>
-        <p class="klein"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button></p>
         <p class="klein app-tipp" data-en="Tip: Put Saray on your home screen – in Safari via “Share” → “Add to Home Screen”, in Chrome via the menu → “Add to home screen”.">Tipp: Saray auf den Home-Bildschirm legen – in Safari über „Teilen“ → „Zum Home-Bildschirm“, in Chrome über das Menü → „Zum Startbildschirm hinzufügen“.</p>
       </div>
 %%FUSS_ORTE%%

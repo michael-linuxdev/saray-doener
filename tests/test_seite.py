@@ -332,10 +332,15 @@ def tastatur_bleibt_im_zettel(b, url):
 @test
 def linkshaender(b, url):
     s = Seite(b, url)
-    s.p.click(".fuss [data-hand]")
+    s.p.click(".hand-zeile [data-hand]")
     assert s.js("document.documentElement.classList.contains('links')")
     plus = s.js("document.querySelector('#nr-1 .plus').getBoundingClientRect().left")
     assert plus < 60, f"Plus nicht links ({plus})"
+    # Empfehlungs-/Beliebt-Karten bleiben unverändert (sonst verdeckt das Plus den Preis)
+    tipp = s.js("(()=>{const c=document.querySelector('.tipps:not(.tipps-empfehlung) .tipp'),p=c.querySelector('.plus').getBoundingClientRect(),r=c.getBoundingClientRect();return p.right>r.right-30})()")
+    assert tipp, "Plus der Beliebt-Karte nicht mehr rechts"
+    oben = s.js("getComputedStyle(document.getElementById('nach-oben')).right")
+    assert oben != "auto", "Nach-oben-Pfeil sollte rechts bleiben"
     s.p.reload()
     s.p.wait_for_timeout(200)
     assert s.js("document.documentElement.classList.contains('links')"), "Linkshänder-Modus nicht gemerkt"
