@@ -512,6 +512,25 @@ p{margin:0}
 .glas-oben{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.02;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3E%C2%B7%3C/text%3E%3C/svg%3E") repeat}
 .app-tipp{opacity:.8}
+/* Kontrast: Rot auf Gelb ist zu schwach (3,6:1) – auf gelben Karten dunkleres Rot (5,2:1) */
+.tipp-gross .preis,.tipp-gross .tipp-preis{color:#9E2A10}
+/* Linkshänder-Modus (nur Handy): Bedienknöpfe auf die linke Seite */
+.hand-knopf{background:none;border:0;padding:6px 0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+@media (max-width:719px){
+  html.links .gericht{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) auto;grid-template-areas:"plus nr zeile p1" ". . info ."}
+  html.links .ohne-nr .gericht{grid-template-columns:2.6rem minmax(0,1fr) auto;grid-template-areas:"plus zeile p1" ". info ."}
+  html.links .zwei .gericht{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) 3rem 3rem;grid-template-areas:"plus nr zeile p1 p2" ". . info . ."}
+  html.links .zwei .groessen{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) 3rem 3rem}
+  html.links .plus{justify-self:start}
+  html.links .mengen{justify-content:flex-start}
+  html.links .tipp .plus{right:auto;left:12px}
+  html.links .tipp .mengen{right:auto;left:10px}
+  html.links .tipp-gross .plus{left:12px}
+  html.links .tipp-gross .mengen{left:10px}
+  html.links .z-steuer .z-anpassen{order:-1;margin-left:0;margin-right:auto}
+  html.links .zettel-kopf{flex-direction:row-reverse}
+  html.links .nach-oben{right:auto;left:14px}
+}
 .vorschau-band .stand{opacity:.7;white-space:nowrap}
 #debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
@@ -634,6 +653,7 @@ body.mit-zettel .nach-oben{bottom:calc(80px + env(safe-area-inset-bottom))}
 .z-info{display:block;font-size:.85rem;color:var(--tinte-weich)}
 .z-preis{font:700 1.05rem var(--slab);color:var(--paprika);white-space:nowrap;text-align:right}
 .z-steuer{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.z-steuer .z-anpassen.z-fertig{background:var(--tinte);color:var(--gelb);min-width:96px}
 .z-steuer .z-anpassen{width:auto;height:auto;margin-left:auto;min-height:38px;padding:0 14px;border-radius:999px;border:2px solid var(--tinte);background:var(--gelb);color:var(--tinte);font:700 .9rem var(--text);cursor:pointer}
 .z-fehlt{color:var(--paprika);font-weight:700}
 .z-optionen{grid-column:1/-1;display:grid;gap:12px;padding:12px;border-radius:14px;background:var(--gelb-blass)}
@@ -649,7 +669,7 @@ body.vorschau::after{content:"";position:absolute;inset:0;z-index:90;pointer-eve
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3ENICHT FREIGESCHALTET%3C/text%3E%3C/svg%3E") repeat}
 @media print{body.vorschau::after{opacity:.15;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .marke-verf{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;font:700 .72rem/1.6 var(--text);vertical-align:middle;white-space:nowrap}
-li.nicht-da .name,li.nicht-da .tipp-name{color:#a8949f}
+li.nicht-da .name,li.nicht-da .tipp-name{color:#7a6471}
 li.nicht-da .preis,li.nicht-da .tipp-preis,li.nicht-da .beschreibung,li.nicht-da .tipp-info,li.nicht-da .marke-beliebt{opacity:.45}
 li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .verf-hinweis{color:var(--paprika);font-weight:700}
@@ -912,7 +932,6 @@ ZETTEL_JS = r'''
       box.appendChild(chips(L('Extra je Zutat +1,50 €','Extra per topping +1,50 €'),GEMUESE,o.ex,'ex',x.u));
       box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),FLEISCH.concat(KAESE),o.ex,'ex',x.u));
     }
-    box.appendChild(knopf(L('Fertig','Done'),{'class':'knopf knopf-dunkel z-fertig','data-fertig':x.u}));
     return box;
   }
   function zeichnen(){
@@ -935,6 +954,8 @@ ZETTEL_JS = r'''
       var m=knopf('−',{'data-a':'minus','data-u':x.u,'aria-label':(x.q===1?L('Entfernen: ','Remove: '):L('Eins weniger: ','One less: '))+na});
       var pl=knopf('+',{'data-a':'plus','data-u':x.u,'aria-label':L('Eins mehr: ','One more: ')+na});
       st.appendChild(m);st.appendChild(q);st.appendChild(pl);
+      /* „Fertig“ steht beim Anpassen dort, wo vorher „Anpassen“ war – rechts, gut mit dem Daumen erreichbar */
+      if(x.t&&offen===x.u)st.appendChild(knopf(L('Fertig','Done'),{'class':'z-anpassen z-fertig','data-fertig':x.u}));
       if(x.t&&offen!==x.u)st.appendChild(knopf(x.q>1?L('Eins davon anpassen','Customize one of them'):L('Anpassen','Customize'),{'class':'z-anpassen','data-anpassen':x.u}));
       li.appendChild(st);
       if(offen===x.u)li.appendChild(editor(x));
@@ -1024,7 +1045,16 @@ ZETTEL_JS = r'''
   function schliessen(){offen=null;zusammenfassen();speichern();zeichnen();huelle.hidden=true;document.documentElement.style.overflow='';if(zuletzt&&zuletzt.focus&&!zl.hidden)zuletzt.focus();}
   zl.addEventListener('click',oeffnen);
   huelle.addEventListener('click',function(ev){if(ev.target.closest('[data-zu]'))schliessen();});
-  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!huelle.hidden)schliessen();});
+  document.addEventListener('keydown',function(ev){
+    if(huelle.hidden)return;
+    if(ev.key==='Escape'){schliessen();return;}
+    if(ev.key!=='Tab')return;
+    /* Tastatur bleibt im offenen Bestellzettel (Dialog) */
+    var f=[].filter.call(huelle.querySelectorAll('.zettel a[href],.zettel button,.zettel input,.zettel select,.zettel [tabindex]'),function(x){return !x.disabled&&x.offsetParent!==null;});
+    if(!f.length)return;var erst=f[0],letzt=f[f.length-1];
+    if(ev.shiftKey&&(document.activeElement===erst||!huelle.contains(document.activeElement))){ev.preventDefault();letzt.focus();}
+    else if(!ev.shiftKey&&(document.activeElement===letzt||!huelle.contains(document.activeElement))){ev.preventDefault();erst.focus();}
+  });
   /* Abholung: Laden, Uhrzeit, Name */
   var AK='saray-abholung',abh={laden:'',tag:'',zeit:'',name:''},VORBESTELL_TAGE=%%VORBESTELL_TAGE%%;
   try{abh=Object.assign(abh,JSON.parse(localStorage.getItem(AK)||'{}'));}catch(e){}
@@ -1166,6 +1196,15 @@ JS = r"""
     SP=(/bot|crawl|spider|lighthouse/i.test(navigator.userAgent)||langs.some(function(l){return /^de/i.test(l);}))?'de':'en';
   }
   function L(de,en){return SP==='en'?en:de;}
+  /* Linkshänder-Modus: auf diesem Gerät gemerkt */
+  var HK='saray-hand',linkshand=false;
+  try{linkshand=localStorage.getItem(HK)==='links';}catch(e){}
+  function handZeigen(){document.documentElement.classList.toggle('links',linkshand);
+    document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('Rechtshänder: Knöpfe rechts','Right-handed: buttons on the right'):L('Linkshänder: Knöpfe links','Left-handed: buttons on the left');
+      b.setAttribute('aria-pressed',String(linkshand));});}
+  document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
+    try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
+  handZeigen();
   var KURZ={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
   var weniger=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1320,7 +1359,7 @@ JS = r"""
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
-    zeichnen();zeitenFuellen();waAktualisieren();
+    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();
   }
   spKnopf.addEventListener('click',function(){sprache(SP==='en'?'de':'en',true);});
   if(SP==='en')sprache('en',false);
@@ -1447,6 +1486,7 @@ SEITE = r"""<!doctype html>
         <img class="logo" src="%%IMG_KOPF%%" width="76" height="76" alt="">
         <p class="motto" data-en="Quality is no accident.">Qualität ist kein Zufall.</p>
         <p><span lang="tr">Afiyet olsun</span> – <span data-en="enjoy your meal!">guten Appetit!</span></p>
+        <p class="klein"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button></p>
         <p class="klein app-tipp" data-en="Tip: Put Saray on your home screen – in Safari via “Share” → “Add to Home Screen”, in Chrome via the menu → “Add to home screen”.">Tipp: Saray auf den Home-Bildschirm legen – in Safari über „Teilen“ → „Zum Home-Bildschirm“, in Chrome über das Menü → „Zum Startbildschirm hinzufügen“.</p>
       </div>
 %%FUSS_ORTE%%
@@ -1499,6 +1539,7 @@ SEITE = r"""<!doctype html>
         %%ZETTEL_ANRUF%%
         <button type="button" class="knopf knopf-linie" id="zettel-kopieren" data-en="Copy list">Zettel kopieren</button>
         <button type="button" class="knopf-klein" id="zettel-leeren" data-en="Clear list">Zettel leeren</button>
+        <button type="button" class="knopf-klein hand-knopf" data-hand>Linkshänder: Knöpfe links</button>
       </div>
     </div>
   </section>

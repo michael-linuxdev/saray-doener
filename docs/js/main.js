@@ -10,6 +10,15 @@
     SP=(/bot|crawl|spider|lighthouse/i.test(navigator.userAgent)||langs.some(function(l){return /^de/i.test(l);}))?'de':'en';
   }
   function L(de,en){return SP==='en'?en:de;}
+  /* Linkshänder-Modus: auf diesem Gerät gemerkt */
+  var HK='saray-hand',linkshand=false;
+  try{linkshand=localStorage.getItem(HK)==='links';}catch(e){}
+  function handZeigen(){document.documentElement.classList.toggle('links',linkshand);
+    document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('Rechtshänder: Knöpfe rechts','Right-handed: buttons on the right'):L('Linkshänder: Knöpfe links','Left-handed: buttons on the left');
+      b.setAttribute('aria-pressed',String(linkshand));});}
+  document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
+    try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
+  handZeigen();
   var KURZ={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
   var weniger=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -307,7 +316,6 @@
       box.appendChild(chips(L('Extra je Zutat +1,50 €','Extra per topping +1,50 €'),GEMUESE,o.ex,'ex',x.u));
       box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),FLEISCH.concat(KAESE),o.ex,'ex',x.u));
     }
-    box.appendChild(knopf(L('Fertig','Done'),{'class':'knopf knopf-dunkel z-fertig','data-fertig':x.u}));
     return box;
   }
   function zeichnen(){
@@ -330,6 +338,8 @@
       var m=knopf('−',{'data-a':'minus','data-u':x.u,'aria-label':(x.q===1?L('Entfernen: ','Remove: '):L('Eins weniger: ','One less: '))+na});
       var pl=knopf('+',{'data-a':'plus','data-u':x.u,'aria-label':L('Eins mehr: ','One more: ')+na});
       st.appendChild(m);st.appendChild(q);st.appendChild(pl);
+      /* „Fertig“ steht beim Anpassen dort, wo vorher „Anpassen“ war – rechts, gut mit dem Daumen erreichbar */
+      if(x.t&&offen===x.u)st.appendChild(knopf(L('Fertig','Done'),{'class':'z-anpassen z-fertig','data-fertig':x.u}));
       if(x.t&&offen!==x.u)st.appendChild(knopf(x.q>1?L('Eins davon anpassen','Customize one of them'):L('Anpassen','Customize'),{'class':'z-anpassen','data-anpassen':x.u}));
       li.appendChild(st);
       if(offen===x.u)li.appendChild(editor(x));
@@ -419,7 +429,16 @@
   function schliessen(){offen=null;zusammenfassen();speichern();zeichnen();huelle.hidden=true;document.documentElement.style.overflow='';if(zuletzt&&zuletzt.focus&&!zl.hidden)zuletzt.focus();}
   zl.addEventListener('click',oeffnen);
   huelle.addEventListener('click',function(ev){if(ev.target.closest('[data-zu]'))schliessen();});
-  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!huelle.hidden)schliessen();});
+  document.addEventListener('keydown',function(ev){
+    if(huelle.hidden)return;
+    if(ev.key==='Escape'){schliessen();return;}
+    if(ev.key!=='Tab')return;
+    /* Tastatur bleibt im offenen Bestellzettel (Dialog) */
+    var f=[].filter.call(huelle.querySelectorAll('.zettel a[href],.zettel button,.zettel input,.zettel select,.zettel [tabindex]'),function(x){return !x.disabled&&x.offsetParent!==null;});
+    if(!f.length)return;var erst=f[0],letzt=f[f.length-1];
+    if(ev.shiftKey&&(document.activeElement===erst||!huelle.contains(document.activeElement))){ev.preventDefault();letzt.focus();}
+    else if(!ev.shiftKey&&(document.activeElement===letzt||!huelle.contains(document.activeElement))){ev.preventDefault();erst.focus();}
+  });
   /* Abholung: Laden, Uhrzeit, Name */
   var AK='saray-abholung',abh={laden:'',tag:'',zeit:'',name:''},VORBESTELL_TAGE=14;
   try{abh=Object.assign(abh,JSON.parse(localStorage.getItem(AK)||'{}'));}catch(e){}
@@ -582,7 +601,7 @@
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
-    zeichnen();zeitenFuellen();waAktualisieren();
+    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();
   }
   spKnopf.addEventListener('click',function(){sprache(SP==='en'?'de':'en',true);});
   if(SP==='en')sprache('en',false);

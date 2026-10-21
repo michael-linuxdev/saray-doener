@@ -316,6 +316,79 @@ def laden_karte_springt_zu_zeiten(b, url):
         s.schliessen()
 
 
+@test
+def tastatur_bleibt_im_zettel(b, url):
+    s = Seite(b, url, vp=DESKTOP, mobil=False)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    for _ in range(40):
+        s.p.keyboard.press("Tab")
+        assert s.js("!!document.activeElement.closest('#zettel')"), "Fokus hat den Bestellzettel verlassen"
+    s.p.keyboard.press("Escape")
+    assert s.js("document.getElementById('zettel').hidden")
+    s.schliessen()
+
+
+@test
+def linkshaender(b, url):
+    s = Seite(b, url)
+    s.p.click(".fuss [data-hand]")
+    assert s.js("document.documentElement.classList.contains('links')")
+    plus = s.js("document.querySelector('#nr-1 .plus').getBoundingClientRect().left")
+    assert plus < 60, f"Plus nicht links ({plus})"
+    s.p.reload()
+    s.p.wait_for_timeout(200)
+    assert s.js("document.documentElement.classList.contains('links')"), "Linkshänder-Modus nicht gemerkt"
+    s.schliessen()
+
+
+# WCAG-Grundprüfung: Kontrast (4,5:1 bzw. 3:1 für große Schrift), Namen für Links/Knöpfe, Alt-Texte,
+# Beschriftungen für Felder, Tippziele ≥ 24 px, Überschriften-Reihenfolge, Sprache
+WCAG_PRUEF = r"""
+(()=>{
+ function rgb(s){const m=s.match(/rgba?\(([^)]+)\)/);if(!m)return null;const p=m[1].split(/[ ,\/]+/).filter(Boolean).map(Number);return {r:p[0],g:p[1],b:p[2],a:p.length>3?p[3]:1};}
+ function lum(c){return [c.r,c.g,c.b].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0);}
+ function ratio(a,b){const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+ function bg(el){while(el){const cs=getComputedStyle(el);if(cs.backgroundImage!=='none'&&!el.matches('body'))return null;const c=rgb(cs.backgroundColor);if(c&&c.a>0.95)return c;el=el.parentElement;}return {r:255,g:255,b:255,a:1};}
+ const res={kontrast:[],ohneName:[],ohneAlt:[],ohneLabel:[],klein:[],ueberschriften:[]};
+ const seen=new Set();
+ const tw=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+ while(n=tw.nextNode()){const t=n.textContent.trim();if(!t)continue;const el=n.parentElement;
+   if(!el||el.closest('[hidden],script,style,.sr-only,[aria-hidden=true]')||!el.offsetParent&&getComputedStyle(el).position!=='fixed')continue;
+   const cs=getComputedStyle(el);if(cs.visibility==='hidden'||+cs.opacity<.5)continue;
+   const fg=rgb(cs.color),b=bg(el);if(!fg||!b)continue;
+   const r=ratio(fg,b),gr=parseFloat(cs.fontSize),fett=+cs.fontWeight>=700,gross=gr>=24||(fett&&gr>=18.66);
+   if(r<(gross?3:4.5)){const k=el.className+'|'+cs.color+'|'+cs.backgroundColor;if(!seen.has(k)){seen.add(k);res.kontrast.push({text:t.slice(0,30),ratio:r.toFixed(2),soll:gross?3:4.5,el:el.tagName+'.'+el.className,fg:cs.color,bg:`rgb(${b.r},${b.g},${b.b})`});}}
+ }
+ document.querySelectorAll('a,button,[role=button]').forEach(e=>{if(e.closest('[hidden]'))return;const name=(e.getAttribute('aria-label')||e.textContent||e.title||'').trim();if(!name)res.ohneName.push(e.outerHTML.slice(0,90));
+   const r=e.getBoundingClientRect();if(e.offsetParent&&(r.width<24||r.height<24)&&!e.closest('p,li.varianten,address,figcaption,.fuss'))res.klein.push((e.textContent||e.getAttribute('aria-label')||'').trim().slice(0,25)+' '+Math.round(r.width)+'x'+Math.round(r.height));});
+ document.querySelectorAll('img').forEach(i=>{if(!i.hasAttribute('alt'))res.ohneAlt.push(i.src.slice(-40));});
+ document.querySelectorAll('input,select,textarea').forEach(i=>{if(i.type==='hidden')return;const ok=i.getAttribute('aria-label')||(i.id&&document.querySelector('label[for="'+i.id+'"]'))||i.closest('label');if(!ok)res.ohneLabel.push(i.outerHTML.slice(0,80));});
+ let last=1;document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h=>{const l=+h.tagName[1];if(l>last+1)res.ueberschriften.push(h.tagName+': '+h.textContent.trim().slice(0,30)+' (nach h'+last+')');last=l;});
+ res.lang=document.documentElement.lang;res.h1=document.querySelectorAll('h1').length;
+ return res;})()
+"""
+
+
+@test
+def barrierefreiheit(b, url):
+    for vp, mobil in ((HANDY, True), (DESKTOP, False)):
+        s = Seite(b, url, vp, mobil=mobil, regeln=[{"was": "huhn"}])
+        s.p.click("#nr-1 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click("[data-anpassen]")
+        r = s.js(WCAG_PRUEF)
+        for k in ("kontrast", "ohneName", "ohneAlt", "ohneLabel", "klein", "ueberschriften"):
+            assert not r[k], f"{vp['width']}px {k}: {r[k]}"
+        assert r["lang"] == "de" and r["h1"] == 1, r
+        s.schliessen()
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
+    r = p.evaluate(WCAG_PRUEF)
+    for k in ("kontrast", "ohneName", "ohneAlt", "ohneLabel", "klein"):
+        assert not r[k], f"Chef-App {k}: {r[k]}"
+    ctx.close()
+
+
 def chef_oeffnen(b, url, anp=None, gespeichert=None):
     """Öffnet die Chef-App mit nachgebildeter GitHub-API (es wird nichts wirklich gespeichert)."""
     import base64
