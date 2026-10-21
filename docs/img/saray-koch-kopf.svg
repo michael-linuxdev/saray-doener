@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="t">
+  <title id="t">Saray-Koch</title>
+  <circle cx="100" cy="112" r="84" fill="#C8371A" stroke="#3A1531" stroke-width="6"/>
+  <circle cx="100" cy="112" r="75" fill="none" stroke="#fff" stroke-width="4"/>
+  <g transform="translate(100 124) scale(.64) rotate(-5)">
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <g fill="#3A1531" stroke="#3A1531" stroke-width="14"><circle cx="-38" cy="-110" r="32"/><circle cx="0" cy="-130" r="40"/><circle cx="38" cy="-110" r="32"/><rect x="-55" y="-118" width="110" height="38"/></g>
+      <g fill="#FFFFFF"><circle cx="-38" cy="-110" r="32"/><circle cx="0" cy="-130" r="40"/><circle cx="38" cy="-110" r="32"/><rect x="-55" y="-118" width="110" height="38"/></g>
+      <path d="M22 -158 C36 -154 42 -142 41 -130 M58 -122 C64 -114 64 -104 60 -98" fill="none" stroke="#ECE2E8" stroke-width="8"/>
+      <circle cx="-71" cy="8" r="15" fill="#F4C29A" stroke="#3A1531" stroke-width="7"/>
+      <circle cx="71" cy="8" r="15" fill="#F4C29A" stroke="#3A1531" stroke-width="7"/>
+      <path d="M-75 2 Q-67 8 -73 15 M75 2 Q67 8 73 15" fill="none" stroke="#E3A07A" stroke-width="5"/>
+      <ellipse cx="0" cy="0" rx="72" ry="76" fill="#F4C29A" stroke="#3A1531" stroke-width="7"/>
+      <path d="M-67 -56 C-70 -42 -69 -28 -65 -16 L-58 -18 C-61 -30 -61 -44 -58 -56 Z" fill="#3A1531"/>
+      <path d="M67 -56 C70 -42 69 -28 65 -16 L58 -18 C61 -30 61 -44 58 -56 Z" fill="#3A1531"/>
+      <rect x="-58" y="-96" width="116" height="38" rx="10" fill="#FFFFFF" stroke="#3A1531" stroke-width="7"/>
+      <path d="M-50 -66 H50" stroke="#ECE2E8" stroke-width="7"/>
+      <path d="M-18 -100 C-16 -110 -16 -120 -19 -128 M18 -100 C16 -110 16 -120 19 -128" fill="none" stroke="#3A1531" stroke-width="5"/>
+      <circle cx="-42" cy="24" r="13" fill="#F07F70" opacity=".5"/>
+      <circle cx="42" cy="24" r="13" fill="#F07F70" opacity=".5"/>
+      <path d="M-44 -30 Q-28 -42 -12 -33 M12 -33 Q28 -42 44 -30" fill="none" stroke="#3A1531" stroke-width="8"/>
+      <ellipse cx="-27" cy="-10" rx="8.5" ry="11.5" fill="#3A1531"/>
+      <ellipse cx="27" cy="-10" rx="8.5" ry="11.5" fill="#3A1531"/>
+      <circle cx="-24" cy="-14" r="3.2" fill="#fff"/><circle cx="30" cy="-14" r="3.2" fill="#fff"/>
+      <path d="M-28 42 Q0 88 28 42 Q0 52 -28 42 Z" fill="#5C1730" stroke="#3A1531" stroke-width="6"/>
+      <path d="M-13 58 Q0 52 13 58 Q8 64.5 0 65 Q-8 64.5 -13 58 Z" fill="#E2604A"/>
+      <path d="M0 28 C-8 20 -26 18 -40 26 C-48 31 -54 29 -57 22 C-61 32 -54 44 -40 44 C-26 44 -12 40 0 35
+               C12 40 26 44 40 44 C54 44 61 32 57 22 C54 29 48 31 40 26 C26 18 8 20 0 28 Z" fill="#3A1531"/>
+      <ellipse cx="0" cy="14" rx="15" ry="12.5" fill="#EBA27F" stroke="#3A1531" stroke-width="6"/>
+      <ellipse cx="-5" cy="9" rx="4.5" ry="3" fill="#fff" opacity=".55"/>
+    </g></g>
+</svg>

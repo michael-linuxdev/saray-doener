@@ -1,0 +1,6 @@
+# Lokale Einstellungen (z. B. Test-WhatsApp-Nummern) – nie committen
+lokal.json
+# Einzeldatei-Vorschau (python3 build.py --einzeln)
+index.html
+__pycache__/
+maskottchen/vorschau.*

@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""Saray-Maskottchen: eigener, frei gezeichneter Koch als SVG.
+
+Erzeugt in maskottchen/:
+  saray-koch.svg       Brustbild: hält einen Döner hoch, Daumen hoch
+  saray-koch-kopf.svg  Kopf im roten Kreis (Logo, Browser-Icon)
+  vorschau.html        Prüfseite (nicht zum Hochladen)
+Farben aus der ersten Fassung der Website.
+"""
+import pathlib
+
+HIER = pathlib.Path(__file__).parent
+OUT = HIER / "maskottchen"
+OUT.mkdir(exist_ok=True)
+
+O = "#3A1531"                        # Umriss, Haare, Schnurrbart (Aubergine)
+HAUT, HAUT_S, NASE = "#F4C29A", "#E3A07A", "#EBA27F"
+WEISS, WEISS_S = "#FFFFFF", "#ECE2E8"
+GELB, ROT = "#FFD21F", "#C8371A"
+WANGE, MUND, ZUNGE = "#F07F70", "#5C1730", "#E2604A"
+BROT, BROT_S, SESAM = "#EFBE6C", "#C9873A", "#FFF4DA"
+FLEISCH, FLEISCH_H = "#9C4F2B", "#C4733F"
+SALAT, TOMATE, KOHL, ZWIEBEL = "#5DB44C", "#E4472F", "#7D2C69", "#FBF1F5"
+W = 7                                # Umrissstärke
+
+
+def kopf():
+    """Kopf mit Kochmütze, Gesichtsmitte im Ursprung."""
+    puffs = ('<circle cx="-38" cy="-110" r="32"/><circle cx="0" cy="-130" r="40"/>'
+             '<circle cx="38" cy="-110" r="32"/><rect x="-55" y="-118" width="110" height="38"/>')
+    return f'''
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <g fill="{O}" stroke="{O}" stroke-width="{2 * W}">{puffs}</g>
+      <g fill="{WEISS}">{puffs}</g>
+      <path d="M22 -158 C36 -154 42 -142 41 -130 M58 -122 C64 -114 64 -104 60 -98" fill="none" stroke="{WEISS_S}" stroke-width="8"/>
+      <circle cx="-71" cy="8" r="15" fill="{HAUT}" stroke="{O}" stroke-width="{W}"/>
+      <circle cx="71" cy="8" r="15" fill="{HAUT}" stroke="{O}" stroke-width="{W}"/>
+      <path d="M-75 2 Q-67 8 -73 15 M75 2 Q67 8 73 15" fill="none" stroke="{HAUT_S}" stroke-width="5"/>
+      <ellipse cx="0" cy="0" rx="72" ry="76" fill="{HAUT}" stroke="{O}" stroke-width="{W}"/>
+      <path d="M-67 -56 C-70 -42 -69 -28 -65 -16 L-58 -18 C-61 -30 -61 -44 -58 -56 Z" fill="{O}"/>
+      <path d="M67 -56 C70 -42 69 -28 65 -16 L58 -18 C61 -30 61 -44 58 -56 Z" fill="{O}"/>
+      <rect x="-58" y="-96" width="116" height="38" rx="10" fill="{WEISS}" stroke="{O}" stroke-width="{W}"/>
+      <path d="M-50 -66 H50" stroke="{WEISS_S}" stroke-width="7"/>
+      <path d="M-18 -100 C-16 -110 -16 -120 -19 -128 M18 -100 C16 -110 16 -120 19 -128" fill="none" stroke="{O}" stroke-width="5"/>
+      <circle cx="-42" cy="24" r="13" fill="{WANGE}" opacity=".5"/>
+      <circle cx="42" cy="24" r="13" fill="{WANGE}" opacity=".5"/>
+      <path d="M-44 -30 Q-28 -42 -12 -33 M12 -33 Q28 -42 44 -30" fill="none" stroke="{O}" stroke-width="8"/>
+      <ellipse cx="-27" cy="-10" rx="8.5" ry="11.5" fill="{O}"/>
+      <ellipse cx="27" cy="-10" rx="8.5" ry="11.5" fill="{O}"/>
+      <circle cx="-24" cy="-14" r="3.2" fill="#fff"/><circle cx="30" cy="-14" r="3.2" fill="#fff"/>
+      <path d="M-28 42 Q0 88 28 42 Q0 52 -28 42 Z" fill="{MUND}" stroke="{O}" stroke-width="6"/>
+      <path d="M-13 58 Q0 52 13 58 Q8 64.5 0 65 Q-8 64.5 -13 58 Z" fill="{ZUNGE}"/>
+      <path d="M0 28 C-8 20 -26 18 -40 26 C-48 31 -54 29 -57 22 C-61 32 -54 44 -40 44 C-26 44 -12 40 0 35
+               C12 40 26 44 40 44 C54 44 61 32 57 22 C54 29 48 31 40 26 C26 18 8 20 0 28 Z" fill="{O}"/>
+      <ellipse cx="0" cy="14" rx="15" ry="12.5" fill="{NASE}" stroke="{O}" stroke-width="6"/>
+      <ellipse cx="-5" cy="9" rx="4.5" ry="3" fill="#fff" opacity=".55"/>
+    </g>'''
+
+
+def doener():
+    """Döner im Fladenbrot, Ursprung = Mitte der Brotöffnung."""
+    return f'''
+    <g stroke="{O}" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-50 0 C-50 -54 50 -54 50 0 Z" fill="{BROT_S}" stroke-width="6"/>
+      <path d="M-56 -4 L-50 -32 L-40 -16 L-31 -44 L-19 -22 L-6 -48 L4 -24 L17 -47 L27 -22 L39 -42 L45 -18 L56 -32 L52 4 L-52 4 Z"
+            fill="{SALAT}" stroke-width="5"/>
+      <path d="M-36 -14 C-30 -28 -20 -28 -15 -16 M30 -16 C34 -26 42 -26 45 -14" fill="none" stroke="{KOHL}" stroke-width="5"/>
+      <circle cx="-25" cy="-25" r="10" fill="{TOMATE}" stroke-width="4.5"/>
+      <circle cx="25" cy="-27" r="9" fill="{TOMATE}" stroke-width="4.5"/>
+      <path d="M-25 -25 m-5 0 a5 5 0 0 1 10 0 M25 -27 m-4 0 a4 4 0 0 1 8 0" fill="none" stroke="#F7A08C" stroke-width="2.5"/>
+      <circle cx="3" cy="-35" r="7.5" fill="none" stroke-width="8"/>
+      <circle cx="3" cy="-35" r="7.5" fill="none" stroke="{ZWIEBEL}" stroke-width="3.5"/>
+      <path d="M-46 4 C-46 -16 -28 -24 -17 -13 C-8 -27 9 -27 15 -13 C26 -24 44 -16 44 4 Z" fill="{FLEISCH}" stroke-width="5"/>
+      <path d="M-34 -6 C-30 -11 -25 -11 -22 -7 M-3 -13 C1 -17 6 -17 9 -13 M23 -7 C27 -11 32 -11 35 -7" fill="none" stroke="{FLEISCH_H}" stroke-width="4"/>
+      <path d="M-56 -4 C-56 52 56 52 56 -4 C34 8 -34 8 -56 -4 Z" fill="{BROT}" stroke-width="6"/>
+      <path d="M-46 18 C-38 36 38 36 46 18" fill="none" stroke="{BROT_S}" stroke-width="5" opacity=".45"/>
+      <g fill="{SESAM}" stroke="none">
+        <ellipse cx="-30" cy="13" rx="3" ry="2" transform="rotate(-20 -30 13)"/>
+        <ellipse cx="-12" cy="20" rx="3" ry="2" transform="rotate(15 -12 20)"/>
+        <ellipse cx="8" cy="22" rx="3" ry="2" transform="rotate(-10 8 22)"/>
+        <ellipse cx="28" cy="14" rx="3" ry="2" transform="rotate(25 28 14)"/>
+        <ellipse cx="-2" cy="31" rx="3" ry="2" transform="rotate(5 -2 31)"/>
+      </g>
+    </g>'''
+
+
+def arm(d):
+    """Ärmel als Röhre: dunkle Kontur + weiße Füllung."""
+    return (f'<path d="{d}" fill="none" stroke="{O}" stroke-width="{36 + 2 * W}" stroke-linecap="round" stroke-linejoin="round"/>',
+            f'<path d="{d}" fill="none" stroke="{WEISS}" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>')
+
+
+ARM_L = "M112 344 C70 352 46 366 52 330 C55 312 63 298 72 288"
+ARM_R = "M318 344 C360 352 384 366 378 330 C375 312 367 298 358 288"
+TORSO = ("M178 288 C150 292 116 302 100 322 C86 340 80 372 80 448 C150 464 280 464 350 448 "
+         "C350 372 344 340 330 322 C314 302 280 292 252 288 C240 300 190 300 178 288 Z")
+
+
+def koerper():
+    al_kontur, al_fuell = arm(ARM_L)
+    ar_kontur, ar_fuell = arm(ARM_R)
+    return f'''
+  {al_kontur}{ar_kontur}
+  <path d="M197 252 V302 H233 V252 Z" fill="{HAUT_S}" stroke="{O}" stroke-width="{W}"/>
+  <clipPath id="koerper-form"><path d="{TORSO}"/></clipPath>
+  <path d="{TORSO}" fill="{WEISS}"/>
+  <path d="M326 360 C340 380 348 410 350 470 L318 470 C320 420 318 390 308 368 Z" fill="{WEISS_S}" clip-path="url(#koerper-form)"/>
+  <path d="{TORSO}" fill="none" stroke="{O}" stroke-width="{W}" stroke-linejoin="round"/>
+  {al_fuell}{ar_fuell}
+  <g stroke="{O}" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M178 288 L215 318 L172 326 C170 310 172 298 178 288 Z" fill="{WEISS}" stroke-width="6"/>
+    <path d="M252 288 L215 318 L258 326 C260 310 258 298 252 288 Z" fill="{WEISS}" stroke-width="6"/>
+    <path d="M208 326 L194 364 L213 356 Z M222 326 L238 365 L218 356 Z" fill="{GELB}" stroke-width="6"/>
+    <ellipse cx="215" cy="322" rx="13" ry="11" fill="{GELB}" stroke-width="6"/>
+    <path d="M231 336 C234 372 234 420 231 455" fill="none" stroke-width="5"/>
+  </g>
+  <g fill="{O}"><circle cx="212" cy="380" r="5.5"/><circle cx="212" cy="416" r="5.5"/>
+    <circle cx="252" cy="380" r="5.5"/><circle cx="252" cy="416" r="5.5"/></g>
+  <g transform="translate(162 384)">
+    <circle r="18" fill="{ROT}" stroke="{O}" stroke-width="6"/>
+    <path d="M5.5 -6.5 C2 -10 -7 -9.5 -7 -3.5 C-7 2 7 0 7 5.5 C7 11 -3 11.5 -6.5 7" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+  </g>
+  <rect x="50" y="283" width="44" height="15" rx="6" transform="rotate(25.5 72 290.5)" fill="{WEISS}" stroke="{O}" stroke-width="6"/>
+  <rect x="336" y="283" width="44" height="15" rx="6" transform="rotate(-25.5 358 290.5)" fill="{WEISS}" stroke="{O}" stroke-width="6"/>
+  <g transform="translate(64 224) rotate(-14)">{doener()}
+  </g>
+  <g stroke="{O}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <g transform="rotate(-14 76 266)">
+      <path d="M57 272 C49 268 45 258 49 252 C52 248 58 250 60 256 L63 266" fill="{HAUT}"/>
+      <path d="M56 262 C54 278 61 290 77 291 C93 291 101 281 99 263 Z" fill="{HAUT}"/>
+      <rect x="57" y="245" width="13" height="25" rx="6.5" fill="{HAUT}"/>
+      <rect x="68" y="240" width="13" height="30" rx="6.5" fill="{HAUT}"/>
+      <rect x="79" y="241" width="13" height="29" rx="6.5" fill="{HAUT}"/>
+      <rect x="89" y="246" width="12" height="23" rx="6" fill="{HAUT}"/>
+      <g fill="#FBE0C8" stroke="none">
+        <ellipse cx="62.5" cy="250" rx="3" ry="2.2"/><ellipse cx="73.5" cy="245" rx="3" ry="2.2"/>
+        <ellipse cx="84.5" cy="246" rx="3" ry="2.2"/><ellipse cx="94.5" cy="251" rx="2.8" ry="2"/>
+      </g>
+      <path d="M66 281 C72 285 82 285 88 281" fill="none" stroke="{HAUT_S}" stroke-width="4"/>
+    </g>
+    <rect x="349" y="222" width="17" height="38" rx="8.5" fill="{HAUT}"/>
+    <rect x="336" y="248" width="42" height="34" rx="13" fill="{HAUT}"/>
+    <path d="M338 258 H352 M338 266 H352 M338 274 H352" fill="none" stroke-width="4.5"/>
+  </g>'''
+
+
+def svg(viewbox, titel, inhalt):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{viewbox}" role="img" aria-labelledby="t">\n'
+            f'  <title id="t">{titel}</title>\n{inhalt}\n</svg>\n')
+
+
+voll = svg("0 0 430 470", "Saray-Koch mit Döner", koerper() + f'\n  <g transform="translate(215 203) rotate(-5)">{kopf()}</g>')
+kopfbild = svg("0 0 200 200", "Saray-Koch",
+               f'''  <circle cx="100" cy="112" r="84" fill="{ROT}" stroke="{O}" stroke-width="6"/>
+  <circle cx="100" cy="112" r="75" fill="none" stroke="#fff" stroke-width="4"/>
+  <g transform="translate(100 124) scale(.64) rotate(-5)">{kopf()}</g>''')
+
+(OUT / "saray-koch.svg").write_text(voll, encoding="utf-8")
+(OUT / "saray-koch-kopf.svg").write_text(kopfbild, encoding="utf-8")
+
+(OUT / "vorschau.html").write_text(f'''<!doctype html><html lang="de"><head><meta charset="utf-8">
+<style>
+body{{margin:0;font:600 15px/1.4 system-ui,sans-serif;color:{O};background:#fff}}
+.reihe{{display:flex;gap:0}}
+.feld{{padding:28px;display:grid;place-items:center;gap:10px}}
+.gelb{{background:{GELB};background-image:radial-gradient(ellipse 60% 58% at 40% 50%,rgba(255,255,255,.45),rgba(255,255,255,0) 70%)}}
+.weiss{{background:#fff;border-left:1px solid #eee}}
+.klein{{display:flex;align-items:end;gap:26px;padding:24px 28px;background:{GELB};border-top:6px solid {O}}}
+.klein figure{{margin:0;text-align:center}} .klein figcaption{{font-size:12px;margin-top:6px}}
+</style></head><body>
+<div class="reihe">
+  <div class="feld gelb"><img src="saray-koch.svg" width="430" height="470" alt=""></div>
+  <div class="feld weiss"><img src="saray-koch.svg" width="215" height="235" alt=""><img src="saray-koch-kopf.svg" width="160" height="160" alt=""></div>
+</div>
+<div class="klein">
+  <figure><img src="saray-koch.svg" width="120" height="131" alt=""><figcaption>klein</figcaption></figure>
+  <figure><img src="saray-koch-kopf.svg" width="54" height="54" alt=""><figcaption>Logo 54 px</figcaption></figure>
+  <figure><img src="saray-koch-kopf.svg" width="32" height="32" alt=""><figcaption>Icon 32 px</figcaption></figure>
+  <figure><img src="saray-koch-kopf.svg" width="16" height="16" alt=""><figcaption>16 px</figcaption></figure>
+</div></body></html>''', encoding="utf-8")
+print("ok", *(f"{p.name} {p.stat().st_size // 1024 or 1} KB" for p in sorted(OUT.glob("*.svg"))))
