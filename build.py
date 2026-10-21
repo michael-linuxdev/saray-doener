@@ -523,7 +523,8 @@ p{margin:0}
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .fuss-hand{margin:0}
 /* Sammelbestellung */
-.sammel-start{margin:4px 0 0}
+.sammel-start{margin:12px 0 0}
+.knopf-sammel{min-height:44px;padding:0 18px;font-size:.98rem;white-space:nowrap}
 /* Teilnehmer einer Sammelbestellung: Laden, Tag und Uhrzeit wählt der Sammler */
 .im-sammel .abholung legend,.im-sammel .abholung .z-chips,.im-sammel label[for=abhol-tag],.im-sammel #abhol-tag,
 .im-sammel label[for=abhol-zeit],.im-sammel #abhol-zeit,.im-sammel #abhol-hinweis,.im-sammel #wa-hinweis,.im-sammel .zettel-hinweis,
@@ -1236,7 +1237,7 @@ ZETTEL_JS = r'''
     var lb=el('label',null,L('Ihr Name','Your name'));lb.htmlFor='sammel-name';return [lb,f];}
   function einladen(){
     var nf=nameFeld(),fehler=el('p','abhol-hinweis');fehler.hidden=true;
-    dialog(L('Sammelbestellung starten','Start a group order'),[el('p',null,L('Sie laden andere ein. Jeder sucht sich sein Essen aus und schickt Ihnen seinen Teil zurück. Sie bestellen dann alles zusammen.','You invite others. Everyone picks their food and sends their part back to you. You then order everything together.'))].concat(nf,[fehler]),
+    dialog(L('Gemeinsam bestellen','Order as a group'),[el('p',null,L('Sie laden andere ein. Jeder sucht sich sein Essen aus und schickt Ihnen seinen Teil zurück. Sie bestellen dann alles zusammen.','You invite others. Everyone picks their food and sends their part back to you. You then order everything together.'))].concat(nf,[fehler]),
       [[L('Einladung teilen','Share invitation'),function(){var name=nf[1].value.trim();
           if(!name){fehler.textContent=L('Bitte Ihren Namen eintragen.','Please enter your name.');fehler.hidden=false;nf[1].focus();return;}
           abh.name=name;eName.value=name;abhSpeichern();dialogZu();
@@ -1587,7 +1588,7 @@ SEITE = r"""<!doctype html>
       <h2 id="karte-titel" data-en="Menu">Speisekarte</h2>
       <p data-en="All prices in euros. Every dish comes with your choice of sauce: garlic, herb or chili.">Alle Preise in Euro. Zu jedem Gericht gibt es Soße nach Wahl: Knoblauch, Kräuter oder Chili.</p>
       <p data-en="The menu applies in Freital and Altenberg.">Die Karte gilt in Freital und Altenberg.</p>
-      <p class="sammel-start"><button type="button" class="hand-knopf" data-sammel-start data-en="👥 Ordering for several people? Start a group order">👥 Für mehrere bestellen? Sammelbestellung starten</button></p>
+      <p class="sammel-start"><button type="button" class="knopf knopf-linie knopf-sammel" data-sammel-start data-en="👥 Order as a group">👥 Gemeinsam bestellen</button></p>
       <div class="sammel-band" id="sammel-band" hidden><p id="sammel-band-text"></p><button type="button" class="knopf-klein" id="sammel-ende" data-en="End">Beenden</button></div>
     </header>
     <div class="karte-layout">
@@ -1690,7 +1691,7 @@ SEITE = r"""<!doctype html>
         <p class="abhol-hinweis" id="wa-hinweis" hidden data-en="Choose the shop above to order via WhatsApp.">Bitte oben den Laden wählen, dann können Sie per WhatsApp bestellen.</p>
         %%ZETTEL_ANRUF%%
         <button type="button" class="knopf knopf-linie" id="zettel-kopieren"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7.5h14V12"/></svg><span data-en="Share order">Bestellung teilen</span></button>
-        <button type="button" class="knopf knopf-linie" id="sammel-einladen"><span data-en="👥 Invite others (group order)">👥 Andere einladen (Sammelbestellung)</span></button>
+        <button type="button" class="knopf knopf-linie" id="sammel-einladen"><span data-en="👥 Order as a group">👥 Gemeinsam bestellen</span></button>
         <button type="button" class="knopf-klein" id="zettel-leeren" data-en="Clear order">Bestellung leeren</button>
       </div>
     </div>

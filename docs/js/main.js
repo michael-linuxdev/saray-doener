@@ -619,7 +619,7 @@
     var lb=el('label',null,L('Ihr Name','Your name'));lb.htmlFor='sammel-name';return [lb,f];}
   function einladen(){
     var nf=nameFeld(),fehler=el('p','abhol-hinweis');fehler.hidden=true;
-    dialog(L('Sammelbestellung starten','Start a group order'),[el('p',null,L('Sie laden andere ein. Jeder sucht sich sein Essen aus und schickt Ihnen seinen Teil zurück. Sie bestellen dann alles zusammen.','You invite others. Everyone picks their food and sends their part back to you. You then order everything together.'))].concat(nf,[fehler]),
+    dialog(L('Gemeinsam bestellen','Order as a group'),[el('p',null,L('Sie laden andere ein. Jeder sucht sich sein Essen aus und schickt Ihnen seinen Teil zurück. Sie bestellen dann alles zusammen.','You invite others. Everyone picks their food and sends their part back to you. You then order everything together.'))].concat(nf,[fehler]),
       [[L('Einladung teilen','Share invitation'),function(){var name=nf[1].value.trim();
           if(!name){fehler.textContent=L('Bitte Ihren Namen eintragen.','Please enter your name.');fehler.hidden=false;nf[1].focus();return;}
           abh.name=name;eName.value=name;abhSpeichern();dialogZu();
