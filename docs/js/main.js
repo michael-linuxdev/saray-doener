@@ -19,6 +19,32 @@
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
     try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
   handZeigen();
+  function handSetzen(v){linkshand=v;try{localStorage.setItem(HK,v?'links':'rechts');}catch(e){}handZeigen();}
+  /* Einmaliger Hinweis beim ersten „+“ – mit Rückgängig; danach Verweis auf die Fußzeile */
+  var HG='saray-hand-gefragt',handTimer=null;
+  function handTippZeigen(text,knoepfe,dauer){
+    var box=document.getElementById('hand-tipp');box.textContent='';
+    var pa=document.createElement('p');pa.innerHTML=text;box.appendChild(pa);
+    var reihe=document.createElement('div');
+    knoepfe.forEach(function(k,i){var b=document.createElement('button');b.type='button';b.textContent=k[0];if(i)b.className='zweit';
+      b.addEventListener('click',k[1]);reihe.appendChild(b);});
+    box.appendChild(reihe);box.hidden=false;
+    clearTimeout(handTimer);handTimer=setTimeout(handTippZu,dauer||12000);
+  }
+  function handTippZu(){clearTimeout(handTimer);document.getElementById('hand-tipp').hidden=true;}
+  function handTipp(meldung){
+    var schon=true;try{schon=!!localStorage.getItem(HK)||!!localStorage.getItem(HG);localStorage.setItem(HG,'1');}catch(e){}
+    if(schon||!(window.matchMedia&&matchMedia('(max-width:719px)').matches))return false;
+    var esc=function(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;};
+    handTippZeigen('✓ '+esc(meldung)+'<br><b>'+L('Linkshänder?','Left-handed?')+'</b> '+L('Die +-Knöpfe können auf die linke Seite.','The + buttons can move to the left.'),
+      [[L('Knöpfe nach links','Buttons to the left'),function(){handSetzen(true);
+        handTippZeigen(L('Die Knöpfe sind jetzt links.','The buttons are now on the left.'),
+          [[L('Rückgängig','Undo'),function(){handSetzen(false);
+            handTippZeigen(L('Doch vertippt? Sie können das jederzeit unten in der Fußzeile umstellen.','Mistapped? You can change this any time at the bottom of the page.'),[[L('OK','OK'),handTippZu]],9000);}],
+           [L('OK','OK'),handTippZu]],10000);}],
+       [L('Nein danke','No thanks'),handTippZu]],14000);
+    return true;
+  }
   var KURZ={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
   var weniger=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -134,7 +160,6 @@
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
     var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0;
-    document.querySelectorAll('.hand-zeile').forEach(function(h){h.hidden=teile.length>0;});
     if(typeof letzteZeigen==='function')letzteZeigen();
     fest=null;verfolgen();
   }
@@ -377,7 +402,8 @@
     if(x)x.q++;else zettel.push(neu);
     speichern();zeichnen();
     var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):'';
-    melden(nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis);
+    var meldung=nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis;
+    if(handTipp(meldung))zmeld.hidden=true;else melden(meldung);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
   }
   document.addEventListener('click',function(ev){

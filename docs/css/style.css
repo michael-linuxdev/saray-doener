@@ -195,8 +195,16 @@ p{margin:0}
 /* Linkshänder-Modus (nur Handy): Plus und Mengen-Regler der Speisekarte auf die linke Seite.
    Nach-oben-Pfeil ebenfalls links. Karten (Empfehlung/Beliebt) und Bestellzettel bleiben unverändert. */
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.hand-zeile{list-style:none;margin:-2px 0 6px;font-size:.88rem;color:var(--tinte-weich)}
-@media (min-width:720px){.hand-zeile{display:none}}
+.fuss-hand{margin:0}
+@media (min-width:720px){.fuss-hand{display:none}}
+/* einmaliger Hinweis beim ersten „+“ (nur Handy) */
+.hand-tipp{position:fixed;left:10px;right:10px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:71;background:var(--tinte);color:#fff;
+  border-radius:16px;padding:12px 14px;box-shadow:0 12px 28px -12px rgba(58,21,49,.7)}
+.hand-tipp p{margin:0 0 10px;line-height:1.4}
+.hand-tipp p b{color:var(--gelb)}
+.hand-tipp div{display:flex;flex-wrap:wrap;gap:8px}
+.hand-tipp button{min-height:42px;padding:0 16px;border-radius:999px;border:2px solid var(--gelb);background:var(--gelb);color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
+.hand-tipp button.zweit{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
 @media (max-width:719px){
   html.links .gericht{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) auto;grid-template-areas:"plus nr zeile p1" ". . info ."}
   html.links .ohne-nr .gericht{grid-template-columns:2.6rem minmax(0,1fr) auto;grid-template-areas:"plus zeile p1" ". info ."}

@@ -184,9 +184,6 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     return "".join(teile)
 
 
-HAND_GESETZT = []
-
-
 def gruppe_html(gr):
     out = [f'<section class="gruppe" id="{gr["id"]}" aria-labelledby="g-{gr["id"]}">',
            f'<h3 class="band" id="g-{gr["id"]}"><svg class="band-icon" viewBox="0 0 40 40" aria-hidden="true">{ICONS[gr["id"]]}</svg>{t(gr["titel"], EN.titel(gr["titel"]))}</h3>']
@@ -209,10 +206,6 @@ def gruppe_html(gr):
             klasse += " ohne-nr"
         out.append(f'<ul class="{klasse}" style="--zeilen:{math.ceil(n / 2)}">')
         zeilen = [gericht_html(g, gr["titel"], ab["titel"], groessen) for g in ab["gerichte"]]
-        if not HAND_GESETZT and zeilen:
-            # Umschalter für Linkshänder direkt unter der ersten Bestellmöglichkeit (nur Handy)
-            zeilen.insert(1, '<li class="hand-zeile"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button></li>')
-            HAND_GESETZT.append(True)
         out += zeilen
         out.append("</ul>")
         if ab.get("notiz"):
@@ -528,8 +521,16 @@ p{margin:0}
 /* Linkshänder-Modus (nur Handy): Plus und Mengen-Regler der Speisekarte auf die linke Seite.
    Nach-oben-Pfeil ebenfalls links. Karten (Empfehlung/Beliebt) und Bestellzettel bleiben unverändert. */
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.hand-zeile{list-style:none;margin:-2px 0 6px;font-size:.88rem;color:var(--tinte-weich)}
-@media (min-width:720px){.hand-zeile{display:none}}
+.fuss-hand{margin:0}
+@media (min-width:720px){.fuss-hand{display:none}}
+/* einmaliger Hinweis beim ersten „+“ (nur Handy) */
+.hand-tipp{position:fixed;left:10px;right:10px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:71;background:var(--tinte);color:#fff;
+  border-radius:16px;padding:12px 14px;box-shadow:0 12px 28px -12px rgba(58,21,49,.7)}
+.hand-tipp p{margin:0 0 10px;line-height:1.4}
+.hand-tipp p b{color:var(--gelb)}
+.hand-tipp div{display:flex;flex-wrap:wrap;gap:8px}
+.hand-tipp button{min-height:42px;padding:0 16px;border-radius:999px;border:2px solid var(--gelb);background:var(--gelb);color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
+.hand-tipp button.zweit{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
 @media (max-width:719px){
   html.links .gericht{grid-template-columns:2.6rem 2.2rem minmax(0,1fr) auto;grid-template-areas:"plus nr zeile p1" ". . info ."}
   html.links .ohne-nr .gericht{grid-template-columns:2.6rem minmax(0,1fr) auto;grid-template-areas:"plus zeile p1" ". info ."}
@@ -1000,7 +1001,8 @@ ZETTEL_JS = r'''
     if(x)x.q++;else zettel.push(neu);
     speichern();zeichnen();
     var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):'';
-    melden(nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis);
+    var meldung=nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis;
+    if(handTipp(meldung))zmeld.hidden=true;else melden(meldung);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
   }
   document.addEventListener('click',function(ev){
@@ -1218,6 +1220,32 @@ JS = r"""
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
     try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
   handZeigen();
+  function handSetzen(v){linkshand=v;try{localStorage.setItem(HK,v?'links':'rechts');}catch(e){}handZeigen();}
+  /* Einmaliger Hinweis beim ersten „+“ – mit Rückgängig; danach Verweis auf die Fußzeile */
+  var HG='saray-hand-gefragt',handTimer=null;
+  function handTippZeigen(text,knoepfe,dauer){
+    var box=document.getElementById('hand-tipp');box.textContent='';
+    var pa=document.createElement('p');pa.innerHTML=text;box.appendChild(pa);
+    var reihe=document.createElement('div');
+    knoepfe.forEach(function(k,i){var b=document.createElement('button');b.type='button';b.textContent=k[0];if(i)b.className='zweit';
+      b.addEventListener('click',k[1]);reihe.appendChild(b);});
+    box.appendChild(reihe);box.hidden=false;
+    clearTimeout(handTimer);handTimer=setTimeout(handTippZu,dauer||12000);
+  }
+  function handTippZu(){clearTimeout(handTimer);document.getElementById('hand-tipp').hidden=true;}
+  function handTipp(meldung){
+    var schon=true;try{schon=!!localStorage.getItem(HK)||!!localStorage.getItem(HG);localStorage.setItem(HG,'1');}catch(e){}
+    if(schon||!(window.matchMedia&&matchMedia('(max-width:719px)').matches))return false;
+    var esc=function(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;};
+    handTippZeigen('✓ '+esc(meldung)+'<br><b>'+L('Linkshänder?','Left-handed?')+'</b> '+L('Die +-Knöpfe können auf die linke Seite.','The + buttons can move to the left.'),
+      [[L('Knöpfe nach links','Buttons to the left'),function(){handSetzen(true);
+        handTippZeigen(L('Die Knöpfe sind jetzt links.','The buttons are now on the left.'),
+          [[L('Rückgängig','Undo'),function(){handSetzen(false);
+            handTippZeigen(L('Doch vertippt? Sie können das jederzeit unten in der Fußzeile umstellen.','Mistapped? You can change this any time at the bottom of the page.'),[[L('OK','OK'),handTippZu]],9000);}],
+           [L('OK','OK'),handTippZu]],10000);}],
+       [L('Nein danke','No thanks'),handTippZu]],14000);
+    return true;
+  }
   var KURZ={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
   var weniger=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1333,7 +1361,6 @@ JS = r"""
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
     var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0;
-    document.querySelectorAll('.hand-zeile').forEach(function(h){h.hidden=teile.length>0;});
     if(typeof letzteZeigen==='function')letzteZeigen();
     fest=null;verfolgen();
   }
@@ -1499,6 +1526,7 @@ SEITE = r"""<!doctype html>
         <img class="logo" src="%%IMG_KOPF%%" width="76" height="76" alt="">
         <p class="motto" data-en="Quality is no accident.">Qualität ist kein Zufall.</p>
         <p><span lang="tr">Afiyet olsun</span> – <span data-en="enjoy your meal!">guten Appetit!</span></p>
+        <p class="klein fuss-hand"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button></p>
         <p class="klein app-tipp" data-en="Tip: Put Saray on your home screen – in Safari via “Share” → “Add to Home Screen”, in Chrome via the menu → “Add to home screen”.">Tipp: Saray auf den Home-Bildschirm legen – in Safari über „Teilen“ → „Zum Home-Bildschirm“, in Chrome über das Menü → „Zum Startbildschirm hinzufügen“.</p>
       </div>
 %%FUSS_ORTE%%
@@ -1523,6 +1551,7 @@ SEITE = r"""<!doctype html>
 <button type="button" class="nach-oben" id="nach-oben" hidden aria-label="Nach oben" data-en-aria="Back to top" title="Nach oben"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>
 <button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><svg class="ico tuete" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1.2 12.5H6.7z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg><span data-en="My order">Meine Bestellung</span><span class="zl-summe"></span></button>
 <p class="zettel-meldung" id="zettel-meldung" role="status" hidden></p>
+<div class="hand-tipp" id="hand-tipp" role="status" hidden></div>
 <div class="zettel-huelle" id="zettel" hidden>
   <div class="zettel-hinter" data-zu></div>
   <section class="zettel" role="dialog" aria-modal="true" aria-labelledby="zettel-titel">
