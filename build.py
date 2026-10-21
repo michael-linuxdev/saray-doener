@@ -479,9 +479,10 @@ p{margin:0}
 /* iOS 26 Safari zeigt über dem Sichtbereich (unter der gläsernen Adressleiste) die Seite durchscheinend.
    Solange das Kategorie-Band oben klebt, deckt eine feste weiße Fläche direkt oberhalb des Sichtbereichs das ab;
    im oberen Teil der Seite (Bild, Läden) darf es durchscheinen. */
-.deckel-oben{position:fixed;left:0;right:0;bottom:100%;height:300px;background:#fff;z-index:19;pointer-events:none}
+.kat-marke{height:0}
+.kategorien.klebt::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:400px;background:#fff;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
-.kategorien.klebt{box-shadow:0 -120px 0 0 #fff;padding-top:calc(10px + env(safe-area-inset-top))}
+
 .kategorien ul{list-style:none;margin:0;padding:0 var(--rand);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
   scroll-padding-inline:var(--rand);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);
   mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
@@ -1177,12 +1178,12 @@ JS = r"""
     return id;
   }
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
-  /* Die weiße Fläche existiert nur, solange das Band klebt – Safari färbt sonst die Glasleiste danach ein */
-  var deckel=null;
-  function klebtPruefen(){if(!nav)return;var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top<=0.5;
-    if(k===nav.classList.contains('klebt'))return;nav.classList.toggle('klebt',k);
-    if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
-    else if(!k&&deckel){deckel.remove();deckel=null;}}
+  /* Klebt das Band? Dann liegt es tiefer als die unsichtbare Marke direkt davor.
+     (Safari auf iOS 26 lässt es unter der Adressleiste kleben, nicht bei 0.) Weiße Fläche darüber per .klebt::before */
+  var marke=document.querySelector('.kat-marke');
+  function klebtPruefen(){if(!nav||!marke)return;
+    var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
+    if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
@@ -1352,6 +1353,7 @@ SEITE = r"""<!doctype html>
           <label for="suche-feld" data-en="Search dishes">Gericht suchen</label>
           <div class="suche-feld">%%SUCH_ICON%%<input id="suche-feld" type="search" placeholder="Name oder Nummer" data-en-ph="Name or number" autocomplete="off" enterkeyhint="search"></div>
         </div>
+        <div class="kat-marke" aria-hidden="true"></div>
         <nav class="kategorien" aria-label="Kategorien der Speisekarte"><ul>%%NAV%%</ul></nav>
       </div>
       <div class="karte-inhalt">

@@ -63,12 +63,12 @@
     return id;
   }
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
-  /* Die weiße Fläche existiert nur, solange das Band klebt – Safari färbt sonst die Glasleiste danach ein */
-  var deckel=null;
-  function klebtPruefen(){if(!nav)return;var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top<=0.5;
-    if(k===nav.classList.contains('klebt'))return;nav.classList.toggle('klebt',k);
-    if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
-    else if(!k&&deckel){deckel.remove();deckel=null;}}
+  /* Klebt das Band? Dann liegt es tiefer als die unsichtbare Marke direkt davor.
+     (Safari auf iOS 26 lässt es unter der Adressleiste kleben, nicht bei 0.) Weiße Fläche darüber per .klebt::before */
+  var marke=document.querySelector('.kat-marke');
+  function klebtPruefen(){if(!nav||!marke)return;
+    var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
+    if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
