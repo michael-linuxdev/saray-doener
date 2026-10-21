@@ -262,6 +262,15 @@ def home_bildschirm(b, url):
     s.schliessen()
 
 
+@test
+def qr_waehlt_laden_vor(b, url):
+    s = Seite(b, url + "?laden=altenberg")
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    assert s.js("document.querySelector('[data-laden=altenberg]').getAttribute('aria-pressed')") == "true"
+    s.schliessen()
+
+
 def main():
     srv, url = server()
     ok = 0
