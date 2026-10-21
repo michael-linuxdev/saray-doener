@@ -615,7 +615,9 @@ body.mit-zettel .nach-oben{bottom:calc(80px + env(safe-area-inset-bottom))}
 .vorschau-band{position:relative;z-index:80;padding:10px 16px;text-align:center;font:400 .9rem/1.4 var(--text);color:#fff;
   background:repeating-linear-gradient(-45deg,#3A1531 0 18px,#5a2350 18px 36px);border-bottom:4px solid var(--paprika)}
 .vorschau-band strong{display:inline-block;margin-right:6px;padding:1px 10px;border-radius:999px;background:var(--paprika);letter-spacing:.08em}
-body.vorschau::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.09;
+/* nicht position:fixed: Safari 26 richtet die Farbe der Adressleiste nach festen Elementen am Rand aus */
+body.vorschau{position:relative}
+body.vorschau::after{content:"";position:absolute;inset:0;z-index:90;pointer-events:none;opacity:.09;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3ENICHT FREIGESCHALTET%3C/text%3E%3C/svg%3E") repeat}
 @media print{body.vorschau::after{opacity:.15;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .marke-verf{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;font:700 .72rem/1.6 var(--text);vertical-align:middle;white-space:nowrap}
