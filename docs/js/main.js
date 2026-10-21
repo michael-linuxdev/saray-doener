@@ -115,17 +115,36 @@
   var PAARE=[['1','2'],['3','4'],['6','7'],['9','10'],['11','12'],['13','14'],['15','16'],['23','25'],['30','31'],['32','33'],['36','37'],
     ['40','41'],['42','43'],['50','51'],['52','53'],['54','55'],['60','61'],['123','124']],OHNE_K={},MIT_K={};
   PAARE.forEach(function(pq){OHNE_K[pq[0]]=pq[1];MIT_K[pq[1]]=pq[0];});
-  /* „ohne Fleisch“ macht aus dem Gericht die vegetarische Variante (Käse bleibt, wie er ist) */
-  var VEG={'1':'3','2':'4','6':'3','7':'4','30':'3','31':'4','32':'3','33':'4',
-           '50':'52','51':'53','54':'52','55':'53','40':'52','41':'53','42':'52','43':'53'};
-  var FLEISCH_ZURUECK={'3':'1','4':'2','52':'50','53':'51'};
-  function hatKaese(k){return !!MIT_K[k];}
-  function fleischZiel(x){
-    if(VEG[x.k])return VEG[x.k];
-    var z=(x.o&&x.o.fleisch)||FLEISCH_ZURUECK[x.k];if(!z)return null;
-    if(hatKaese(z)!==hatKaese(x.k))z=hatKaese(x.k)?(OHNE_K[z]||z):(MIT_K[z]||z);
-    return z;
+  /* Varianten: Form, Füllung, extra Fleisch (Super), Käse, Beilage.
+     Die Schalter im Zettel suchen damit das passende Gericht der Karte. */
+  var VAR={},FUELL=['kalb','huhn','veg','falafel','halloumi','schnitzel','nuggets','hack'];
+  var F_NAME={kalb:['Dönerfleisch','Döner meat'],huhn:['Hähnchen','Chicken'],veg:['ohne Fleisch','No meat'],falafel:['Falafel','Falafel'],
+    halloumi:['Halloumi','Halloumi'],schnitzel:['Schnitzel','Schnitzel'],nuggets:['Nuggets','Nuggets'],hack:['Hackfleisch','Minced meat']};
+  [ /* k, Form, Füllung, Super, Käse, Beilage */
+    ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
+    ['30','doener','huhn',0,0],['31','doener','huhn',0,1],['32','doener','huhn',1,0],['33','doener','huhn',1,1],
+    ['3','doener','veg',0,0],['4','doener','veg',0,1],['5','doener','halloumi',0,0],['11','doener','falafel',0,0],['12','doener','falafel',0,1],
+    ['9','doener','schnitzel',0,0],['10','doener','schnitzel',0,1],['60','doener','nuggets',0,0],['61','doener','nuggets',0,1],
+    ['50','duerum','kalb',0,0],['51','duerum','kalb',0,1],['54','duerum','kalb',1,0],['55','duerum','kalb',1,1],
+    ['40','duerum','huhn',0,0],['41','duerum','huhn',0,1],['42','duerum','huhn',1,0],['43','duerum','huhn',1,1],
+    ['52','duerum','veg',0,0],['53','duerum','veg',0,1],['57','duerum','halloumi',0,0],['58','duerum','falafel',0,0],
+    ['13','box','kalb',0,0],['14','box','kalb',0,1],['15','box','huhn',0,0],['16','box','huhn',0,1],
+    ['21','teller','kalb',0,0,'S'],['22','teller','kalb',0,0,'P'],['23','teller','kalb',0,0,'SP'],['25','teller','kalb',0,1,'SP'],
+    ['34','teller','huhn',0,0,'S'],['35','teller','huhn',0,0,'P'],['36','teller','huhn',0,0,'SP'],['37','teller','huhn',0,1,'SP'],
+    ['24','teller','veg',0,0,'SP'],['28','ueber','kalb',0,0],['38','ueber','huhn',0,0],['18','kinder','kalb',0,0],['19','kinder','huhn',0,0],
+    ['121','lahmacun','hack',0,0],['123','lahmacun','kalb',0,0],['124','lahmacun','kalb',0,1]
+  ].forEach(function(v){VAR[v[0]]={k:v[0],form:v[1],f:v[2],sup:v[3],kae:v[4],bei:v[5]||''};});
+  /* bestes Gericht mit den gewünschten Merkmalen; Vorrang: Beilage, Käse, Super */
+  function variante(k,wunsch,streng){
+    var a=VAR[k];if(!a)return null;var w=Object.assign({},a,wunsch),best=null,bp=-1;
+    Object.keys(VAR).forEach(function(kk){var v=VAR[kk];if(v.form!==a.form||v.f!==w.f||!gerichtLi(kk))return;
+      if(streng&&(v.sup!==w.sup||v.kae!==w.kae||v.bei!==w.bei))return;
+      var pkt=(v.bei===w.bei?4:0)+(v.kae===w.kae?2:0)+(v.sup===w.sup?1:0);if(pkt>bp){bp=pkt;best=kk;}});
+    return best===k?null:best;
   }
+  function kaesePartner(k){return VAR[k]?variante(k,{kae:VAR[k].kae?0:1},true):(OHNE_K[k]||MIT_K[k]||null);}
+  function wechseln(x,ziel){var li=gerichtLi(ziel);if(!li)return;x.k=li.dataset.k;x.n=li.dataset.n;x.d=li.dataset.d;x.c=+li.dataset.p;}
+  function preisDiff(x,ziel){var li=gerichtLi(ziel);if(!li)return '';var d=(+li.dataset.p)-x.c;return d?' ('+(d<0?'−':'+')+euro(Math.abs(d))+')':'';}
   var W={'Knoblauch':'garlic','Kräuter':'herb','Chili':'chili','Zwiebeln':'onions','Tomaten':'tomatoes','Gurken':'cucumber','Rotkohl':'red cabbage',
     'Weißkohl':'white cabbage','Eisbergsalat':'iceberg lettuce','Paprika':'bell pepper','Zwiebel':'onion','Champignon':'mushrooms','Tomate':'tomato',
     'Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
@@ -177,18 +196,25 @@
   function editor(x){
     var box=el('div','z-optionen'),o=x.o;
     if(x.t==='D'||x.t==='SA')box.appendChild(chips(L('Soße (mehrere möglich)','Sauce (choose any)'),SOSSEN,o.s,'s',x.u));
-    if(x.t==='D'&&(OHNE_K[x.k]||MIT_K[x.k])){
-      var partner=gerichtLi(OHNE_K[x.k]||MIT_K[x.k]),diff=partner?(+partner.dataset.p)-x.c:0,mit=!!MIT_K[x.k];
-      var kg=el('div','z-gruppe');kg.appendChild(el('span','z-gruppe-titel',L('Käse','Cheese')));var kw=el('div','z-chips');
-      kw.appendChild(knopf(L('mit Käse','with cheese')+(mit?'':' (+'+euro(Math.abs(diff))+')'),{'class':'chip','aria-pressed':String(mit),'data-kaese':x.u}));
-      kg.appendChild(kw);box.appendChild(kg);
+    var va=VAR[x.k];
+    if(x.t==='D'&&va){
+      var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',L('Füllung','Filling')));var fw=el('div','z-chips');
+      FUELL.forEach(function(f){
+        var ziel=f===va.f?x.k:variante(x.k,{f:f});if(!ziel)return;
+        fw.appendChild(knopf(L(F_NAME[f][0],F_NAME[f][1])+(f===va.f?'':preisDiff(x,ziel)),{'class':'chip','aria-pressed':String(f===va.f),'data-fuell':f,'data-u':x.u}));
+      });
+      if(fw.children.length>1){fg.appendChild(fw);box.appendChild(fg);}
+      var su=variante(x.k,{sup:va.sup?0:1},true);
+      if(su){var sg=el('div','z-gruppe');sg.appendChild(el('span','z-gruppe-titel',L('Fleisch','Meat')));var sw=el('div','z-chips');
+        sw.appendChild(knopf(L('extra Fleisch (Super)','extra meat (Super)')+(va.sup?'':preisDiff(x,su)),{'class':'chip','aria-pressed':String(!!va.sup),'data-super':x.u}));
+        sg.appendChild(sw);box.appendChild(sg);}
     }
-    if(x.t==='D'&&fleischZiel(x)){
-      var vz=gerichtLi(fleischZiel(x)),veg=!VEG[x.k],vd=vz?(+vz.dataset.p)-x.c:0;
-      var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',L('Fleisch','Meat')));var fw=el('div','z-chips');
-      fw.appendChild(knopf(L('ohne Fleisch (vegetarisch)','no meat (vegetarian)')+(veg||!vd?'':' ('+(vd<0?'−':'+')+euro(Math.abs(vd))+')'),
-        {'class':'chip','aria-pressed':String(veg),'data-fleisch':x.u}));
-      fg.appendChild(fw);box.appendChild(fg);
+    var kp=x.t==='D'&&kaesePartner(x.k);
+    if(kp){
+      var mit=VAR[x.k]?!!VAR[x.k].kae:!!MIT_K[x.k];
+      var kg=el('div','z-gruppe');kg.appendChild(el('span','z-gruppe-titel',L('Käse','Cheese')));var kw=el('div','z-chips');
+      kw.appendChild(knopf(L('mit Käse','with cheese')+(mit?'':preisDiff(x,kp)),{'class':'chip','aria-pressed':String(mit),'data-kaese':x.u}));
+      kg.appendChild(kw);box.appendChild(kg);
     }
     if(x.t==='D')box.appendChild(chips(L('Ohne','Without'),OHNE,o.ohne,'ohne',x.u));
     if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
@@ -287,15 +313,15 @@
       if(art==='va')o[art]=wert;
       else{var arr=o[art],i2=arr.indexOf(wert);if(i2>-1)arr.splice(i2,1);else if(!(art==='wahl'&&arr.length>=3))arr.push(wert);}
       speichern();zeichnen();var wieder=zliste.querySelector('[data-o="'+art+'"][data-w="'+wert+'"]');if(wieder)wieder.focus();return;}
-    var fb=ev.target.closest('[data-fleisch]');
-    if(fb){var zf=finde(fb.dataset.fleisch);if(!zf)return;var zielK=fleischZiel(zf),zl2=zielK&&gerichtLi(zielK);if(!zl2)return;
-      if(VEG[zf.k])zf.o.fleisch=zf.k;else delete zf.o.fleisch;
-      zf.k=zl2.dataset.k;zf.n=zl2.dataset.n;zf.d=zl2.dataset.d;zf.c=+zl2.dataset.p;
-      speichern();zeichnen();var fw2=zliste.querySelector('[data-fleisch]');if(fw2)fw2.focus();return;}
+    var fu=ev.target.closest('[data-fuell]');
+    if(fu){var zf=finde(fu.dataset.u);if(!zf)return;var zielF=variante(zf.k,{f:fu.dataset.fuell});if(!zielF)return;
+      wechseln(zf,zielF);speichern();zeichnen();var fw2=zliste.querySelector('[data-fuell="'+fu.dataset.fuell+'"]');if(fw2)fw2.focus();return;}
+    var sb=ev.target.closest('[data-super]');
+    if(sb){var zs=finde(sb.dataset.super);if(!zs||!VAR[zs.k])return;var zielS=variante(zs.k,{sup:VAR[zs.k].sup?0:1},true);if(!zielS)return;
+      wechseln(zs,zielS);speichern();zeichnen();var sw2=zliste.querySelector('[data-super]');if(sw2)sw2.focus();return;}
     var kb=ev.target.closest('[data-kaese]');
-    if(kb){var zk=finde(kb.dataset.kaese);if(!zk)return;var ziel=gerichtLi(OHNE_K[zk.k]||MIT_K[zk.k]);if(!ziel)return;
-      zk.k=ziel.dataset.k;zk.n=ziel.dataset.n;zk.d=ziel.dataset.d;zk.c=+ziel.dataset.p;
-      speichern();zeichnen();var kw2=zliste.querySelector('[data-kaese]');if(kw2)kw2.focus();return;}
+    if(kb){var zk=finde(kb.dataset.kaese);if(!zk)return;var zielK=kaesePartner(zk.k);if(!zielK)return;
+      wechseln(zk,zielK);speichern();zeichnen();var kw2=zliste.querySelector('[data-kaese]');if(kw2)kw2.focus();return;}
     var f=ev.target.closest('[data-fertig]');
     if(f){offen=null;zusammenfassen();speichern();zeichnen();return;}
   });
