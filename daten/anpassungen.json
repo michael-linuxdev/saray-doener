@@ -10,5 +10,14 @@
       "von": "2026-10-21",
       "bis": "2026-10-21"
     }
+  ],
+  "verfuegbarkeit": [
+    {
+      "was": "nuggets",
+      "laden": "freital"
+    },
+    {
+      "was": "fisch"
+    }
   ]
 }
