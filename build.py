@@ -22,7 +22,7 @@ STANDORTE = [
     {
         "id": "freital", "name": "Freital", "strasse": "Dresdner Str. 87", "plz": "01705", "ort": "Freital",
         "tel": "0351 27676660", "tel_href": "+4935127676660", "tel_ld": "+49 351 27676660",
-        "whatsapp": "",  # z. B. "4917612345678" – leer: WhatsApp-Knopf ausgeblendet
+        "whatsapp": "491601836249",  # Testnummer (Michael) – vor dem Livegang durch die Ladennummer ersetzen; leer: Knopf ausgeblendet
         "zeilen": [("Montag bis Freitag", "10–22 Uhr", [1, 2, 3, 4, 5]), ("Samstag und Sonntag", "11–22 Uhr", [6, 0])],
         "zeilen_en": ["Monday to Friday", "Saturday and Sunday"], "extra_en": "Outdoor seating in good weather.",
         "kurz": "Mo–Fr 10–22 Uhr, Sa–So 11–22 Uhr",
@@ -32,7 +32,7 @@ STANDORTE = [
     {
         "id": "altenberg", "name": "Altenberg", "strasse": "Dresdner Str. 23", "plz": "01773", "ort": "Altenberg",
         "tel": "035056 23674", "tel_href": "+493505623674", "tel_ld": "+49 35056 23674",
-        "whatsapp": "",
+        "whatsapp": "491601836249",  # Testnummer (Michael)
         "zeilen": [("Montag bis Samstag", "10–21 Uhr", [1, 2, 3, 4, 5, 6]), ("Sonntag", "11–21 Uhr", [0])],
         "zeilen_en": ["Monday to Saturday", "Sunday"], "extra_en": "Right by the station.",
         "kurz": "Mo–Sa 10–21 Uhr, So 11–21 Uhr",
@@ -568,6 +568,15 @@ p{margin:0}
 @media (min-width:720px){.zettel-leiste{left:auto;right:24px;bottom:24px}.zl-summe{margin-left:12px}}
 body.mit-zettel .fuss{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 @media (min-width:720px){body.mit-zettel .fuss{padding-bottom:100px}}
+/* „Nach oben“: unten rechts, über der Zettel-Leiste bzw. der Anrufleiste */
+.nach-oben{position:fixed;z-index:36;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;display:grid;place-items:center;
+  border:2px solid var(--gelb);border-radius:50%;background:var(--tinte);color:var(--gelb);cursor:pointer;box-shadow:0 8px 20px -8px rgba(58,21,49,.55)}
+.nach-oben svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.nach-oben:focus-visible{outline:3px solid var(--paprika);outline-offset:3px}
+body.mit-zettel .nach-oben{bottom:calc(140px + env(safe-area-inset-bottom))}
+@media (min-width:720px){.nach-oben{right:24px;bottom:24px}body.mit-zettel .nach-oben{bottom:94px}}
+@media (hover:hover){.nach-oben:hover{background:#56213f}}
+@media print{.nach-oben{display:none!important}}
 .zettel-huelle{position:fixed;inset:0;height:100vh;height:100dvh;z-index:60;display:flex;justify-content:flex-end;align-items:flex-end}
 .zettel-hinter{position:absolute;inset:0;background:rgba(42,14,35,.45)}
 /* Höhe am sichtbaren Bereich messen (iPhone: vh zählt die Adressleiste nicht ab) */
@@ -682,6 +691,17 @@ ZETTEL_JS = r'''
   var PAARE=[['1','2'],['3','4'],['6','7'],['9','10'],['11','12'],['13','14'],['15','16'],['23','25'],['30','31'],['32','33'],['36','37'],
     ['40','41'],['42','43'],['50','51'],['52','53'],['54','55'],['60','61'],['123','124']],OHNE_K={},MIT_K={};
   PAARE.forEach(function(pq){OHNE_K[pq[0]]=pq[1];MIT_K[pq[1]]=pq[0];});
+  /* „ohne Fleisch“ macht aus dem Gericht die vegetarische Variante (Käse bleibt, wie er ist) */
+  var VEG={'1':'3','2':'4','6':'3','7':'4','30':'3','31':'4','32':'3','33':'4',
+           '50':'52','51':'53','54':'52','55':'53','40':'52','41':'53','42':'52','43':'53'};
+  var FLEISCH_ZURUECK={'3':'1','4':'2','52':'50','53':'51'};
+  function hatKaese(k){return !!MIT_K[k];}
+  function fleischZiel(x){
+    if(VEG[x.k])return VEG[x.k];
+    var z=(x.o&&x.o.fleisch)||FLEISCH_ZURUECK[x.k];if(!z)return null;
+    if(hatKaese(z)!==hatKaese(x.k))z=hatKaese(x.k)?(OHNE_K[z]||z):(MIT_K[z]||z);
+    return z;
+  }
   var W={'Knoblauch':'garlic','Kräuter':'herb','Chili':'chili','Zwiebeln':'onions','Tomaten':'tomatoes','Gurken':'cucumber','Rotkohl':'red cabbage',
     'Weißkohl':'white cabbage','Eisbergsalat':'iceberg lettuce','Paprika':'bell pepper','Zwiebel':'onion','Champignon':'mushrooms','Tomate':'tomato',
     'Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
@@ -738,6 +758,13 @@ ZETTEL_JS = r'''
       var kg=el('div','z-gruppe');kg.appendChild(el('span','z-gruppe-titel',L('Käse','Cheese')));var kw=el('div','z-chips');
       kw.appendChild(knopf(L('mit Käse','with cheese')+(mit?'':' (+'+euro(Math.abs(diff))+')'),{'class':'chip','aria-pressed':String(mit),'data-kaese':x.u}));
       kg.appendChild(kw);box.appendChild(kg);
+    }
+    if(x.t==='D'&&fleischZiel(x)){
+      var vz=gerichtLi(fleischZiel(x)),veg=!VEG[x.k],vd=vz?(+vz.dataset.p)-x.c:0;
+      var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',L('Fleisch','Meat')));var fw=el('div','z-chips');
+      fw.appendChild(knopf(L('ohne Fleisch (vegetarisch)','no meat (vegetarian)')+(veg||!vd?'':' ('+(vd<0?'−':'+')+euro(Math.abs(vd))+')'),
+        {'class':'chip','aria-pressed':String(veg),'data-fleisch':x.u}));
+      fg.appendChild(fw);box.appendChild(fg);
     }
     if(x.t==='D')box.appendChild(chips(L('Ohne','Without'),OHNE,o.ohne,'ohne',x.u));
     if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
@@ -836,6 +863,11 @@ ZETTEL_JS = r'''
       if(art==='va')o[art]=wert;
       else{var arr=o[art],i2=arr.indexOf(wert);if(i2>-1)arr.splice(i2,1);else if(!(art==='wahl'&&arr.length>=3))arr.push(wert);}
       speichern();zeichnen();var wieder=zliste.querySelector('[data-o="'+art+'"][data-w="'+wert+'"]');if(wieder)wieder.focus();return;}
+    var fb=ev.target.closest('[data-fleisch]');
+    if(fb){var zf=finde(fb.dataset.fleisch);if(!zf)return;var zielK=fleischZiel(zf),zl2=zielK&&gerichtLi(zielK);if(!zl2)return;
+      if(VEG[zf.k])zf.o.fleisch=zf.k;else delete zf.o.fleisch;
+      zf.k=zl2.dataset.k;zf.n=zl2.dataset.n;zf.d=zl2.dataset.d;zf.c=+zl2.dataset.p;
+      speichern();zeichnen();var fw2=zliste.querySelector('[data-fleisch]');if(fw2)fw2.focus();return;}
     var kb=ev.target.closest('[data-kaese]');
     if(kb){var zk=finde(kb.dataset.kaese);if(!zk)return;var ziel=gerichtLi(OHNE_K[zk.k]||MIT_K[zk.k]);if(!ziel)return;
       zk.k=ziel.dataset.k;zk.n=ziel.dataset.n;zk.d=ziel.dataset.d;zk.c=+ziel.dataset.p;
@@ -1063,6 +1095,16 @@ JS = r"""
     nichts.querySelector('button').addEventListener('click',function(){feld.value='';suchen();feld.focus();});
   }
 
+  /* „Nach oben“-Knopf: erscheint, wenn man etwa eine Bildschirmhöhe gescrollt hat */
+  var obenK=document.getElementById('nach-oben'),obenGeplant=false;
+  function obenPruefen(){obenK.hidden=window.scrollY<window.innerHeight*0.9;}
+  window.addEventListener('scroll',function(){if(obenGeplant)return;obenGeplant=true;requestAnimationFrame(function(){obenGeplant=false;obenPruefen();});},{passive:true});
+  obenK.addEventListener('click',function(){
+    window.scrollTo({top:0,behavior:weniger?'auto':'smooth'});
+    var ziel=document.querySelector('#oben a');if(ziel)ziel.focus({preventScroll:true});
+  });
+  obenPruefen();
+
   /* Hinweis-Band nach deutschem Datum */
   function hinweiseZeigen(){
     var d=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -1229,6 +1271,7 @@ SEITE = r"""<!doctype html>
 </footer>
 
 <nav class="anrufleiste" aria-label="Schnell anrufen">%%ANRUF%%</nav>
+<button type="button" class="nach-oben" id="nach-oben" hidden aria-label="Nach oben" data-en-aria="Back to top" title="Nach oben"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>
 <button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><span data-en="View order list">Bestellzettel ansehen</span><span class="zl-summe"></span></button>
 <p class="zettel-meldung" id="zettel-meldung" role="status" hidden></p>
 <div class="zettel-huelle" id="zettel" hidden>

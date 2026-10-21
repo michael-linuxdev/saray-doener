@@ -36,17 +36,17 @@ Nur Python 3, keine Pakete nötig. Nach jeder Änderung `python3 build.py` laufe
 
 ## WhatsApp-Bestellung
 
-Die Nummern stehen bewusst **nicht** im Repo. Solange `whatsapp` in `STANDORTE` leer ist, ist der WhatsApp-Knopf ausgeblendet; Anrufen und „Zettel kopieren“ funktionieren immer.
+Die Nummern stehen bei `whatsapp` in `STANDORTE` (`build.py`), international ohne `+`, z. B. `4917612345678`. Zurzeit ist dort zum Testen **Michaels Nummer** eingetragen – vor dem Livegang durch die Nummer des jeweiligen Ladens ersetzen. Ist das Feld leer, wird der WhatsApp-Knopf ausgeblendet; Anrufen und „Zettel kopieren“ funktionieren immer.
 
-- Für den Livegang die echte Nummer des Ladens bei `whatsapp` eintragen (international ohne `+`, z. B. `4917612345678`).
-- Zum Testen nur lokal: `lokal.json` anlegen (steht in `.gitignore`), wirkt nur auf `--einzeln`:
-  ```json
-  {"whatsapp": {"freital": "4917612345678", "altenberg": "4917612345678"}}
-  ```
+Optional nur lokal: `lokal.json` (steht in `.gitignore`) überschreibt die Nummern für die Einzeldatei-Vorschau (`--einzeln`):
+```json
+{"whatsapp": {"freital": "4917612345678", "altenberg": "4917612345678"}}
+```
 
 ## Vor dem Wechsel auf saraydöner.de
 
 - `VORSCHAU = False` in `build.py` (entfernt `noindex` und die Sperre in `robots.txt`).
 - `CNAME` in `build.py` auf die endgültige Domain setzen und den DNS-Eintrag umstellen.
-- Datenschutzerklärung fertigstellen (inkl. Hinweis auf WhatsApp/Meta, sobald die Bestellung per WhatsApp aktiv ist).
+- Testnummer bei `whatsapp` durch die Nummern der Läden ersetzen.
+- Datenschutzerklärung fertigstellen (inkl. Hinweis auf WhatsApp/Meta).
 - Allergen- und Zusatzstoff-Legende vom Inhaber einarbeiten.

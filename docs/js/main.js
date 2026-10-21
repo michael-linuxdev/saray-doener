@@ -115,6 +115,17 @@
   var PAARE=[['1','2'],['3','4'],['6','7'],['9','10'],['11','12'],['13','14'],['15','16'],['23','25'],['30','31'],['32','33'],['36','37'],
     ['40','41'],['42','43'],['50','51'],['52','53'],['54','55'],['60','61'],['123','124']],OHNE_K={},MIT_K={};
   PAARE.forEach(function(pq){OHNE_K[pq[0]]=pq[1];MIT_K[pq[1]]=pq[0];});
+  /* „ohne Fleisch“ macht aus dem Gericht die vegetarische Variante (Käse bleibt, wie er ist) */
+  var VEG={'1':'3','2':'4','6':'3','7':'4','30':'3','31':'4','32':'3','33':'4',
+           '50':'52','51':'53','54':'52','55':'53','40':'52','41':'53','42':'52','43':'53'};
+  var FLEISCH_ZURUECK={'3':'1','4':'2','52':'50','53':'51'};
+  function hatKaese(k){return !!MIT_K[k];}
+  function fleischZiel(x){
+    if(VEG[x.k])return VEG[x.k];
+    var z=(x.o&&x.o.fleisch)||FLEISCH_ZURUECK[x.k];if(!z)return null;
+    if(hatKaese(z)!==hatKaese(x.k))z=hatKaese(x.k)?(OHNE_K[z]||z):(MIT_K[z]||z);
+    return z;
+  }
   var W={'Knoblauch':'garlic','Kräuter':'herb','Chili':'chili','Zwiebeln':'onions','Tomaten':'tomatoes','Gurken':'cucumber','Rotkohl':'red cabbage',
     'Weißkohl':'white cabbage','Eisbergsalat':'iceberg lettuce','Paprika':'bell pepper','Zwiebel':'onion','Champignon':'mushrooms','Tomate':'tomato',
     'Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
@@ -171,6 +182,13 @@
       var kg=el('div','z-gruppe');kg.appendChild(el('span','z-gruppe-titel',L('Käse','Cheese')));var kw=el('div','z-chips');
       kw.appendChild(knopf(L('mit Käse','with cheese')+(mit?'':' (+'+euro(Math.abs(diff))+')'),{'class':'chip','aria-pressed':String(mit),'data-kaese':x.u}));
       kg.appendChild(kw);box.appendChild(kg);
+    }
+    if(x.t==='D'&&fleischZiel(x)){
+      var vz=gerichtLi(fleischZiel(x)),veg=!VEG[x.k],vd=vz?(+vz.dataset.p)-x.c:0;
+      var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',L('Fleisch','Meat')));var fw=el('div','z-chips');
+      fw.appendChild(knopf(L('ohne Fleisch (vegetarisch)','no meat (vegetarian)')+(veg||!vd?'':' ('+(vd<0?'−':'+')+euro(Math.abs(vd))+')'),
+        {'class':'chip','aria-pressed':String(veg),'data-fleisch':x.u}));
+      fg.appendChild(fw);box.appendChild(fg);
     }
     if(x.t==='D')box.appendChild(chips(L('Ohne','Without'),OHNE,o.ohne,'ohne',x.u));
     if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
@@ -269,6 +287,11 @@
       if(art==='va')o[art]=wert;
       else{var arr=o[art],i2=arr.indexOf(wert);if(i2>-1)arr.splice(i2,1);else if(!(art==='wahl'&&arr.length>=3))arr.push(wert);}
       speichern();zeichnen();var wieder=zliste.querySelector('[data-o="'+art+'"][data-w="'+wert+'"]');if(wieder)wieder.focus();return;}
+    var fb=ev.target.closest('[data-fleisch]');
+    if(fb){var zf=finde(fb.dataset.fleisch);if(!zf)return;var zielK=fleischZiel(zf),zl2=zielK&&gerichtLi(zielK);if(!zl2)return;
+      if(VEG[zf.k])zf.o.fleisch=zf.k;else delete zf.o.fleisch;
+      zf.k=zl2.dataset.k;zf.n=zl2.dataset.n;zf.d=zl2.dataset.d;zf.c=+zl2.dataset.p;
+      speichern();zeichnen();var fw2=zliste.querySelector('[data-fleisch]');if(fw2)fw2.focus();return;}
     var kb=ev.target.closest('[data-kaese]');
     if(kb){var zk=finde(kb.dataset.kaese);if(!zk)return;var ziel=gerichtLi(OHNE_K[zk.k]||MIT_K[zk.k]);if(!ziel)return;
       zk.k=ziel.dataset.k;zk.n=ziel.dataset.n;zk.d=ziel.dataset.d;zk.c=+ziel.dataset.p;
@@ -307,7 +330,7 @@
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
     abhSpeichern();
   }
-  var WA={},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
+  var WA={"freital": "491601836249", "altenberg": "491601836249"},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
   function waAktualisieren(){
     var nr=abh.laden&&WA[abh.laden];
     waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!Object.keys(WA).length;
@@ -384,6 +407,16 @@
     feld.addEventListener('input',suchen);
     nichts.querySelector('button').addEventListener('click',function(){feld.value='';suchen();feld.focus();});
   }
+
+  /* „Nach oben“-Knopf: erscheint, wenn man etwa eine Bildschirmhöhe gescrollt hat */
+  var obenK=document.getElementById('nach-oben'),obenGeplant=false;
+  function obenPruefen(){obenK.hidden=window.scrollY<window.innerHeight*0.9;}
+  window.addEventListener('scroll',function(){if(obenGeplant)return;obenGeplant=true;requestAnimationFrame(function(){obenGeplant=false;obenPruefen();});},{passive:true});
+  obenK.addEventListener('click',function(){
+    window.scrollTo({top:0,behavior:weniger?'auto':'smooth'});
+    var ziel=document.querySelector('#oben a');if(ziel)ziel.focus({preventScroll:true});
+  });
+  obenPruefen();
 
   /* Hinweis-Band nach deutschem Datum */
   function hinweiseZeigen(){

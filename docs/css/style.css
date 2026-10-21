@@ -258,6 +258,15 @@ p{margin:0}
 @media (min-width:720px){.zettel-leiste{left:auto;right:24px;bottom:24px}.zl-summe{margin-left:12px}}
 body.mit-zettel .fuss{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 @media (min-width:720px){body.mit-zettel .fuss{padding-bottom:100px}}
+/* „Nach oben“: unten rechts, über der Zettel-Leiste bzw. der Anrufleiste */
+.nach-oben{position:fixed;z-index:36;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;display:grid;place-items:center;
+  border:2px solid var(--gelb);border-radius:50%;background:var(--tinte);color:var(--gelb);cursor:pointer;box-shadow:0 8px 20px -8px rgba(58,21,49,.55)}
+.nach-oben svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.nach-oben:focus-visible{outline:3px solid var(--paprika);outline-offset:3px}
+body.mit-zettel .nach-oben{bottom:calc(140px + env(safe-area-inset-bottom))}
+@media (min-width:720px){.nach-oben{right:24px;bottom:24px}body.mit-zettel .nach-oben{bottom:94px}}
+@media (hover:hover){.nach-oben:hover{background:#56213f}}
+@media print{.nach-oben{display:none!important}}
 .zettel-huelle{position:fixed;inset:0;height:100vh;height:100dvh;z-index:60;display:flex;justify-content:flex-end;align-items:flex-end}
 .zettel-hinter{position:absolute;inset:0;background:rgba(42,14,35,.45)}
 /* Höhe am sichtbaren Bereich messen (iPhone: vh zählt die Adressleiste nicht ab) */
