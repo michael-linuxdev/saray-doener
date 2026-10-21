@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Automatische Tests für die fertige Seite in docs/.
+"""Automatische Tests für die fertige Seite.
 
-Aufruf:  python3 tests/test_seite.py
+Aufruf:  python3 tests/test_seite.py            -> baut eine Standard-Seite (ohne Chef-App-Änderungen) in einen
+                                                   Testordner und prüft dort alle Abläufe
+         python3 tests/test_seite.py --echt     -> prüft nur, dass die echte Seite in docs/ fehlerfrei lädt
 Braucht: pip install playwright && python -m playwright install chromium
 
 Startet einen kleinen Webserver für docs/, öffnet die Seite in Chromium (Handy- und
@@ -14,12 +16,16 @@ import json
 import pathlib
 import sys
 import threading
+import os
+import subprocess
+import tempfile
 import traceback
 import urllib.parse
 
 from playwright.sync_api import sync_playwright
 
-DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
+REPO = pathlib.Path(__file__).resolve().parent.parent
+DOCS = REPO / "docs"   # wird in main() auf die Standard-Seite im Testordner umgestellt
 HANDY = {"width": 390, "height": 844}
 DESKTOP = {"width": 1440, "height": 900}
 # Mittwoch 21.10.2026, 17:45 Uhr: beide Läden offen
@@ -208,6 +214,26 @@ def verfuegbarkeit(b, url):
 
 
 @test
+def sperre_fuer_gewaehlten_laden(b, url):
+    s = Seite(b, url + "?laden=freital", regeln=[{"was": "nuggets", "laden": "freital"}])
+    s.p.wait_for_timeout(300)
+    assert s.js("document.getElementById('nr-60').classList.contains('nicht-da')"), "Nuggets in Freital nicht ausgegraut"
+    assert s.js("document.querySelector('#nr-60 .plus').disabled")
+    assert s.js("document.querySelector('#nr-60 .marke-verf').textContent") == "nicht verfügbar in Freital"
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=altenberg]")
+    s.p.click(".zettel-zu")
+    assert not s.js("document.getElementById('nr-60').classList.contains('nicht-da')"), "in Altenberg gesperrt"
+    s.p.click("#nr-60 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    assert s.js("document.getElementById('zettel-whatsapp').hidden")
+    assert s.js("document.getElementById('zettel-kopieren').disabled")
+    s.schliessen()
+
+
+@test
 def wie_letztes_mal(b, url):
     s = Seite(b, url)
     s.p.click("#nr-7 .plus")
@@ -376,7 +402,7 @@ def chef_app_aenderungen(b, url):
     with tempfile.TemporaryDirectory() as tmp:
         datei = pathlib.Path(tmp) / "anp.json"
         datei.write_text(json.dumps(d))
-        root = DOCS.parent
+        root = REPO
         out = subprocess.run([sys.executable, "-c", f"import build; build.bauen(ziel={str(pathlib.Path(tmp) / 'docs')!r})"],
                              cwd=root, env=dict(os.environ, SARAY_ANPASSUNGEN=str(datei)), capture_output=True, text=True)
         assert out.returncode == 0 and "WARNUNG" not in out.stdout, out.stdout + out.stderr
@@ -401,12 +427,51 @@ def chef_app_standard_wiederherstellen(b, url):
     ctx.close()
 
 
+@test
+def echte_seite_laedt(b, url):
+    """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
+    for vp, mobil in ((HANDY, True), (DESKTOP, False)):
+        s = Seite(b, url, vp, mobil=mobil)
+        assert "Saray Döner" in s.p.title()
+        assert s.js("document.querySelectorAll('.gericht').length") > 20
+        s.schliessen()
+        ctx = b.new_context()
+        p = ctx.new_page()
+        fehler = []
+        p.on("pageerror", lambda e: fehler.append(str(e)))
+        p.goto(url + "chef/")
+        p.wait_for_timeout(300)
+        assert not fehler, fehler
+        ctx.close()
+
+
+def standard_bauen(ziel):
+    """Baut die Seite ohne Änderungen aus der Chef-App – die Tests erwarten den Standard."""
+    leer = pathlib.Path(ziel) / "leer.json"
+    leer.write_text("{}")
+    out = subprocess.run([sys.executable, "-c", f"import build; build.bauen(ziel={str(pathlib.Path(ziel) / 'docs')!r})"],
+                         cwd=REPO, env=dict(os.environ, SARAY_ANPASSUNGEN=str(leer)), capture_output=True, text=True)
+    if out.returncode:
+        print(out.stdout + out.stderr)
+        raise SystemExit("Standard-Seite ließ sich nicht bauen")
+    return pathlib.Path(ziel) / "docs"
+
+
 def main():
+    global DOCS
+    echt = "--echt" in sys.argv
+    tmp = None
+    if echt:
+        auswahl = [echte_seite_laedt]
+    else:
+        tmp = tempfile.TemporaryDirectory()
+        DOCS = standard_bauen(tmp.name)
+        auswahl = [t for t in TESTS if t is not echte_seite_laedt]
     srv, url = server()
     ok = 0
     with sync_playwright() as pw:
         b = pw.chromium.launch()
-        for t in TESTS:
+        for t in auswahl:
             try:
                 t(b, url)
                 ok += 1
@@ -416,8 +481,10 @@ def main():
                 traceback.print_exc()
         b.close()
     srv.shutdown()
-    print(f"{ok} von {len(TESTS)} Tests bestanden")
-    return 0 if ok == len(TESTS) else 1
+    if tmp:
+        tmp.cleanup()
+    print(f"{ok} von {len(auswahl)} Tests bestanden")
+    return 0 if ok == len(auswahl) else 1
 
 
 if __name__ == "__main__":

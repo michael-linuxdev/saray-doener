@@ -38,8 +38,11 @@ jobs:
           pip install playwright==1.56.0
           python -m playwright install --with-deps chromium
 
-      - name: Seite im Browser testen
+      - name: Abläufe testen (Standard-Seite ohne Chef-App-Änderungen)
         run: python3 tests/test_seite.py
+
+      - name: Echte Seite lädt fehlerfrei
+        run: python3 tests/test_seite.py --echt
 
       - name: docs/ ins Repo zurückschreiben
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

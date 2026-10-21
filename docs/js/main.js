@@ -165,7 +165,7 @@
   }
   function kaesePartner(k){return VAR[k]?variante(k,{kae:VAR[k].kae?0:1},true):(OHNE_K[k]||MIT_K[k]||null);}
   /* Verfügbarkeit: feste Regeln aus build.py + tagesaktuelle aus status.json */
-  var SPERR={"doener": {"de": "Döner", "en": "Döner", "nr": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "30", "31", "32", "33", "34", "35", "36", "37", "38"]}, "duerum": {"de": "Dürüm", "en": "Dürüm", "nr": ["50", "51", "52", "53", "54", "55", "56", "57", "58", "40", "41", "42", "43"]}, "teller": {"de": "Box & Teller", "en": "Boxes & plates", "nr": ["13", "14", "15", "16", "21", "22", "23", "24", "25", "26", "28"]}, "pizza": {"de": "Pizza", "en": "Pizza", "nr": ["80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "125"]}, "lahmacun": {"de": "Lahmacun", "en": "Lahmacun", "nr": ["120", "121", "122", "123", "124"]}, "baguette": {"de": "Baguette", "en": "Baguette", "nr": ["150", "151", "152", "153", "154", "156", "157", "158", "159", "160"]}, "salate": {"de": "Salate", "en": "Salads", "nr": ["130", "131", "132", "133", "134", "135", "136", "137", "138", "139", "140", "141", "142", "143"]}, "schnitzel": {"de": "Schnitzel & Nuggets", "en": "Schnitzel & nuggets", "nr": ["70", "71", "72", "73", "60", "61", "62", "63", "64", "65"]}, "kinder": {"de": "Für Kinder", "en": "For kids", "nr": ["17", "18", "19", "20"]}, "getraenke": {"de": "Getränke", "en": "Drinks", "nr": []}, "huhn": {"de": "Hähnchen", "en": "Chicken", "nr": ["30", "31", "32", "33", "34", "35", "36", "37", "38", "40", "41", "42", "43", "15", "16", "26", "102", "105", "134", "135", "19"]}, "nuggets": {"de": "Nuggets", "en": "Nuggets", "nr": ["60", "61", "62", "63", "64", "65", "20"]}, "falafel": {"de": "Falafel", "en": "Falafel", "nr": ["11", "12", "58", "24", "142"]}, "halloumi": {"de": "Halloumi", "en": "Halloumi", "nr": ["5", "57", "24", "26", "98", "99", "158", "141"]}, "schnitzel-fleisch": {"de": "Schnitzel", "en": "Schnitzel", "nr": ["9", "10", "159", "70"]}, "fisch": {"de": "Fisch", "en": "Fish", "nr": ["71"]}},REGELN_FEST=[],REGELN=REGELN_FEST.slice(),LADEN_N={freital:'Freital',altenberg:'Altenberg'};
+  var SPERR={"doener": {"de": "Döner", "en": "Döner", "nr": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "30", "31", "32", "33", "34", "35", "36", "37", "38"]}, "duerum": {"de": "Dürüm", "en": "Dürüm", "nr": ["50", "51", "52", "53", "54", "55", "56", "57", "58", "40", "41", "42", "43"]}, "teller": {"de": "Box & Teller", "en": "Boxes & plates", "nr": ["13", "14", "15", "16", "21", "22", "23", "24", "25", "26", "28"]}, "pizza": {"de": "Pizza", "en": "Pizza", "nr": ["80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "125"]}, "lahmacun": {"de": "Lahmacun", "en": "Lahmacun", "nr": ["120", "121", "122", "123", "124"]}, "baguette": {"de": "Baguette", "en": "Baguette", "nr": ["150", "151", "152", "153", "154", "156", "157", "158", "159", "160"]}, "salate": {"de": "Salate", "en": "Salads", "nr": ["130", "131", "132", "133", "134", "135", "136", "137", "138", "139", "140", "141", "142", "143"]}, "schnitzel": {"de": "Schnitzel & Nuggets", "en": "Schnitzel & nuggets", "nr": ["70", "71", "72", "73", "60", "61", "62", "63", "64", "65"]}, "kinder": {"de": "Für Kinder", "en": "For kids", "nr": ["17", "18", "19", "20"]}, "getraenke": {"de": "Getränke", "en": "Drinks", "nr": []}, "huhn": {"de": "Hähnchen", "en": "Chicken", "nr": ["30", "31", "32", "33", "34", "35", "36", "37", "38", "40", "41", "42", "43", "15", "16", "26", "102", "105", "134", "135", "19"]}, "nuggets": {"de": "Nuggets", "en": "Nuggets", "nr": ["60", "61", "62", "63", "64", "65", "20"]}, "falafel": {"de": "Falafel", "en": "Falafel", "nr": ["11", "12", "58", "24", "142"]}, "halloumi": {"de": "Halloumi", "en": "Halloumi", "nr": ["5", "57", "24", "26", "98", "99", "158", "141"]}, "schnitzel-fleisch": {"de": "Schnitzel", "en": "Schnitzel", "nr": ["9", "10", "159", "70"]}, "fisch": {"de": "Fisch", "en": "Fish", "nr": ["71"]}},REGELN_FEST=[{"was": "nuggets", "laden": "freital"}, {"was": "fisch"}],REGELN=REGELN_FEST.slice(),LADEN_N={freital:'Freital',altenberg:'Altenberg'};
   function datumISO(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+off*864e5));}
   function minAus(t){var q=String(t).split(':');return (+q[0])*60+(+q[1]||0);}
   function trifft(r,k){var w=[].concat(r.was||[]);return w.some(function(v){v=String(v);return v===k||(SPERR[v]&&SPERR[v].nr.indexOf(k)>-1);});}
@@ -179,13 +179,13 @@
       if(r.tage&&r.tage.indexOf(tag)<0)return;
       if(r.ab&&min<minAus(r.ab))res={art:'ab',zeit:r.ab};
       else if(r.bis&&min>=minAus(r.bis))res={art:'bis',zeit:r.bis};
-      else if(!r.ab&&!r.bis)res={art:'aus'};
+      else if(!r.ab&&!r.bis)res={art:'aus',dauer:!r.datum};
     });
     return res;
   }
   function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP==='en'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
   function sperrText(sp,heute){
-    if(sp.art==='aus')return heute===false?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
+    if(sp.art==='aus')return (heute===false||sp.dauer)?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
     if(sp.art==='ab')return L('erst ab ','only from ')+uhrK(sp.zeit);
     return L('nur bis ','only until ')+uhrK(sp.zeit);
   }
@@ -198,10 +198,14 @@
     var n=jetzt();
     document.querySelectorAll('li[data-k]').forEach(function(li){
       var k=li.dataset.k,sp={};Object.keys(LADEN_N).forEach(function(l){sp[l]=sperre(k,l,0,n.min);});
-      var gesperrt=Object.keys(sp).filter(function(l){return sp[l];}),txt='';
-      if(gesperrt.length===2&&sperrText(sp.freital)===sperrText(sp.altenberg))txt=sperrText(sp.freital);
-      else txt=gesperrt.map(function(l){return LADEN_N[l]+': '+sperrText(sp[l]);}).join(' · ');
-      var aus=gesperrt.length===2&&sp.freital.art==='aus'&&sp.altenberg.art==='aus';
+      var gesperrt=Object.keys(sp).filter(function(l){return sp[l];}),txt='',aus;
+      if(abh.laden&&LADEN_N[abh.laden]){ /* Laden gewählt: Karte gilt für diesen Laden */
+        var s1=sp[abh.laden];txt=s1?sperrText(s1)+L(' in ',' in ')+LADEN_N[abh.laden]:'';aus=!!s1&&s1.art==='aus';
+      }else{
+        if(gesperrt.length===2&&sperrText(sp.freital)===sperrText(sp.altenberg))txt=sperrText(sp.freital);
+        else txt=gesperrt.map(function(l){return LADEN_N[l]+': '+sperrText(sp[l]);}).join(' · ');
+        aus=gesperrt.length===2&&sp.freital.art==='aus'&&sp.altenberg.art==='aus';
+      }
       li.classList.toggle('nicht-da',aus);
       var pk=li.querySelector('.plus');if(pk){pk.disabled=aus;}
       var m=li.querySelector('.marke-verf');
@@ -465,7 +469,7 @@
   function konflikte(){return zettel.filter(function(x){return sperreZettel(x.k);}).length;}
   function waAktualisieren(){
     var nr=abh.laden&&WA[abh.laden],kf=konflikte();
-    verfHinweis.hidden=!kf;
+    verfHinweis.hidden=!kf;document.getElementById('zettel-kopieren').disabled=!!kf;
     verfHinweis.textContent=kf===1?L('Ein Gericht ist zur gewählten Zeit nicht zu haben. Bitte oben ändern.','One dish is not available at the chosen time. Please change it above.')
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
     if(kf)nr=null;
@@ -477,7 +481,7 @@
     document.querySelectorAll('[data-anruf]').forEach(function(a){a.hidden=!!abh.laden&&a.dataset.anruf!==abh.laden;});
     zeitenFuellen();waAktualisieren();
   }
-  document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();});});
+  document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();verfZeigen();});});
   selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();zeichnen();waAktualisieren();});
   selTag.addEventListener('change',function(){abh.tag=selTag.value;abh.zeit='';abhSpeichern();zeitenFuellen();waAktualisieren();});
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});

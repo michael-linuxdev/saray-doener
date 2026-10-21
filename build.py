@@ -784,13 +784,13 @@ ZETTEL_JS = r'''
       if(r.tage&&r.tage.indexOf(tag)<0)return;
       if(r.ab&&min<minAus(r.ab))res={art:'ab',zeit:r.ab};
       else if(r.bis&&min>=minAus(r.bis))res={art:'bis',zeit:r.bis};
-      else if(!r.ab&&!r.bis)res={art:'aus'};
+      else if(!r.ab&&!r.bis)res={art:'aus',dauer:!r.datum};
     });
     return res;
   }
   function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP==='en'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
   function sperrText(sp,heute){
-    if(sp.art==='aus')return heute===false?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
+    if(sp.art==='aus')return (heute===false||sp.dauer)?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
     if(sp.art==='ab')return L('erst ab ','only from ')+uhrK(sp.zeit);
     return L('nur bis ','only until ')+uhrK(sp.zeit);
   }
@@ -803,10 +803,14 @@ ZETTEL_JS = r'''
     var n=jetzt();
     document.querySelectorAll('li[data-k]').forEach(function(li){
       var k=li.dataset.k,sp={};Object.keys(LADEN_N).forEach(function(l){sp[l]=sperre(k,l,0,n.min);});
-      var gesperrt=Object.keys(sp).filter(function(l){return sp[l];}),txt='';
-      if(gesperrt.length===2&&sperrText(sp.freital)===sperrText(sp.altenberg))txt=sperrText(sp.freital);
-      else txt=gesperrt.map(function(l){return LADEN_N[l]+': '+sperrText(sp[l]);}).join(' · ');
-      var aus=gesperrt.length===2&&sp.freital.art==='aus'&&sp.altenberg.art==='aus';
+      var gesperrt=Object.keys(sp).filter(function(l){return sp[l];}),txt='',aus;
+      if(abh.laden&&LADEN_N[abh.laden]){ /* Laden gewählt: Karte gilt für diesen Laden */
+        var s1=sp[abh.laden];txt=s1?sperrText(s1)+L(' in ',' in ')+LADEN_N[abh.laden]:'';aus=!!s1&&s1.art==='aus';
+      }else{
+        if(gesperrt.length===2&&sperrText(sp.freital)===sperrText(sp.altenberg))txt=sperrText(sp.freital);
+        else txt=gesperrt.map(function(l){return LADEN_N[l]+': '+sperrText(sp[l]);}).join(' · ');
+        aus=gesperrt.length===2&&sp.freital.art==='aus'&&sp.altenberg.art==='aus';
+      }
       li.classList.toggle('nicht-da',aus);
       var pk=li.querySelector('.plus');if(pk){pk.disabled=aus;}
       var m=li.querySelector('.marke-verf');
@@ -1070,7 +1074,7 @@ ZETTEL_JS = r'''
   function konflikte(){return zettel.filter(function(x){return sperreZettel(x.k);}).length;}
   function waAktualisieren(){
     var nr=abh.laden&&WA[abh.laden],kf=konflikte();
-    verfHinweis.hidden=!kf;
+    verfHinweis.hidden=!kf;document.getElementById('zettel-kopieren').disabled=!!kf;
     verfHinweis.textContent=kf===1?L('Ein Gericht ist zur gewählten Zeit nicht zu haben. Bitte oben ändern.','One dish is not available at the chosen time. Please change it above.')
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
     if(kf)nr=null;
@@ -1082,7 +1086,7 @@ ZETTEL_JS = r'''
     document.querySelectorAll('[data-anruf]').forEach(function(a){a.hidden=!!abh.laden&&a.dataset.anruf!==abh.laden;});
     zeitenFuellen();waAktualisieren();
   }
-  document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();});});
+  document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();verfZeigen();});});
   selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();zeichnen();waAktualisieren();});
   selTag.addEventListener('change',function(){abh.tag=selTag.value;abh.zeit='';abhSpeichern();zeitenFuellen();waAktualisieren();});
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
