@@ -355,8 +355,8 @@ def sammelbestellung(b, url):
     a.p.click("[data-anpassen]")
     a.p.click('[data-o="ohne"][data-w="Zwiebeln"]')
     a.p.click("[data-fertig]")
-    a.p.click("[data-laden=freital]")
     assert a.js("document.getElementById('zettel-whatsapp').hidden"), "Teilnehmerin soll nicht selbst beim Laden bestellen"
+    assert not a.js("document.querySelector('[data-laden=freital]').offsetParent"), "Ladenwahl sollte für Teilnehmer ausgeblendet sein"
     a.p.click("#sammel-teil")
     assert "Namen" in a.p.text_content("#zettel-meldung")
     a.p.fill("#abhol-name", "Anna")
