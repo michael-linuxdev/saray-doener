@@ -600,6 +600,13 @@ body.mit-zettel .nach-oben{bottom:calc(140px + env(safe-area-inset-bottom))}
 .z-optionen{grid-column:1/-1;display:grid;gap:12px;padding:12px;border-radius:14px;background:var(--gelb-blass)}
 .z-gruppe-titel{display:block;font-weight:700;font-size:.88rem;margin-bottom:6px}
 .z-chips{display:flex;flex-wrap:wrap;gap:6px}
+/* Entwurf: Band oben + Wasserzeichen über der ganzen Seite (nur solange VORSCHAU = True) */
+.vorschau-band{position:relative;z-index:80;padding:10px 16px;text-align:center;font:400 .9rem/1.4 var(--text);color:#fff;
+  background:repeating-linear-gradient(-45deg,#3A1531 0 18px,#5a2350 18px 36px);border-bottom:4px solid var(--paprika)}
+.vorschau-band strong{display:inline-block;margin-right:6px;padding:1px 10px;border-radius:999px;background:var(--paprika);letter-spacing:.08em}
+body.vorschau::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.09;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3ENICHT FREIGESCHALTET%3C/text%3E%3C/svg%3E") repeat}
+@media print{body.vorschau::after{opacity:.15;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .marke-verf{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;font:700 .72rem/1.6 var(--text);vertical-align:middle;white-space:nowrap}
 li.nicht-da .name,li.nicht-da .tipp-name{color:#a8949f}
 li.nicht-da .preis,li.nicht-da .tipp-preis,li.nicht-da .beschreibung,li.nicht-da .tipp-info,li.nicht-da .marke-beliebt{opacity:.45}
@@ -1076,6 +1083,7 @@ ZETTEL_JS = r'''
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
   function zettelText(){
+    var test=document.body.classList.contains('vorschau')?['*TEST – Seite nicht freigeschaltet, keine echte Bestellung*','']:[];
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     if(abh.zeit)z.push('Abholung: '+abh.zeit);
@@ -1083,7 +1091,7 @@ ZETTEL_JS = r'''
     z.push('');
     zettel.forEach(function(x){var w=x.t?wuensche(x):'';
       z.push(x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:''));});
-    z.push('Summe: '+euro(summe()));return z.join('\n');
+    z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
   document.getElementById('zettel-kopieren').addEventListener('click',function(){
     var t=zettelText();
@@ -1270,7 +1278,7 @@ SEITE = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Saray Döner Freital &amp; Altenberg – Döner, Pizza und Salate seit 1997</title>
+<title>%%TITEL_PRAEFIX%%Saray Döner Freital &amp; Altenberg – Döner, Pizza und Salate seit 1997</title>
 <meta name="description" content="Saray Döner in Freital (Dresdner Str. 87) und Altenberg (Dresdner Str. 23): Döner, Dürüm, Pizza, Lahmacun und Salate. Speisekarte mit Preisen, Öffnungszeiten und Telefonnummern.">
 <link rel="canonical" href="%%DOMAIN%%">
 <meta name="theme-color" content="#FFD21F">
@@ -1285,7 +1293,8 @@ SEITE = r"""<!doctype html>
 %%ROBOTS%%%%CSS_EINBINDEN%%
 <script type="application/ld+json">%%LD%%</script>
 </head>
-<body>
+<body%%BODY_KLASSE%%>
+%%VORSCHAU_BAND%%
 <a class="skip" href="#speisekarte" data-en="Skip to menu">Zur Speisekarte springen</a>
 
 <header class="kopf-band" id="oben">
@@ -1526,6 +1535,12 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%LADEN_CHIPS%%": "".join(f'<button type="button" class="chip" data-laden="{st["id"]}" aria-pressed="false">{e(st["name"])}</button>' for st in STANDORTE),
         "%%ZETTEL_ANRUF%%": "".join(f'<a class="knopf knopf-dunkel" data-anruf="{st["id"]}" href="tel:{st["tel_href"]}">{TEL_ICON}{t(st["name"] + " anrufen: " + st["tel"], "Call " + st["name"] + ": " + st["tel"])}</a>' for st in STANDORTE),
 
+        "%%TITEL_PRAEFIX%%": "[Nicht freigeschaltet] " if VORSCHAU else "",
+        "%%BODY_KLASSE%%": ' class="vorschau"' if VORSCHAU else "",
+        "%%VORSCHAU_BAND%%": ('<div class="vorschau-band" role="note"><strong data-en="NOT RELEASED">NICHT FREIGESCHALTET</strong> '
+                              '<span data-en="Draft – not yet the official website of Saray Döner. Orders go to a test number.">'
+                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span></div>')
+                             if VORSCHAU else "",
         "%%ROBOTS%%": '<meta name="robots" content="noindex">\n' if VORSCHAU and not einzeln else "",
     }
     if einzeln:

@@ -492,6 +492,7 @@
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
   function zettelText(){
+    var test=document.body.classList.contains('vorschau')?['*TEST – Seite nicht freigeschaltet, keine echte Bestellung*','']:[];
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     if(abh.zeit)z.push('Abholung: '+abh.zeit);
@@ -499,7 +500,7 @@
     z.push('');
     zettel.forEach(function(x){var w=x.t?wuensche(x):'';
       z.push(x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:''));});
-    z.push('Summe: '+euro(summe()));return z.join('\n');
+    z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
   document.getElementById('zettel-kopieren').addEventListener('click',function(){
     var t=zettelText();

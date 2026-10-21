@@ -71,7 +71,7 @@ Optional nur lokal: `lokal.json` (steht in `.gitignore`) überschreibt die Numme
 
 ## Vor dem Wechsel auf saraydöner.de
 
-- `VORSCHAU = False` in `build.py` (entfernt `noindex` und die Sperre in `robots.txt`).
+- `VORSCHAU = False` in `build.py`. Das entfernt das Band „Nicht freigeschaltet“, das Wasserzeichen, den Titel-Zusatz, den TEST-Hinweis in der WhatsApp-Nachricht, `noindex` und die Sperre in `robots.txt`.
 - `CNAME` in `build.py` auf die endgültige Domain setzen und den DNS-Eintrag umstellen.
 - Testnummer bei `whatsapp` durch die Nummern der Läden ersetzen.
 - Datenschutzerklärung fertigstellen (inkl. Hinweis auf WhatsApp/Meta).
