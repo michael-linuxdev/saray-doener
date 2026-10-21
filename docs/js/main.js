@@ -65,14 +65,17 @@
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
   /* Klebt das Band? Dann liegt es tiefer als die unsichtbare Marke direkt davor.
      (Safari auf iOS 26 lässt es unter der Adressleiste kleben, nicht bei 0.) Weiße Fläche darüber per .klebt::before */
-  var marke=document.querySelector('.kat-marke');
+  var marke=document.querySelector('.kat-marke'),deckel=null;
   function klebtPruefen(){if(!nav||!marke)return;
     var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
     if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);
+    if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
+    if(deckel)deckel.style.height=nav.offsetHeight+'px';
+    if(!k&&deckel){deckel.remove();deckel=null;}
     if(dbg){var vv=window.visualViewport;dbg.textContent='scrollY '+Math.round(scrollY)+'\ninnerH '+innerHeight+' vv.h '+(vv?Math.round(vv.height):'-')+' vv.top '+(vv?Math.round(vv.offsetTop):'-')+
       '\nnav.top '+Math.round(nav.getBoundingClientRect().top)+' marke.bottom '+Math.round(marke.getBoundingClientRect().bottom)+
       '\nposition '+getComputedStyle(nav).position+' top '+getComputedStyle(nav).top+'\nklebt '+nav.classList.contains('klebt')+' before '+getComputedStyle(nav,'::before').content+
-      '\nsafe-top '+getComputedStyle(document.documentElement).getPropertyValue('--sat');}}
+      '\ndeckel '+(deckel?deckel.style.height:'-')+'\nsafe-top '+getComputedStyle(document.documentElement).getPropertyValue('--sat');}}
   var dbg=null;
   if(/[?&]debug/.test(location.search)){dbg=document.createElement('div');dbg.id='debug-info';document.body.appendChild(dbg);
     document.documentElement.style.setProperty('--sat','env(safe-area-inset-top)');
