@@ -251,6 +251,17 @@ def band_klebt_mit_weisser_flaeche(b, url):
     s.schliessen()
 
 
+@test
+def home_bildschirm(b, url):
+    s = Seite(b, url)
+    m = s.js("fetch(document.querySelector('link[rel=manifest]').href).then(r=>r.json())")
+    assert m["short_name"] == "Saray" and m["display"] == "standalone", m
+    for icon in m["icons"] + [{"src": s.js("document.querySelector('link[rel=apple-touch-icon]').getAttribute('href')")}]:
+        status = s.js(f"fetch('{icon['src']}').then(r=>r.status)")
+        assert status == 200, f"{icon['src']}: {status}"
+    s.schliessen()
+
+
 def main():
     srv, url = server()
     ok = 0

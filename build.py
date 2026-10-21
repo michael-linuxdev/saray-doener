@@ -487,6 +487,7 @@ p{margin:0}
    Ohne festes Element nimmt Safari 26 (große Adressleiste) die Hintergrundfarbe – Weiß statt Glas. */
 .glas-oben{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.02;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3E%C2%B7%3C/text%3E%3C/svg%3E") repeat}
+.app-tipp{opacity:.8}
 .vorschau-band .stand{opacity:.7;white-space:nowrap}
 #debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
@@ -1322,7 +1323,7 @@ SEITE = r"""<!doctype html>
 <meta property="og:description" content="Döner, Dürüm, Pizza und Salate seit 1997. Speisekarte, Öffnungszeiten und Telefon.">
 <meta property="og:url" content="%%DOMAIN%%">
 <link rel="icon" href="%%FAVICON_PNG%%" type="image/png" sizes="96x96">
-<link rel="icon" href="%%IMG_KOPF%%" type="image/svg+xml">
+<link rel="icon" href="%%IMG_KOPF%%" type="image/svg+xml">%%APP_KOPF%%
 %%ROBOTS%%%%CSS_EINBINDEN%%
 <script type="application/ld+json">%%LD%%</script>
 </head>
@@ -1416,6 +1417,7 @@ SEITE = r"""<!doctype html>
         <img class="logo" src="%%IMG_KOPF%%" width="76" height="76" alt="">
         <p class="motto" data-en="Quality is no accident.">Qualität ist kein Zufall.</p>
         <p><span lang="tr">Afiyet olsun</span> – <span data-en="enjoy your meal!">guten Appetit!</span></p>
+        <p class="klein app-tipp" data-en="Tip: Put Saray on your home screen – in Safari via “Share” → “Add to Home Screen”, in Chrome via the menu → “Add to home screen”.">Tipp: Saray auf den Home-Bildschirm legen – in Safari über „Teilen“ → „Zum Home-Bildschirm“, in Chrome über das Menü → „Zum Startbildschirm hinzufügen“.</p>
       </div>
 %%FUSS_ORTE%%
     </div>
@@ -1578,6 +1580,12 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
                               'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span>'
                               f' <small class="stand">Stand {STAND}</small></div>')
                              if VORSCHAU else "",
+        "%%APP_KOPF%%": "" if einzeln else (
+            '\n<link rel="manifest" href="manifest.webmanifest">'
+            f'\n<link rel="apple-touch-icon" href="{maskottchen("app-180.png", "image/png")}">'
+            '\n<meta name="apple-mobile-web-app-title" content="Saray">'
+            '\n<meta name="mobile-web-app-capable" content="yes">'
+            '\n<meta name="apple-mobile-web-app-capable" content="yes">'),
         "%%ROBOTS%%": '<meta name="robots" content="noindex">\n' if VORSCHAU and not einzeln else "",
     }
     if einzeln:
@@ -1612,6 +1620,15 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         assert "%%" not in inhalt, f"Platzhalter übrig in {name}"
         (aus / name).write_text(inhalt.strip() + "\n", encoding="utf-8")
     (aus / ".nojekyll").write_text("")
+    for g in (192, 512):
+        shutil.copyfile(MASKOTT / f"app-{g}.png", aus / "img" / f"app-{g}.png")
+    (aus / "manifest.webmanifest").write_text(json.dumps({
+        "name": "Saray Döner" + (" (Vorschau)" if VORSCHAU else ""), "short_name": "Saray",
+        "description": "Speisekarte, Öffnungszeiten und Bestellzettel von Saray Döner in Freital und Altenberg.",
+        "lang": "de", "start_url": "./", "scope": "./", "display": "standalone",
+        "background_color": "#FFD21F", "theme_color": "#FFD21F",
+        "icons": [{"src": f"img/app-{g}.png", "sizes": f"{g}x{g}", "type": "image/png", "purpose": "any maskable"} for g in (192, 512)],
+    }, ensure_ascii=False, indent=2) + "\n")
     (aus / "status.json").write_text(status or '{\n  "regeln": []\n}\n')
     if CNAME:
         (aus / "CNAME").write_text(CNAME + "\n")
