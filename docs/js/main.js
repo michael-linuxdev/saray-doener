@@ -323,7 +323,7 @@
     var n=anzahl();
     zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);
     zl.querySelector('.zl-anzahl').textContent=n;zl.querySelector('.zl-summe').textContent=euro(summe());
-    zl.setAttribute('aria-label',L('Bestellzettel ansehen: ','View order list: ')+n+(n===1?L(' Gericht, ',' dish, '):L(' Gerichte, ',' dishes, '))+euro(summe()));
+    zl.setAttribute('aria-label',L('Meine Bestellung ansehen: ','View my order: ')+n+(n===1?L(' Gericht, ',' dish, '):L(' Gerichte, ',' dishes, '))+euro(summe()));
     zliste.textContent='';
     zettel.forEach(function(x){
       var li=el('li','z-eintrag'),kopf=el('div');
@@ -376,8 +376,8 @@
     var s1=sig(neu),x=zettel.find(function(y){return sig(y)===s1;});
     if(x)x.q++;else zettel.push(neu);
     speichern();zeichnen();
-    var hinweis=neu.t==='S'?L(' Zutaten auf dem Zettel wählen.',' Choose the toppings on your list.'):neu.t==='R'?L(' Variante auf dem Zettel wählen.',' Choose the option on your list.'):'';
-    melden(nameA(neu)+(g?' ('+g+')':'')+L(' liegt auf dem Bestellzettel.',' added to your order list.')+hinweis);
+    var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):'';
+    melden(nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
   }
   document.addEventListener('click',function(ev){
@@ -550,19 +550,24 @@
       z.push(x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:''));});
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
+  /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
   document.getElementById('zettel-kopieren').addEventListener('click',function(){
     var t=zettelText();
+    letzteMerken();
+    var kopiert=L('Bestellung kopiert – jetzt in WhatsApp, SMS, E-Mail oder Teams einfügen.','Order copied – now paste it into WhatsApp, a text message, e-mail or Teams.');
     function notfall(){var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';
       document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();
-      melden(ok?L('Zettel kopiert. Jetzt in WhatsApp oder SMS einfügen.','List copied. Now paste it into WhatsApp or a text message.'):L('Kopieren hat nicht geklappt. Bitte den Zettel abschreiben.','Copying did not work. Please write the list down.'));}
-    letzteMerken();
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){melden(L('Zettel kopiert. Jetzt in WhatsApp oder SMS einfügen.','List copied. Now paste it into WhatsApp or a text message.'));},notfall);}else notfall();
+      melden(ok?kopiert:L('Kopieren hat nicht geklappt. Bitte die Bestellung abschreiben.','Copying did not work. Please write the order down.'));}
+    function kopieren(){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){melden(kopiert);},notfall);else notfall();}
+    if(navigator.share&&(window.matchMedia&&matchMedia('(pointer:coarse)').matches)){
+      navigator.share({title:'Bestellung Saray Döner',text:t}).catch(function(e){if(!e||e.name!=='AbortError')kopieren();});
+    }else kopieren();
   });
   var leeren=document.getElementById('zettel-leeren'),leerenTimer=null;
   leeren.addEventListener('click',function(){
-    if(leeren.dataset.sicher){zettel=[];offen=null;speichern();zeichnen();schliessen();melden(L('Bestellzettel geleert.','Order list cleared.'));delete leeren.dataset.sicher;leeren.textContent=L('Zettel leeren','Clear list');return;}
+    if(leeren.dataset.sicher){zettel=[];offen=null;speichern();zeichnen();schliessen();melden(L('Bestellung geleert.','Order cleared.'));delete leeren.dataset.sicher;leeren.textContent=L('Bestellung leeren','Clear order');return;}
     leeren.dataset.sicher='1';leeren.textContent=L('Wirklich alles löschen? Nochmal tippen.','Really delete everything? Tap again.');
-    clearTimeout(leerenTimer);leerenTimer=setTimeout(function(){delete leeren.dataset.sicher;leeren.textContent=L('Zettel leeren','Clear list');},4000);
+    clearTimeout(leerenTimer);leerenTimer=setTimeout(function(){delete leeren.dataset.sicher;leeren.textContent=L('Bestellung leeren','Clear order');},4000);
   });
   zeichnen();verfZeigen();regelnLaden();
   setInterval(function(){try{verfZeigen();zeitenFuellen();}catch(e){}},60000);

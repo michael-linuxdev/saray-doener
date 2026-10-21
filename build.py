@@ -155,7 +155,7 @@ def zettel_daten(nr, name, desc, preise, groessen, typ="", varianten=()):
 
 
 def plus_knopf(name):
-    return f'<button type="button" class="plus" aria-label="{e(name)} auf den Bestellzettel" data-en-aria="Add {e(EN.name(name))} to order list">+</button>'
+    return f'<button type="button" class="plus" aria-label="{e(name)} zur Bestellung hinzufügen" data-en-aria="Add {e(EN.name(name))} to my order">+</button>'
 
 
 def gericht_html(g, gruppe, abschnitt, groessen):
@@ -359,6 +359,9 @@ h1,h2,h3,h4{font-family:var(--slab);font-weight:700;line-height:1.1;margin:0}
 p{margin:0}
 .wrap{max-width:var(--breite);margin-inline:auto;padding-inline:var(--rand)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.tuete{margin-right:2px}
+.zettel-kopf h2{display:flex;align-items:center;gap:8px}
+.zettel-kopf h2 .tuete{width:.9em;height:.9em;stroke-width:2.4}
 .ico{width:1.15em;height:1.15em;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 :focus-visible{outline:3px solid var(--tinte);outline-offset:3px;border-radius:6px}
 .skip{position:absolute;left:12px;top:-80px;z-index:50;background:var(--tinte);color:var(--gelb);padding:10px 16px;border-radius:10px;font-weight:700}
@@ -943,7 +946,7 @@ ZETTEL_JS = r'''
     var n=anzahl();
     zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);
     zl.querySelector('.zl-anzahl').textContent=n;zl.querySelector('.zl-summe').textContent=euro(summe());
-    zl.setAttribute('aria-label',L('Bestellzettel ansehen: ','View order list: ')+n+(n===1?L(' Gericht, ',' dish, '):L(' Gerichte, ',' dishes, '))+euro(summe()));
+    zl.setAttribute('aria-label',L('Meine Bestellung ansehen: ','View my order: ')+n+(n===1?L(' Gericht, ',' dish, '):L(' Gerichte, ',' dishes, '))+euro(summe()));
     zliste.textContent='';
     zettel.forEach(function(x){
       var li=el('li','z-eintrag'),kopf=el('div');
@@ -996,8 +999,8 @@ ZETTEL_JS = r'''
     var s1=sig(neu),x=zettel.find(function(y){return sig(y)===s1;});
     if(x)x.q++;else zettel.push(neu);
     speichern();zeichnen();
-    var hinweis=neu.t==='S'?L(' Zutaten auf dem Zettel wählen.',' Choose the toppings on your list.'):neu.t==='R'?L(' Variante auf dem Zettel wählen.',' Choose the option on your list.'):'';
-    melden(nameA(neu)+(g?' ('+g+')':'')+L(' liegt auf dem Bestellzettel.',' added to your order list.')+hinweis);
+    var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):'';
+    melden(nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
   }
   document.addEventListener('click',function(ev){
@@ -1170,19 +1173,24 @@ ZETTEL_JS = r'''
       z.push(x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:''));});
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
+  /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
   document.getElementById('zettel-kopieren').addEventListener('click',function(){
     var t=zettelText();
+    letzteMerken();
+    var kopiert=L('Bestellung kopiert – jetzt in WhatsApp, SMS, E-Mail oder Teams einfügen.','Order copied – now paste it into WhatsApp, a text message, e-mail or Teams.');
     function notfall(){var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';
       document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();
-      melden(ok?L('Zettel kopiert. Jetzt in WhatsApp oder SMS einfügen.','List copied. Now paste it into WhatsApp or a text message.'):L('Kopieren hat nicht geklappt. Bitte den Zettel abschreiben.','Copying did not work. Please write the list down.'));}
-    letzteMerken();
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){melden(L('Zettel kopiert. Jetzt in WhatsApp oder SMS einfügen.','List copied. Now paste it into WhatsApp or a text message.'));},notfall);}else notfall();
+      melden(ok?kopiert:L('Kopieren hat nicht geklappt. Bitte die Bestellung abschreiben.','Copying did not work. Please write the order down.'));}
+    function kopieren(){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){melden(kopiert);},notfall);else notfall();}
+    if(navigator.share&&(window.matchMedia&&matchMedia('(pointer:coarse)').matches)){
+      navigator.share({title:'Bestellung Saray Döner',text:t}).catch(function(e){if(!e||e.name!=='AbortError')kopieren();});
+    }else kopieren();
   });
   var leeren=document.getElementById('zettel-leeren'),leerenTimer=null;
   leeren.addEventListener('click',function(){
-    if(leeren.dataset.sicher){zettel=[];offen=null;speichern();zeichnen();schliessen();melden(L('Bestellzettel geleert.','Order list cleared.'));delete leeren.dataset.sicher;leeren.textContent=L('Zettel leeren','Clear list');return;}
+    if(leeren.dataset.sicher){zettel=[];offen=null;speichern();zeichnen();schliessen();melden(L('Bestellung geleert.','Order cleared.'));delete leeren.dataset.sicher;leeren.textContent=L('Bestellung leeren','Clear order');return;}
     leeren.dataset.sicher='1';leeren.textContent=L('Wirklich alles löschen? Nochmal tippen.','Really delete everything? Tap again.');
-    clearTimeout(leerenTimer);leerenTimer=setTimeout(function(){delete leeren.dataset.sicher;leeren.textContent=L('Zettel leeren','Clear list');},4000);
+    clearTimeout(leerenTimer);leerenTimer=setTimeout(function(){delete leeren.dataset.sicher;leeren.textContent=L('Bestellung leeren','Clear order');},4000);
   });
   zeichnen();verfZeigen();regelnLaden();
   setInterval(function(){try{verfZeigen();zeitenFuellen();}catch(e){}},60000);
@@ -1460,7 +1468,7 @@ SEITE = r"""<!doctype html>
         <section class="letzte" id="letzte" hidden aria-labelledby="letzte-titel">
           <h3 id="letzte-titel" data-en="Same as last time?">Wie letztes Mal?</h3>
           <p class="letzte-liste" id="letzte-liste"></p>
-          <button type="button" class="knopf knopf-dunkel" id="letzte-knopf" data-en="Add to my order list again">Wieder auf den Zettel legen</button>
+          <button type="button" class="knopf knopf-dunkel" id="letzte-knopf" data-en="Order the same again">Nochmal so bestellen</button>
         </section>
         <p class="treffer" aria-live="polite" hidden></p>
         <div class="nichts" hidden><p><span data-en="No dish matches">Kein Gericht passt zu</span> <q></q>.</p><button type="button" class="knopf knopf-linie" data-en="Clear search">Suche löschen</button></div>
@@ -1513,14 +1521,14 @@ SEITE = r"""<!doctype html>
 </footer>
 
 <button type="button" class="nach-oben" id="nach-oben" hidden aria-label="Nach oben" data-en-aria="Back to top" title="Nach oben"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>
-<button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><span data-en="View order list">Bestellzettel ansehen</span><span class="zl-summe"></span></button>
+<button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><svg class="ico tuete" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1.2 12.5H6.7z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg><span data-en="My order">Meine Bestellung</span><span class="zl-summe"></span></button>
 <p class="zettel-meldung" id="zettel-meldung" role="status" hidden></p>
 <div class="zettel-huelle" id="zettel" hidden>
   <div class="zettel-hinter" data-zu></div>
   <section class="zettel" role="dialog" aria-modal="true" aria-labelledby="zettel-titel">
-    <header class="zettel-kopf"><h2 id="zettel-titel" tabindex="-1" data-en="Order list">Bestellzettel</h2>
-      <button type="button" class="zettel-zu" data-zu aria-label="Bestellzettel schließen" data-en-aria="Close order list">×</button></header>
-    <p class="zettel-leer" data-en="Nothing on your list yet. Tap “+” in the menu.">Noch nichts auf dem Zettel. Tippen Sie in der Speisekarte auf „+“.</p>
+    <header class="zettel-kopf"><h2 id="zettel-titel" tabindex="-1"><svg class="ico tuete" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1.2 12.5H6.7z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg><span data-en="My order">Meine Bestellung</span></h2>
+      <button type="button" class="zettel-zu" data-zu aria-label="Bestellung schließen" data-en-aria="Close my order">×</button></header>
+    <p class="zettel-leer" data-en="Nothing selected yet. Tap “+” in the menu.">Noch nichts ausgewählt. Tippen Sie in der Speisekarte auf „+“.</p>
     <div class="zettel-voll">
       <ul class="zettel-liste" id="zettel-liste"></ul>
       <p class="zettel-summe-zeile"><span data-en="Total">Summe</span><b id="zettel-summe"></b></p>
@@ -1535,14 +1543,14 @@ SEITE = r"""<!doctype html>
         <label for="abhol-name" data-en="Name for the order">Name für die Bestellung</label>
         <input id="abhol-name" type="text" autocomplete="given-name" placeholder="z. B. Michael" data-en-ph="e.g. Michael">
       </fieldset>
-      <p class="zettel-hinweis" data-en="Send the list via WhatsApp or call and read it out. The list is saved on this device.">Schicken Sie den Zettel per WhatsApp oder rufen Sie an und lesen Sie ihn vor. Der Zettel bleibt auf diesem Gerät gespeichert.</p>
+      <p class="zettel-hinweis" data-en="Order via WhatsApp or call and read it out. Your order is saved on this device.">Bestellen Sie per WhatsApp oder rufen Sie an und lesen Sie die Bestellung vor. Sie bleibt auf diesem Gerät gespeichert.</p>
       <div class="zettel-knoepfe">
         <a class="knopf knopf-whatsapp" id="zettel-whatsapp" href="#" target="_blank" rel="noopener">%%WA_ICON%%<span data-en="Order via WhatsApp">Per WhatsApp bestellen</span></a>
         <p class="abhol-hinweis verf-hinweis" id="verf-hinweis" hidden></p>
         <p class="abhol-hinweis" id="wa-hinweis" hidden data-en="Choose the shop above to order via WhatsApp.">Bitte oben den Laden wählen, dann können Sie per WhatsApp bestellen.</p>
         %%ZETTEL_ANRUF%%
-        <button type="button" class="knopf knopf-linie" id="zettel-kopieren" data-en="Copy list">Zettel kopieren</button>
-        <button type="button" class="knopf-klein" id="zettel-leeren" data-en="Clear list">Zettel leeren</button>
+        <button type="button" class="knopf knopf-linie" id="zettel-kopieren"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7.5h14V12"/></svg><span data-en="Share order">Bestellung teilen</span></button>
+        <button type="button" class="knopf-klein" id="zettel-leeren" data-en="Clear order">Bestellung leeren</button>
       </div>
     </div>
   </section>
@@ -1700,7 +1708,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         shutil.copyfile(MASKOTT / f"app-{g}.png", aus / "img" / f"app-{g}.png")
     (aus / "manifest.webmanifest").write_text(json.dumps({
         "name": "Saray Döner" + (" (Vorschau)" if VORSCHAU else ""), "short_name": "Saray",
-        "description": "Speisekarte, Öffnungszeiten und Bestellzettel von Saray Döner in Freital und Altenberg.",
+        "description": "Speisekarte, Öffnungszeiten und Bestellung bei Saray Döner in Freital und Altenberg.",
         "lang": "de", "start_url": "./", "scope": "./", "display": "standalone",
         "background_color": "#FFD21F", "theme_color": "#FFD21F",
         "icons": [{"src": f"img/app-{g}.png", "sizes": f"{g}x{g}", "type": "image/png", "purpose": "any maskable"} for g in (192, 512)],

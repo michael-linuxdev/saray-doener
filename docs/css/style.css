@@ -26,6 +26,9 @@ h1,h2,h3,h4{font-family:var(--slab);font-weight:700;line-height:1.1;margin:0}
 p{margin:0}
 .wrap{max-width:var(--breite);margin-inline:auto;padding-inline:var(--rand)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.tuete{margin-right:2px}
+.zettel-kopf h2{display:flex;align-items:center;gap:8px}
+.zettel-kopf h2 .tuete{width:.9em;height:.9em;stroke-width:2.4}
 .ico{width:1.15em;height:1.15em;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 :focus-visible{outline:3px solid var(--tinte);outline-offset:3px;border-radius:6px}
 .skip{position:absolute;left:12px;top:-80px;z-index:50;background:var(--tinte);color:var(--gelb);padding:10px 16px;border-radius:10px;font-weight:700}

@@ -1,7 +1,7 @@
 {
   "name": "Saray Döner (Vorschau)",
   "short_name": "Saray",
-  "description": "Speisekarte, Öffnungszeiten und Bestellzettel von Saray Döner in Freital und Altenberg.",
+  "description": "Speisekarte, Öffnungszeiten und Bestellung bei Saray Döner in Freital und Altenberg.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
