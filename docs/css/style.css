@@ -167,6 +167,8 @@ p{margin:0}
 
 .kategorien{position:sticky;top:0;z-index:20;background:#fff;margin-inline:calc(-1 * var(--rand));
   padding:10px 0;border-bottom:1px solid var(--linie);margin-bottom:24px}
+/* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
+.kategorien.klebt{box-shadow:0 -120px 0 0 #fff;padding-top:calc(10px + env(safe-area-inset-top))}
 .kategorien ul{list-style:none;margin:0;padding:0 var(--rand);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
   scroll-padding-inline:var(--rand);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);
   mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
@@ -250,20 +252,20 @@ p{margin:0}
 .tipp-gross .plus{right:auto;left:126px;bottom:22px}
 .tipp .wahl{padding:0 12px 12px;justify-content:flex-start}
 .tipp:has(.mengen .st-g) > .plus{bottom:auto;top:12px}
-.zettel-leiste{position:fixed;z-index:35;left:10px;right:10px;bottom:calc(72px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;
+.zettel-leiste{position:fixed;z-index:35;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;
   min-height:52px;padding:0 18px;border:2px solid var(--tinte);border-radius:999px;background:var(--gelb);color:var(--tinte);font:700 1rem var(--text);cursor:pointer;
   box-shadow:0 10px 24px -10px rgba(58,21,49,.5)}
 .zl-anzahl{display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border-radius:999px;background:var(--tinte);color:var(--gelb);font-size:.9rem}
 .zl-summe{margin-left:auto}
 @media (min-width:720px){.zettel-leiste{left:auto;right:24px;bottom:24px}.zl-summe{margin-left:12px}}
-body.mit-zettel .fuss{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
+body.mit-zettel .fuss{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 @media (min-width:720px){body.mit-zettel .fuss{padding-bottom:100px}}
 /* „Nach oben“: unten rechts, über der Zettel-Leiste bzw. der Anrufleiste */
-.nach-oben{position:fixed;z-index:36;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;display:grid;place-items:center;
+.nach-oben{position:fixed;z-index:36;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:48px;height:48px;display:grid;place-items:center;
   border:2px solid var(--gelb);border-radius:50%;background:var(--tinte);color:var(--gelb);cursor:pointer;box-shadow:0 8px 20px -8px rgba(58,21,49,.55)}
 .nach-oben svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .nach-oben:focus-visible{outline:3px solid var(--paprika);outline-offset:3px}
-body.mit-zettel .nach-oben{bottom:calc(140px + env(safe-area-inset-bottom))}
+body.mit-zettel .nach-oben{bottom:calc(80px + env(safe-area-inset-bottom))}
 @media (min-width:720px){.nach-oben{right:24px;bottom:24px}body.mit-zettel .nach-oben{bottom:94px}}
 @media (hover:hover){.nach-oben:hover{background:#56213f}}
 @media print{.nach-oben{display:none!important}}
@@ -325,7 +327,7 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .zettel-knoepfe{display:grid;gap:10px}
 .zettel-knoepfe .knopf{width:100%}
 .knopf-klein{min-height:40px;font-size:.92rem;border:0;background:none;color:var(--tinte-weich);text-decoration:underline;cursor:pointer}
-.zettel-meldung{position:fixed;z-index:70;left:50%;bottom:calc(136px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100% - 32px);
+.zettel-meldung{position:fixed;z-index:70;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100% - 32px);
   padding:10px 16px;border-radius:12px;background:var(--tinte);color:#fff;font-weight:700;font-size:.95rem;text-align:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
 @media (min-width:720px){.zettel-meldung{bottom:92px;left:auto;right:24px;transform:none}}
 @media print{.plus,.zettel-leiste{display:none!important}}
@@ -375,13 +377,8 @@ html[lang=en] .zeiten tr.heute th::after{content:"today"}
 .platzhalter{background:var(--gelb);color:var(--tinte);padding:0 4px;border-radius:3px}
 
 /* ---------- Anrufleiste (nur Handy) ---------- */
-.anrufleiste{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:1fr 1fr;gap:8px;
-  padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--linie)}
-.anrufleiste a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:999px;
-  background:var(--tinte);color:var(--gelb);font-weight:700;text-decoration:none;font-size:.98rem}
-@media (max-width:719px){.fuss{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
-@media (min-width:720px){.anrufleiste{display:none}}
+@media (max-width:719px){.fuss{padding-bottom:calc(24px + env(safe-area-inset-bottom))}}
 
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.sticker{animation:none}*{transition:none!important}}
-@media print{.anrufleiste,.kategorien,.suche,.bilder,.kopf-nav,.knoepfe{display:none!important}.kopf-band,.buehne-band{background:none;border:0}
+@media print{.kategorien,.suche,.bilder,.kopf-nav,.knoepfe{display:none!important}.kopf-band,.buehne-band{background:none;border:0}
   .gruppe{break-inside:avoid-page}}

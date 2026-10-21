@@ -277,7 +277,6 @@ FUSS_ORTE = ('<div class="fuss-ort"><h2 data-en="Call to order ahead">Anrufen un
     f'{e(st["name"])}: <a href="tel:{st["tel_href"]}">{e(st["tel"])}</a>' for st in STANDORTE) +
     '</p><p class="klein"><a href="#standorte" data-en="Addresses and opening hours">Adressen und Öffnungszeiten</a></p></div>')
 
-ANRUF = "".join(f'<a href="tel:{s["tel_href"]}">{TEL_ICON}{t(s["name"] + " anrufen", "Call " + s["name"])}</a>' for s in STANDORTE)
 
 TAGE_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 LD = {
@@ -477,6 +476,8 @@ p{margin:0}
 
 .kategorien{position:sticky;top:0;z-index:20;background:#fff;margin-inline:calc(-1 * var(--rand));
   padding:10px 0;border-bottom:1px solid var(--linie);margin-bottom:24px}
+/* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
+.kategorien.klebt{box-shadow:0 -120px 0 0 #fff;padding-top:calc(10px + env(safe-area-inset-top))}
 .kategorien ul{list-style:none;margin:0;padding:0 var(--rand);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
   scroll-padding-inline:var(--rand);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);
   mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
@@ -560,20 +561,20 @@ p{margin:0}
 .tipp-gross .plus{right:auto;left:126px;bottom:22px}
 .tipp .wahl{padding:0 12px 12px;justify-content:flex-start}
 .tipp:has(.mengen .st-g) > .plus{bottom:auto;top:12px}
-.zettel-leiste{position:fixed;z-index:35;left:10px;right:10px;bottom:calc(72px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;
+.zettel-leiste{position:fixed;z-index:35;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;
   min-height:52px;padding:0 18px;border:2px solid var(--tinte);border-radius:999px;background:var(--gelb);color:var(--tinte);font:700 1rem var(--text);cursor:pointer;
   box-shadow:0 10px 24px -10px rgba(58,21,49,.5)}
 .zl-anzahl{display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border-radius:999px;background:var(--tinte);color:var(--gelb);font-size:.9rem}
 .zl-summe{margin-left:auto}
 @media (min-width:720px){.zettel-leiste{left:auto;right:24px;bottom:24px}.zl-summe{margin-left:12px}}
-body.mit-zettel .fuss{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
+body.mit-zettel .fuss{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 @media (min-width:720px){body.mit-zettel .fuss{padding-bottom:100px}}
 /* „Nach oben“: unten rechts, über der Zettel-Leiste bzw. der Anrufleiste */
-.nach-oben{position:fixed;z-index:36;right:14px;bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;display:grid;place-items:center;
+.nach-oben{position:fixed;z-index:36;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:48px;height:48px;display:grid;place-items:center;
   border:2px solid var(--gelb);border-radius:50%;background:var(--tinte);color:var(--gelb);cursor:pointer;box-shadow:0 8px 20px -8px rgba(58,21,49,.55)}
 .nach-oben svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .nach-oben:focus-visible{outline:3px solid var(--paprika);outline-offset:3px}
-body.mit-zettel .nach-oben{bottom:calc(140px + env(safe-area-inset-bottom))}
+body.mit-zettel .nach-oben{bottom:calc(80px + env(safe-area-inset-bottom))}
 @media (min-width:720px){.nach-oben{right:24px;bottom:24px}body.mit-zettel .nach-oben{bottom:94px}}
 @media (hover:hover){.nach-oben:hover{background:#56213f}}
 @media print{.nach-oben{display:none!important}}
@@ -635,7 +636,7 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .zettel-knoepfe{display:grid;gap:10px}
 .zettel-knoepfe .knopf{width:100%}
 .knopf-klein{min-height:40px;font-size:.92rem;border:0;background:none;color:var(--tinte-weich);text-decoration:underline;cursor:pointer}
-.zettel-meldung{position:fixed;z-index:70;left:50%;bottom:calc(136px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100% - 32px);
+.zettel-meldung{position:fixed;z-index:70;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100% - 32px);
   padding:10px 16px;border-radius:12px;background:var(--tinte);color:#fff;font-weight:700;font-size:.95rem;text-align:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
 @media (min-width:720px){.zettel-meldung{bottom:92px;left:auto;right:24px;transform:none}}
 @media print{.plus,.zettel-leiste{display:none!important}}
@@ -685,15 +686,10 @@ html[lang=en] .zeiten tr.heute th::after{content:"today"}
 .platzhalter{background:var(--gelb);color:var(--tinte);padding:0 4px;border-radius:3px}
 
 /* ---------- Anrufleiste (nur Handy) ---------- */
-.anrufleiste{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:1fr 1fr;gap:8px;
-  padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--linie)}
-.anrufleiste a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:999px;
-  background:var(--tinte);color:var(--gelb);font-weight:700;text-decoration:none;font-size:.98rem}
-@media (max-width:719px){.fuss{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
-@media (min-width:720px){.anrufleiste{display:none}}
+@media (max-width:719px){.fuss{padding-bottom:calc(24px + env(safe-area-inset-bottom))}}
 
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.sticker{animation:none}*{transition:none!important}}
-@media print{.anrufleiste,.kategorien,.suche,.bilder,.kopf-nav,.knoepfe{display:none!important}.kopf-band,.buehne-band{background:none;border:0}
+@media print{.kategorien,.suche,.bilder,.kopf-nav,.knoepfe{display:none!important}.kopf-band,.buehne-band{background:none;border:0}
   .gruppe{break-inside:avoid-page}}
 """
 
@@ -1176,7 +1172,11 @@ JS = r"""
     }
     return id;
   }
-  function verfolgen(){if(!fest)markiere(imBlick());}
+  /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
+  var themeF=document.getElementById('theme-farbe');
+  function klebtPruefen(){if(!nav||getComputedStyle(nav).position!=='sticky')return;var k=nav.getBoundingClientRect().top<=0.5;
+    if(k!==nav.classList.contains('klebt')){nav.classList.toggle('klebt',k);if(themeF)themeF.setAttribute('content',k?'#ffffff':'#FFD21F');}}
+  function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
     if(geplant)return;geplant=true;
@@ -1281,7 +1281,7 @@ SEITE = r"""<!doctype html>
 <title>%%TITEL_PRAEFIX%%Saray Döner Freital &amp; Altenberg – Döner, Pizza und Salate seit 1997</title>
 <meta name="description" content="Saray Döner in Freital (Dresdner Str. 87) und Altenberg (Dresdner Str. 23): Döner, Dürüm, Pizza, Lahmacun und Salate. Speisekarte mit Preisen, Öffnungszeiten und Telefonnummern.">
 <link rel="canonical" href="%%DOMAIN%%">
-<meta name="theme-color" content="#FFD21F">
+<meta name="theme-color" content="#FFD21F" id="theme-farbe">
 <meta name="format-detection" content="telephone=no">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
@@ -1402,7 +1402,6 @@ SEITE = r"""<!doctype html>
   </div>
 </footer>
 
-<nav class="anrufleiste" aria-label="Schnell anrufen">%%ANRUF%%</nav>
 <button type="button" class="nach-oben" id="nach-oben" hidden aria-label="Nach oben" data-en-aria="Back to top" title="Nach oben"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>
 <button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><span data-en="View order list">Bestellzettel ansehen</span><span class="zl-summe"></span></button>
 <p class="zettel-meldung" id="zettel-meldung" role="status" hidden></p>
@@ -1529,7 +1528,6 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%BELIEBT%%": BELIEBT_HTML,
         "%%ORTE%%": ORTE,
         "%%FUSS_ORTE%%": FUSS_ORTE,
-        "%%ANRUF%%": ANRUF,
         "%%HINWEISE%%": hinweise_html(HINWEISE if hinweise is None else hinweise),
         "%%WA_ICON%%": '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3 2.5 6 6 6.5l1.2-1.4-2-1-.9.8c-1-.4-1.9-1.3-2.3-2.3l.8-.9-1-2L9.4 8.4"/></svg>',
         "%%LADEN_CHIPS%%": "".join(f'<button type="button" class="chip" data-laden="{st["id"]}" aria-pressed="false">{e(st["name"])}</button>' for st in STANDORTE),
