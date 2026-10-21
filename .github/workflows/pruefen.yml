@@ -1,15 +1,26 @@
-name: Seite bauen und prüfen
+name: Seite bauen, prüfen und veröffentlichen
 
-# Läuft bei jedem Push und bei Pull Requests:
-# 1. baut die Seite mit build.py neu und prüft, dass docs/ zum Code passt
+# Läuft bei jedem Push (auch wenn die Chef-App daten/anpassungen.json speichert):
+# 1. baut die Seite mit build.py neu (inkl. Änderungen aus daten/anpassungen.json)
 # 2. testet die fertige Seite im Browser (tests/test_seite.py)
+# 3. nur auf main: schreibt docs/ zurück ins Repo und veröffentlicht docs/ auf GitHub Pages
+#    (Einstellung: Settings → Pages → Source: „GitHub Actions“)
 on:
   push:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: seite-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  pruefen:
+  bauen:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -22,14 +33,6 @@ jobs:
       - name: Seite neu bauen
         run: python3 build.py
 
-      - name: docs/ passt zum Code?
-        run: |
-          if ! git diff --quiet -I 'class="stand"' -- docs; then
-            echo "::error::docs/ ist nicht auf dem Stand des Codes. Bitte 'python3 build.py' ausführen und docs/ mit committen."
-            git --no-pager diff --stat -- docs
-            exit 1
-          fi
-
       - name: Playwright installieren
         run: |
           pip install playwright==1.56.0
@@ -37,3 +40,33 @@ jobs:
 
       - name: Seite im Browser testen
         run: python3 tests/test_seite.py
+
+      - name: docs/ ins Repo zurückschreiben
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          if git diff --quiet -I 'class="stand"' -- docs; then
+            echo "docs/ ist aktuell"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs
+            git commit -m "docs/ neu gebaut (${GITHUB_SHA::7})"
+            git push
+          fi
+
+      - name: Pages-Paket hochladen
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  veroeffentlichen:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: bauen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

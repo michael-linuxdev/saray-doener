@@ -271,6 +271,117 @@ def qr_waehlt_laden_vor(b, url):
     s.schliessen()
 
 
+def chef_oeffnen(b, url, anp=None, gespeichert=None):
+    """Öffnet die Chef-App mit nachgebildeter GitHub-API (es wird nichts wirklich gespeichert)."""
+    import base64
+    ctx = b.new_context(viewport=HANDY, locale="de-DE", timezone_id="Europe/Berlin", is_mobile=True, has_touch=True)
+    p = ctx.new_page()
+    fehler = []
+    p.on("pageerror", lambda e: fehler.append(str(e)))
+    p.clock.set_fixed_time(ZEIT)
+    inhalt = base64.b64encode(json.dumps(anp or {}).encode()).decode()
+
+    def github(route):
+        r = route.request
+        if r.method == "PUT":
+            body = json.loads(r.post_data)
+            assert r.headers.get("authorization") == "Bearer TESTTOKEN", r.headers
+            gespeichert.append(json.loads(base64.b64decode(body["content"]).decode("utf-8")))
+            route.fulfill(status=200, json={"content": {"sha": "neu"}, "commit": {"sha": "c1"}})
+        elif "/actions/runs" in r.url:
+            route.fulfill(status=200, json={"workflow_runs": [{"head_sha": "c1", "status": "completed", "conclusion": "success"}]})
+        else:
+            route.fulfill(status=200, json={"sha": "alt", "content": inhalt})
+    p.route("https://api.github.com/**", github)
+    p.goto(url + "chef/#token=TESTTOKEN")
+    p.wait_for_selector("nav.tabs:not([hidden])")
+    return ctx, p, fehler
+
+
+@test
+def chef_app_aenderungen(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    assert "token" not in p.url, "Token steht noch in der Adresse"
+    # Heute: Hähnchen aus (nur Freital), Nuggets ab 17 Uhr jeden Tag
+    p.click("text=Freital")
+    p.locator(".karte", has=p.locator("h3", has_text="Hähnchen")).locator("text=Heute aus").click()
+    p.locator(".karte", has=p.locator("h3", has_text="Nuggets")).locator("text=Ab Uhrzeit …").click()
+    p.select_option("#ab-zeit", "17:00")
+    p.check("#ab-immer")
+    p.click("text=Übernehmen")
+    # Hinweis
+    p.fill("#h-text", "Heute Lieferung ab 18 Uhr")
+    p.click("text=Hinweis hinzufügen")
+    # Karte: Preis Nr. 1 ändern, Nr. 8 löschen, neues Gericht
+    p.click('nav.tabs [data-tab="karte"]')
+    p.click('.liste-gericht[data-k="1"]')
+    p.fill("#b-preis-0", "7.5")
+    p.click("text=Übernehmen")
+    p.click('.liste-gericht[data-k="8"]')
+    p.click(".blatt >> text=Löschen")
+    p.click("text=+ Neues Gericht")
+    p.select_option("#b-ab", index=0)
+    p.fill("#b-nr", "13a")
+    p.fill("#b-name", "Döner Spezial")
+    p.fill("#b-desc", "Fladenbrot, Fleisch, Salat, Feta")
+    p.fill("#b-preis-0", "9")
+    p.click("text=Übernehmen")
+    p.click("text=+ Neues Gericht")
+    p.fill("#b-nr", "2")
+    p.fill("#b-name", "Doppelte Nummer")
+    p.fill("#b-preis-0", "5")
+    p.click("text=Übernehmen")
+    assert "schon vergeben" in p.text_content(".blatt .fehler")
+    p.click(".blatt >> text=Abbrechen")
+    # Zeiten: Altenberg samstags ab 11 Uhr
+    p.click('nav.tabs [data-tab="zeiten"]')
+    p.select_option(".karte:has(h3:text('Altenberg')) select[aria-label='Sa von']", "11:00")
+    assert "nicht gespeichert" in p.text_content("#speichern-text")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    assert len(gespeichert) == 1, gespeichert
+    d = gespeichert[0]
+    assert d["gerichte"] == {"1": {"preise": ["7,50"]}}, d
+    assert d["geloescht"] == ["8"], d
+    assert d["neu"] == [{"gruppe": "doener", "abschnitt": "Döner", "nr": "13a", "name": "Döner Spezial",
+                         "desc": "Fladenbrot, Fleisch, Salat, Feta", "preise": ["9,00"]}], d
+    assert d["zeiten"] == {"altenberg": {"6": ["11:00", "21:00"]}}, d
+    assert {"was": "huhn", "datum": "2026-10-21", "laden": "freital"} in d["verfuegbarkeit"], d
+    assert {"was": "nuggets", "ab": "17:00", "laden": "freital"} in d["verfuegbarkeit"], d
+    assert d["hinweise"] == [{"text": "Heute Lieferung ab 18 Uhr", "von": "2026-10-21", "bis": "2026-10-21"}], d
+    assert not fehler, fehler
+    ctx.close()
+    # Das Gespeicherte muss sich fehlerfrei bauen lassen und auf der Seite ankommen
+    import subprocess, tempfile, os
+    with tempfile.TemporaryDirectory() as tmp:
+        datei = pathlib.Path(tmp) / "anp.json"
+        datei.write_text(json.dumps(d))
+        root = DOCS.parent
+        out = subprocess.run([sys.executable, "-c", f"import build; build.bauen(ziel={str(pathlib.Path(tmp) / 'docs')!r})"],
+                             cwd=root, env=dict(os.environ, SARAY_ANPASSUNGEN=str(datei)), capture_output=True, text=True)
+        assert out.returncode == 0 and "WARNUNG" not in out.stdout, out.stdout + out.stderr
+        seite = (pathlib.Path(tmp) / "docs" / "index.html").read_text()
+        assert 'id="nr-8"' not in seite and "Döner Spezial" in seite and 'data-p="750"' in seite
+        assert "Sa–So 11–21 Uhr" in seite and "Heute Lieferung ab 18 Uhr" in seite
+
+
+@test
+def chef_app_standard_wiederherstellen(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, anp={"gerichte": {"1": {"preise": ["9,99"]}}, "geloescht": ["8"]}, gespeichert=gespeichert)
+    p.click('nav.tabs [data-tab="karte"]')
+    assert "9,99" in p.text_content('.liste-gericht[data-k="1"]')
+    assert "gelöscht" in p.text_content('.liste-gericht[data-k="8"]')
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click("text=Alles auf Standard zurücksetzen")
+    p.click(".blatt >> text=Ja, zurücksetzen")
+    p.wait_for_selector(".status.ok")
+    assert gespeichert == [{}], gespeichert
+    assert not fehler, fehler
+    ctx.close()
+
+
 def main():
     srv, url = server()
     ok = 0

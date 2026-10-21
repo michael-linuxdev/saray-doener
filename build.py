@@ -11,11 +11,13 @@ WhatsApp-Nummern stehen nicht im Repo: optional in lokal.json (siehe README).
 import base64, html, json, math, pathlib, re, shutil, sys, urllib.parse
 from menu import GRUPPEN
 import englisch as EN
+import anpassungen as ANP
 
 HIER = pathlib.Path(__file__).parent
 A = HIER / "assets"
 DOMAIN = "https://xn--saraydner-57a.de/"  # saraydöner.de (Canonical)
-CNAME = "saray.micana.de"                  # Adresse der GitHub Page
+CNAME = "saray.micana.de"
+REPO = "michael-linuxdev/saray-doener"     # Chef-App speichert Änderungen in diesem Repo (daten/anpassungen.json)                  # Adresse der GitHub Page
 VORSCHAU = True                            # True: Suchmaschinen sollen die Vorschau-Adresse nicht aufnehmen
 
 STANDORTE = [
@@ -47,11 +49,22 @@ def minuten(spanne):
     return int(a) * 60, int(b) * 60
 
 
+# Änderungen aus der Chef-App (daten/anpassungen.json) auf Speisekarte und Öffnungszeiten anwenden
+import os
+ANPASSUNGEN = ANP.laden(pathlib.Path(os.environ.get("SARAY_ANPASSUNGEN") or HIER / "daten" / "anpassungen.json"))
+WARNUNGEN = []
+STANDARD_GRUPPEN = GRUPPEN
+GRUPPEN = ANP.karte(GRUPPEN, ANPASSUNGEN, WARNUNGEN.append)
+
 for s in STANDORTE:
-    s["zeiten"] = {}
+    std = {}
     for _, spanne, tage in s["zeilen"]:
         for t in tage:
-            s["zeiten"][t] = minuten(spanne)
+            std[t] = minuten(spanne)
+    s["zeiten_standard"] = std
+    s["zeiten"] = ANP.zeiten(std, (ANPASSUNGEN.get("zeiten") or {}).get(s["id"]), WARNUNGEN.append, s["name"])
+    s["zeilen_neu"] = ANP.zeilen(s["zeiten"])
+    s["kurz"] = ", ".join(f'{z["kurz"]} {z["zeit"]}' for z in s["zeilen_neu"])
     s["maps"] = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote_plus(
         f"Saray Döner, {s['strasse']}, {s['plz']} {s['ort']}")
 
@@ -216,13 +229,16 @@ def beliebt_karte(nr, gross=False):
             + '</a>' + plus_knopf(name) + '</li>')
 
 
+# gelöschte Gerichte fallen aus Empfehlung und „Beliebt“ heraus
+BELIEBT = [n for n in BELIEBT if n in GERICHT]
 BELIEBT_HTML = ('<section class="beliebt" aria-label="Empfehlungen">'
-                '<h3 class="beliebt-titel" data-en="Our recommendation">Wir empfehlen</h3><ul class="tipps tipps-empfehlung">' + beliebt_karte(EMPFEHLUNG, True) + '</ul>'
+                + ('<h3 class="beliebt-titel" data-en="Our recommendation">Wir empfehlen</h3><ul class="tipps tipps-empfehlung">' + beliebt_karte(EMPFEHLUNG, True) + '</ul>'
+                   if EMPFEHLUNG in GERICHT else "") +
                 '<h3 class="beliebt-titel" data-en="Popular with our guests">Beliebt bei unseren Gästen</h3>'
                 '<ul class="tipps">' + "".join(beliebt_karte(n) for n in BELIEBT) + '</ul></section>')
 NAV = "".join(f'<li><a href="#{g["id"]}" data-en="{e(EN.titel(g["titel"]))}">{e(g["titel"])}</a></li>' for g in GRUPPEN)
 ANZAHL = sum(len(ab["gerichte"]) for g in GRUPPEN for ab in g["abschnitte"])
-DOENER_PREIS = next(g[3][0] for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0] == "1")
+DOENER_PREIS = next((g[3][0] for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0] == "1"), None)
 
 # ---------- Standorte ----------
 TEL_ICON = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 '
@@ -264,7 +280,7 @@ ORTE = "\n".join(
   {t("Telefon", "Phone")} <a href="tel:{s["tel_href"]}">{e(s["tel"])}</a></address>
   {karte_html(s)}
   <table class="zeiten"><caption class="sr-only">Öffnungszeiten {e(s["name"])}</caption><tbody>
-  {"".join(f'<tr data-tage="{",".join(map(str, tg))}"><th scope="row" data-en="{e(s["zeilen_en"][i])}">{e(z)}</th><td data-en="{e(u.replace(" Uhr", "").replace("–", ":00–") + ":00")}">{e(u)}</td></tr>' for i, (z, u, tg) in enumerate(s["zeilen"]))}
+  {"".join(f'<tr data-tage="{",".join(map(str, z["tage"]))}"><th scope="row" data-en="{e(z["en"])}">{e(z["de"])}</th><td data-en="{e(z["zeit_en"])}">{e(z["zeit"])}</td></tr>' for z in s["zeilen_neu"])}
   </tbody></table>
   <p class="ort-extra" data-en="{e(s["extra_en"])}">{e(s["extra"])}</p>
   <div class="knoepfe">
@@ -294,9 +310,9 @@ LD = {
                     "addressLocality": s["ort"], "addressCountry": "DE"},
         "openingHoursSpecification": [{
             "@type": "OpeningHoursSpecification",
-            "dayOfWeek": [TAGE_EN[t] for t in tage],
-            "opens": f"{minuten(sp)[0] // 60:02d}:00", "closes": f"{minuten(sp)[1] // 60:02d}:00"}
-            for _, sp, tage in s["zeilen"]],
+            "dayOfWeek": [TAGE_EN[t] for t in z["tage"]],
+            "opens": f"{z['wert'][0] // 60:02d}:{z['wert'][0] % 60:02d}", "closes": f"{z['wert'][1] // 60:02d}:{z['wert'][1] % 60:02d}"}
+            for z in s["zeilen_neu"] if z["wert"]],
     } for s in STANDORTE],
 }
 JS_ZEITEN = json.dumps({s["id"]: {str(k): list(v) for k, v in s["zeiten"].items()} for s in STANDORTE})
@@ -1487,6 +1503,7 @@ SEITE = r"""<!doctype html>
 # {"text": "Am 24.12. haben wir bis 14 Uhr geöffnet.", "en": "On 24 Dec we are open until 2 pm.",
 #  "von": "2026-12-20", "bis": "2026-12-24"},
 HINWEISE = []
+HINWEISE = HINWEISE + ANP.hinweise(ANPASSUNGEN.get("hinweise"), WARNUNGEN.append)
 
 
 # Verfügbarkeit: feste Regeln, die immer gelten (tagesaktuelle Änderungen: docs/status.json).
@@ -1495,6 +1512,7 @@ HINWEISE = []
 # "ab": "17:00" (erst ab), "bis": "14:00" (nur bis). Ohne ab/bis: nicht verfügbar.
 # Beispiel: {"was": "nuggets", "ab": "17:00"}
 VERFUEGBARKEIT = []
+VERFUEGBARKEIT = VERFUEGBARKEIT + ANP.regeln(ANPASSUNGEN.get("verfuegbarkeit"), WARNUNGEN.append)
 
 # Vorbestellung: so viele Tage im Voraus kann man die Abholung wählen (0 = nur heute)
 VORBESTELL_TAGE = 14
@@ -1563,7 +1581,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%SCHILDER%%": STATUS_KARTEN,
         "%%IMG_KOCH%%": maskottchen("saray-koch.svg", "image/svg+xml"),
         "%%IMG_LADEN%%": b64("laden_web.jpg", "image/jpeg"),
-        "%%STICKER%%": preis(DOENER_PREIS, "sticker-preis"),
+        "%%STICKER%%": preis(DOENER_PREIS, "sticker-preis") if DOENER_PREIS else "",
         "%%SUCH_ICON%%": SUCH_ICON,
         "%%NAV%%": NAV,
         "%%KARTE%%": KARTE,
@@ -1634,8 +1652,12 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
     (aus / "status.json").write_text(status or '{\n  "regeln": []\n}\n')
     if CNAME:
         (aus / "CNAME").write_text(CNAME + "\n")
-    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Allow: /\n"))
+    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\n"))
+    import chef_app
+    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())
+    for w in WARNUNGEN:
+        print("WARNUNG:", w)
     print(f"{aus}/  {gesamt // 1024} KB in {sum(1 for f in aus.rglob('*') if f.is_file())} Dateien  ·  {ANZAHL} Positionen")
 
 

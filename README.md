@@ -10,7 +10,11 @@ Statische Seite ohne Framework, ohne externe Anfragen und ohne Cookies. Was im B
 
 | Pfad | Inhalt |
 |---|---|
-| `menu.py` | Speisekarte: alle Gerichte, Preise, Größen |
+| `menu.py` | Speisekarte (Standard): alle Gerichte, Preise, Größen |
+| `daten/anpassungen.json` | Änderungen aus der Chef-App (leer = Standard) |
+| `anpassungen.py` / `chef_app.py` | Änderungen anwenden / Chef-App |
+| `qr.py` / `aufsteller.py` | QR-Codes / Druckvorlagen für die Theke |
+| `tests/` | automatische Browser-Tests |
 | `englisch.py` | Englische Namen und Beschreibungen |
 | `build.py` | Standorte, Öffnungszeiten, Hinweis-Band, Vorlage, CSS und JS; baut die Seite |
 | `maskottchen.py` | Zeichnet das Koch-Maskottchen als SVG (`maskottchen/`) |
@@ -59,6 +63,38 @@ Tagesaktuelle Sperren stehen in **`docs/status.json`**. Die Seite lädt die Date
 Auf der Seite: Hinweis am Gericht („heute nicht verfügbar“, „erst ab 17 Uhr“, „Altenberg: …“), ganz gesperrte Gerichte sind ausgegraut. Im Bestellzettel wird gegen Laden **und Abholzeit** geprüft – Nuggets um 15 Uhr für 17:30 Uhr vorbestellen geht, für „so schnell wie möglich“ nicht. Solange etwas nicht passt, ist der WhatsApp-Knopf ausgeblendet.
 
 Feste Regeln, die immer gelten, können stattdessen in `VERFUEGBARKEIT` in `build.py` stehen.
+
+## Chef-App (für den Inhaber)
+
+Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für Suchmaschinen gesperrt. Große Schaltflächen, fürs Handy gemacht:
+
+- **Heute:** Hähnchen, Nuggets, Falafel, Pizza, Baguette … für heute aus, ab Uhrzeit (heute oder jeden Tag) oder dauerhaft aus – für beide Läden oder nur einen. Dazu ein Hinweis-Band mit Zeitraum.
+- **Karte:** Preise, Namen und Beschreibungen ändern, Gerichte löschen (und wieder anzeigen), neue Gerichte anlegen.
+- **Zeiten:** Öffnungszeiten je Laden und Wochentag, auch „geschlossen“.
+- **Mehr:** „Alles auf Standard zurücksetzen“, Abmelden.
+
+Gespeichert wird nur die Abweichung vom Standard in **`daten/anpassungen.json`** (Aufbau siehe `anpassungen.py`). Danach baut der GitHub-Workflow die Seite neu, testet sie und veröffentlicht sie – nach ca. 2–3 Minuten ist alles online; die App zeigt den Fortschritt an. Ungültige Einträge werden beim Bauen übersprungen (Warnung im Workflow-Log), der Standard bleibt dann stehen. Der Standard selbst steht weiter in `menu.py` und `STANDORTE` in `build.py`.
+
+**Zugang einrichten (einmal pro Gerät):**
+1. GitHub → Settings → Developer settings → *Fine-grained personal access tokens* → *Generate new token*
+   - Repository access: *Only select repositories* → `saray-doener`
+   - Permissions: **Contents: Read and write**, **Actions: Read-only** (für die Fortschrittsanzeige)
+   - Ablauf: 1 Jahr (danach neuen Token erzeugen und neu einrichten)
+2. Auf dem Handy des Inhabers öffnen: `https://saray.micana.de/chef/#token=<TOKEN>` – der Token wird nur auf dem Gerät gespeichert und sofort aus der Adresse entfernt.
+3. „Zum Home-Bildschirm“ → erscheint als App **„Chef“**.
+
+Token verloren oder Handy weg: Token auf GitHub löschen – damit ist der Zugang sofort gesperrt.
+
+## Veröffentlichen
+
+Der Workflow `.github/workflows/pruefen.yml` läuft bei jedem Push: bauen → im Browser testen → `docs/` zurück ins Repo schreiben → auf GitHub Pages veröffentlichen.
+Einmalig nötig: **Settings → Pages → Source: „GitHub Actions“**. Schlägt ein Test fehl, wird nichts veröffentlicht.
+
+Tests lokal: `python3 tests/test_seite.py` (braucht `pip install playwright` und `python -m playwright install chromium`).
+
+## QR-Aufsteller
+
+`python3 aufsteller.py` erzeugt `druck/aufsteller-freital.pdf` und `-altenberg.pdf` (A5): oben Speisekarte & vorbestellen (wählt den Laden vor), unten Google-Bewertung. Solange `VORSCHAU = True` mit MUSTER-Streifen. Nach dem Umzug auf saraydöner.de neu erzeugen und vor dem Druck mit dem Handy testen.
 
 ## WhatsApp-Bestellung
 
