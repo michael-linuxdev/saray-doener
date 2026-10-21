@@ -395,25 +395,42 @@
   huelle.addEventListener('click',function(ev){if(ev.target.closest('[data-zu]'))schliessen();});
   document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!huelle.hidden)schliessen();});
   /* Abholung: Laden, Uhrzeit, Name */
-  var AK='saray-abholung',abh={laden:'',zeit:'',name:''};
+  var AK='saray-abholung',abh={laden:'',tag:'',zeit:'',name:''},VORBESTELL_TAGE=14;
   try{abh=Object.assign(abh,JSON.parse(localStorage.getItem(AK)||'{}'));}catch(e){}
   function abhSpeichern(){try{localStorage.setItem(AK,JSON.stringify(abh));}catch(e){}}
-  var selZeit=document.getElementById('abhol-zeit'),eName=document.getElementById('abhol-name'),hinweisZ=document.getElementById('abhol-hinweis');
+  var selTag=document.getElementById('abhol-tag'),selZeit=document.getElementById('abhol-zeit'),eName=document.getElementById('abhol-name'),hinweisZ=document.getElementById('abhol-hinweis');
   function zeitText(m,en){var h=Math.floor(m/60),r=m%60;return h+':'+(r<10?'0':'')+r+(en?'':' Uhr');}
+  /* Datum eines Tages ab heute (deutsche Zeit): ISO-Schlüssel und Anzeige */
+  function tagDatum(off,opt,loc){return new Intl.DateTimeFormat(loc||'de-DE',Object.assign({timeZone:'Europe/Berlin'},opt)).format(new Date(Date.now()+off*864e5));}
+  function tagKurz(off,en){return tagDatum(off,{weekday:'short',day:'numeric',month:en?'short':'2-digit'},en?'en-GB':'de-DE');}
+  function tagLang(off){var t=tagDatum(off,{weekday:'long',day:'2-digit',month:'2-digit'});return /\.$/.test(t)?t:t+'.';}   /* „Freitag, 24.10.“ */
+  /* mögliche Abholzeiten eines Tages (Minuten), 15-Minuten-Raster, heute frühestens in 20 Minuten */
+  function slots(off){
+    var n=jetzt(),z=ZEITEN[abh.laden],tag=(n.tag+off)%7,h=z[tag],res=[];if(!h)return res;
+    var start=h[0]+15;if(off===0)start=Math.max(start,Math.ceil((n.min+20)/15)*15);
+    for(var m=start;m<=h[1]-15;m+=15)res.push(m);
+    return res;
+  }
   function zeitenFuellen(){
-    selZeit.textContent='';hinweisZ.hidden=true;ZINFO={};
-    if(!abh.laden){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';selZeit.appendChild(o);selZeit.disabled=true;return;}
-    selZeit.disabled=false;
-    var z=ZEITEN[abh.laden],n=jetzt(),optionen=[];
-    for(var i=0;i<7&&!optionen.length;i++){
-      var tag=(n.tag+i)%7,h=z[tag];if(!h)continue;
-      var start=h[0]+15;if(i===0)start=Math.max(start,Math.ceil((n.min+20)/15)*15);
-      var ende=h[1]-15;if(start>ende)continue;
-      var vor=i===0?'heute':i===1?'morgen':TAGE[tag],en=SP==='en',vorA=en?(i===0?'today':i===1?'tomorrow':TAGE_E[tag]):vor;
-      if(i===0&&n.min>=h[0]&&n.min<h[1]){optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20};}
-      for(var m=start;m<=ende;m+=15){optionen.push({v:vor+', '+zeitText(m),t:(i===0?'':vorA.charAt(0).toUpperCase()+vorA.slice(1)+', ')+zeitText(m,en)});ZINFO[vor+', '+zeitText(m)]={off:i,min:m};}
-      if(i>0){hinweisZ.textContent=L('Heute ist keine Abholung mehr möglich. Sie können für '+vor+' vorbestellen.','Pickup is no longer possible today. You can pre-order for '+vorA+'.');hinweisZ.hidden=false;}
-    }
+    selZeit.textContent='';selTag.textContent='';hinweisZ.hidden=true;ZINFO={};
+    if(!abh.laden){[selTag,selZeit].forEach(function(s){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';s.appendChild(o);s.disabled=true;});return;}
+    selTag.disabled=selZeit.disabled=false;
+    var n=jetzt(),en=SP==='en',tage=[];
+    for(var i=0;i<=VORBESTELL_TAGE;i++){if(slots(i).length)tage.push(i);}
+    tage.forEach(function(off){
+      var t=off===0?L('Heute','Today'):off===1?L('Morgen, ','Tomorrow, ')+tagKurz(1,en):tagKurz(off,en);
+      var o=el('option',null,t);o.value=tagDatum(off,{year:'numeric',month:'2-digit',day:'2-digit'},'en-CA');o.dataset.off=off;selTag.appendChild(o);
+    });
+    if(!tage.length)return;
+    if(![].some.call(selTag.options,function(o){return o.value===abh.tag;}))abh.tag=selTag.options[0].value;
+    selTag.value=abh.tag;
+    var off=+selTag.selectedOptions[0].dataset.off,optionen=[];
+    if(tage[0]>0){hinweisZ.textContent=L('Heute ist keine Abholung mehr möglich. Sie können vorbestellen.','Pickup is no longer possible today. You can pre-order.');hinweisZ.hidden=false;}
+    /* Wert = Text für die Nachricht an den Laden (immer deutsch) */
+    var vor=off===0?'heute':off===1?'morgen, '+tagLang(1):tagLang(off);
+    if(off===0&&n.min>=ZEITEN[abh.laden][n.tag][0]){
+      optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20};}
+    slots(off).forEach(function(m){var v=vor+', '+zeitText(m);optionen.push({v:v,t:zeitText(m,en)});ZINFO[v]={off:off,min:m};});
     optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
     abhSpeichern();zeichnenSpaeter();
@@ -438,6 +455,7 @@
   }
   document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();});});
   selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();zeichnen();waAktualisieren();});
+  selTag.addEventListener('change',function(){abh.tag=selTag.value;abh.zeit='';abhSpeichern();zeitenFuellen();waAktualisieren();});
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
   ladenZeigen();
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
@@ -474,7 +492,8 @@
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
   function zettelText(){
-    var z=['Bestellung Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
+    var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
+    var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     if(abh.zeit)z.push('Abholung: '+abh.zeit);
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
