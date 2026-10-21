@@ -533,6 +533,7 @@ p{margin:0}
 .sammel-band p{margin:0;font-weight:700;line-height:1.35}
 .z-fuer{display:inline-block;margin-top:2px;padding:0 8px;border-radius:999px;background:var(--gelb-blass);font-size:.82rem;font-weight:700}
 .sammel-dialog{position:fixed;inset:0;z-index:90;background:rgba(58,21,49,.5);display:flex;align-items:flex-end;justify-content:center}
+.sammel-box:focus{outline:none}
 .sammel-box{background:#fff;width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
 @media (min-width:720px){.sammel-dialog{align-items:center}.sammel-box{border-radius:20px}}
 .sammel-box h2{margin:0 0 8px;font-size:1.3rem}
@@ -1228,9 +1229,19 @@ ZETTEL_JS = r'''
     var box=document.getElementById('sammel-inhalt');box.textContent='';inhalt.forEach(function(x){box.appendChild(x);});
     var r=document.getElementById('sammel-knoepfe');r.textContent='';
     knoepfe.forEach(function(k,i){var b=knopf(k[0],{'class':i?'knopf knopf-linie':'knopf knopf-dunkel'});b.addEventListener('click',k[1]);r.appendChild(b);});
-    sDlg.hidden=false;var f=sDlg.querySelector('input,button');if(f)f.focus();
+    sDlg.hidden=false;dlgAnpassen();
+    /* Handy: Tastatur nicht sofort öffnen – erst wenn man ins Feld tippt */
+    var beruehrung=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+    var f=beruehrung?sDlg.querySelector('.sammel-box'):sDlg.querySelector('input,button');if(f)f.focus({preventScroll:true});
   }
   function dialogZu(){sDlg.hidden=true;}
+  /* Fenster immer über der Bildschirmtastatur: an den sichtbaren Bereich anpassen (iOS verkleinert ihn) */
+  function dlgAnpassen(){
+    if(sDlg.hidden||!window.visualViewport)return;var v=window.visualViewport;
+    sDlg.style.top=v.offsetTop+'px';sDlg.style.height=v.height+'px';sDlg.style.bottom='auto';
+  }
+  if(window.visualViewport){window.visualViewport.addEventListener('resize',dlgAnpassen);window.visualViewport.addEventListener('scroll',dlgAnpassen);}
+  sDlg.addEventListener('focusin',function(ev){if(ev.target.tagName==='INPUT')setTimeout(function(){dlgAnpassen();ev.target.scrollIntoView({block:'nearest'});},300);});
   sDlg.addEventListener('click',function(ev){if(ev.target===sDlg)dialogZu();});
   document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!sDlg.hidden)dialogZu();});
   function nameFeld(){var f=document.createElement('input');f.type='text';f.id='sammel-name';f.autocomplete='given-name';f.maxLength=40;f.value=abh.name||'';
@@ -1661,7 +1672,7 @@ SEITE = r"""<!doctype html>
 <button type="button" class="zettel-leiste" id="zettel-leiste" hidden><span class="zl-anzahl">0</span><svg class="ico tuete" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1.2 12.5H6.7z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg><span data-en="My order">Meine Bestellung</span><span class="zl-summe"></span></button>
 <p class="zettel-meldung" id="zettel-meldung" role="status" hidden></p>
 <div class="hand-tipp" id="hand-tipp" role="status" hidden></div>
-<div class="sammel-dialog" id="sammel-dialog" hidden><div class="sammel-box" role="dialog" aria-modal="true" aria-labelledby="sammel-titel">
+<div class="sammel-dialog" id="sammel-dialog" hidden><div class="sammel-box" role="dialog" aria-modal="true" aria-labelledby="sammel-titel" tabindex="-1">
   <h2 id="sammel-titel"></h2><div id="sammel-inhalt"></div><div class="sammel-knoepfe" id="sammel-knoepfe"></div></div></div>
 <div class="zettel-huelle" id="zettel" hidden>
   <div class="zettel-hinter" data-zu></div>

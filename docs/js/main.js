@@ -610,9 +610,19 @@
     var box=document.getElementById('sammel-inhalt');box.textContent='';inhalt.forEach(function(x){box.appendChild(x);});
     var r=document.getElementById('sammel-knoepfe');r.textContent='';
     knoepfe.forEach(function(k,i){var b=knopf(k[0],{'class':i?'knopf knopf-linie':'knopf knopf-dunkel'});b.addEventListener('click',k[1]);r.appendChild(b);});
-    sDlg.hidden=false;var f=sDlg.querySelector('input,button');if(f)f.focus();
+    sDlg.hidden=false;dlgAnpassen();
+    /* Handy: Tastatur nicht sofort öffnen – erst wenn man ins Feld tippt */
+    var beruehrung=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+    var f=beruehrung?sDlg.querySelector('.sammel-box'):sDlg.querySelector('input,button');if(f)f.focus({preventScroll:true});
   }
   function dialogZu(){sDlg.hidden=true;}
+  /* Fenster immer über der Bildschirmtastatur: an den sichtbaren Bereich anpassen (iOS verkleinert ihn) */
+  function dlgAnpassen(){
+    if(sDlg.hidden||!window.visualViewport)return;var v=window.visualViewport;
+    sDlg.style.top=v.offsetTop+'px';sDlg.style.height=v.height+'px';sDlg.style.bottom='auto';
+  }
+  if(window.visualViewport){window.visualViewport.addEventListener('resize',dlgAnpassen);window.visualViewport.addEventListener('scroll',dlgAnpassen);}
+  sDlg.addEventListener('focusin',function(ev){if(ev.target.tagName==='INPUT')setTimeout(function(){dlgAnpassen();ev.target.scrollIntoView({block:'nearest'});},300);});
   sDlg.addEventListener('click',function(ev){if(ev.target===sDlg)dialogZu();});
   document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!sDlg.hidden)dialogZu();});
   function nameFeld(){var f=document.createElement('input');f.type='text';f.id='sammel-name';f.autocomplete='given-name';f.maxLength=40;f.value=abh.name||'';

@@ -207,6 +207,7 @@ p{margin:0}
 .sammel-band p{margin:0;font-weight:700;line-height:1.35}
 .z-fuer{display:inline-block;margin-top:2px;padding:0 8px;border-radius:999px;background:var(--gelb-blass);font-size:.82rem;font-weight:700}
 .sammel-dialog{position:fixed;inset:0;z-index:90;background:rgba(58,21,49,.5);display:flex;align-items:flex-end;justify-content:center}
+.sammel-box:focus{outline:none}
 .sammel-box{background:#fff;width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
 @media (min-width:720px){.sammel-dialog{align-items:center}.sammel-box{border-radius:20px}}
 .sammel-box h2{margin:0 0 8px;font-size:1.3rem}
