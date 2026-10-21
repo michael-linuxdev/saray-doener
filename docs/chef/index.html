@@ -343,7 +343,7 @@ function einrichten(meldung){
     meldung?el('p',{class:'fehler',text:meldung}):null,
     el('p',{class:'hinweis',text:'Michael richtet den Zugang einmal pro Gerät ein. Danach diese Seite zum Home-Bildschirm hinzufügen.'}),
     el('label',{for:'tk',text:'Zugangsschlüssel'}),f,
-    el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'Speichern',onclick:function(){try{localStorage.setItem(TK,f.value.trim());}catch(e){}start();}})])]));
+    el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'Speichern',onclick:function(){try{localStorage.setItem(TK,f.value.replace(/\s+/g,''));}catch(e){}start();}})])]));
 }
 function start(){
   if(!token()){einrichten();return;}
@@ -358,7 +358,7 @@ document.getElementById('speichern-knopf').addEventListener('click',function(){s
 document.getElementById('verwerfen').addEventListener('click',function(){frage('Ungespeicherte Änderungen verwerfen?','Verwerfen').then(function(j){if(j){ANP=JSON.parse(ALT);zeichnen();}});});
 window.addEventListener('beforeunload',function(e){if(STD&&geaendert()){e.preventDefault();e.returnValue='';}});
 var m=/[#&]token=([^&]+)/.exec(location.hash);
-if(m){try{localStorage.setItem(TK,decodeURIComponent(m[1]));}catch(e){}history.replaceState(null,'',location.pathname);}
+if(m){try{localStorage.setItem(TK,decodeURIComponent(m[1]).replace(/\s+/g,''));}catch(e){}history.replaceState(null,'',location.pathname);}
 start();
 })();
 </script>

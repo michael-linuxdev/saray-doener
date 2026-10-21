@@ -293,7 +293,7 @@ def chef_oeffnen(b, url, anp=None, gespeichert=None):
         else:
             route.fulfill(status=200, json={"sha": "alt", "content": inhalt})
     p.route("https://api.github.com/**", github)
-    p.goto(url + "chef/#token=TESTTOKEN")
+    p.goto(url + "chef/#token=%20TESTTOKEN")   # Leerzeichen beim Kopieren wird entfernt
     p.wait_for_selector("nav.tabs:not([hidden])")
     return ctx, p, fehler
 
