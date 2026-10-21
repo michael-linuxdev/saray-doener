@@ -485,7 +485,6 @@ p{margin:0}
 .deckel-oben{position:fixed;top:0;left:0;right:0;background:#fff;z-index:19;pointer-events:none}
 .vorschau-band .stand{opacity:.7;white-space:nowrap}
 #debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
-.kategorien.klebt::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:400px;background:#fff;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
 
 .kategorien ul{list-style:none;margin:0;padding:0 var(--rand);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
@@ -1186,7 +1185,8 @@ JS = r"""
   }
   /* Kategorie-Band klebt oben? Dann weiß darüber und weiße Browserleiste */
   /* Klebt das Band? Dann liegt es tiefer als die unsichtbare Marke direkt davor.
-     (Safari auf iOS 26 lässt es unter der Adressleiste kleben, nicht bei 0.) Weiße Fläche darüber per .klebt::before */
+     Solange es klebt, liegt eine feste weiße Fläche dahinter (.deckel-oben): Safari 26 färbt danach den Bereich
+     unter der gläsernen Adressleiste weiß. Wichtig: kein anderes festes Element darf ganz oben darüber liegen. */
   var marke=document.querySelector('.kat-marke'),deckel=null;
   function klebtPruefen(){if(!nav||!marke)return;
     var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
@@ -1196,7 +1196,7 @@ JS = r"""
     if(!k&&deckel){deckel.remove();deckel=null;}
     if(dbg){var vv=window.visualViewport;dbg.textContent='scrollY '+Math.round(scrollY)+'\ninnerH '+innerHeight+' vv.h '+(vv?Math.round(vv.height):'-')+' vv.top '+(vv?Math.round(vv.offsetTop):'-')+
       '\nnav.top '+Math.round(nav.getBoundingClientRect().top)+' marke.bottom '+Math.round(marke.getBoundingClientRect().bottom)+
-      '\nposition '+getComputedStyle(nav).position+' top '+getComputedStyle(nav).top+'\nklebt '+nav.classList.contains('klebt')+' before '+getComputedStyle(nav,'::before').content+
+      '\nposition '+getComputedStyle(nav).position+' top '+getComputedStyle(nav).top+'\nklebt '+nav.classList.contains('klebt')+
       '\ndeckel '+(deckel?deckel.style.height:'-')+'\nsafe-top '+getComputedStyle(document.documentElement).getPropertyValue('--sat');}}
   var dbg=null;
   if(/[?&]debug/.test(location.search)){dbg=document.createElement('div');dbg.id='debug-info';document.body.appendChild(dbg);
