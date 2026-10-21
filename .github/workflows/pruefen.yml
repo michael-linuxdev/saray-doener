@@ -1,0 +1,39 @@
+name: Seite bauen und prüfen
+
+# Läuft bei jedem Push und bei Pull Requests:
+# 1. baut die Seite mit build.py neu und prüft, dass docs/ zum Code passt
+# 2. testet die fertige Seite im Browser (tests/test_seite.py)
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Seite neu bauen
+        run: python3 build.py
+
+      - name: docs/ passt zum Code?
+        run: |
+          if ! git diff --quiet -I 'class="stand"' -- docs; then
+            echo "::error::docs/ ist nicht auf dem Stand des Codes. Bitte 'python3 build.py' ausführen und docs/ mit committen."
+            git --no-pager diff --stat -- docs
+            exit 1
+          fi
+
+      - name: Playwright installieren
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+
+      - name: Seite im Browser testen
+        run: python3 tests/test_seite.py
