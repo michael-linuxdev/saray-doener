@@ -480,6 +480,8 @@ p{margin:0}
    Solange das Kategorie-Band oben klebt, deckt eine feste weiße Fläche direkt oberhalb des Sichtbereichs das ab;
    im oberen Teil der Seite (Bild, Läden) darf es durchscheinen. */
 .kat-marke{height:0}
+.vorschau-band .stand{opacity:.7;white-space:nowrap}
+#debug-info{position:fixed;left:8px;bottom:90px;z-index:95;max-width:70vw;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
 .kategorien.klebt::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:400px;background:#fff;pointer-events:none}
 /* klebt das Band oben: Bereich darüber (Statusleiste/Notch) weiß statt durchscheinender Seite */
 
@@ -1183,7 +1185,16 @@ JS = r"""
   var marke=document.querySelector('.kat-marke');
   function klebtPruefen(){if(!nav||!marke)return;
     var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
-    if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);}
+    if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);
+    if(dbg){var vv=window.visualViewport;dbg.textContent='scrollY '+Math.round(scrollY)+'\ninnerH '+innerHeight+' vv.h '+(vv?Math.round(vv.height):'-')+' vv.top '+(vv?Math.round(vv.offsetTop):'-')+
+      '\nnav.top '+Math.round(nav.getBoundingClientRect().top)+' marke.bottom '+Math.round(marke.getBoundingClientRect().bottom)+
+      '\nposition '+getComputedStyle(nav).position+' top '+getComputedStyle(nav).top+'\nklebt '+nav.classList.contains('klebt')+' before '+getComputedStyle(nav,'::before').content+
+      '\nsafe-top '+getComputedStyle(document.documentElement).getPropertyValue('--sat');}}
+  var dbg=null;
+  if(/[?&]debug/.test(location.search)){dbg=document.createElement('div');dbg.id='debug-info';document.body.appendChild(dbg);
+    document.documentElement.style.setProperty('--sat','env(safe-area-inset-top)');
+    var tst=document.createElement('div');tst.style.cssText='position:fixed;top:0;height:env(safe-area-inset-top)';document.body.appendChild(tst);
+    document.documentElement.style.setProperty('--sat',tst.getBoundingClientRect().height+'px');}
   function verfolgen(){klebtPruefen();if(!fest)markiere(imBlick());}
   function loesen(){fest=null;}
   window.addEventListener('scroll',function(){
@@ -1501,6 +1512,10 @@ def hinweise_html(liste):
         f'<span data-en="{e(h.get("en") or h["text"])}">{e(h["text"])}</span></p></div>' for h in liste)
 
 
+import datetime as _dt, zoneinfo as _zi
+STAND = _dt.datetime.now(_zi.ZoneInfo("Europe/Berlin")).strftime("%d.%m. %H:%M")
+
+
 def whatsapp_nummern(einzeln):
     """Nummern aus STANDORTE. Nur für die Einzeldatei-Vorschau zusätzlich aus lokal.json
     (nicht im Repo), damit Testnummern nie auf der öffentlichen Seite landen."""
@@ -1546,7 +1561,8 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%BODY_KLASSE%%": ' class="vorschau"' if VORSCHAU else "",
         "%%VORSCHAU_BAND%%": ('<div class="vorschau-band" role="note"><strong data-en="NOT RELEASED">NICHT FREIGESCHALTET</strong> '
                               '<span data-en="Draft – not yet the official website of Saray Döner. Orders go to a test number.">'
-                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span></div>')
+                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span>'
+                              f' <small class="stand">Stand {STAND}</small></div>')
                              if VORSCHAU else "",
         "%%ROBOTS%%": '<meta name="robots" content="noindex">\n' if VORSCHAU and not einzeln else "",
     }
