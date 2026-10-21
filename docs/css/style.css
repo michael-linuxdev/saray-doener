@@ -148,7 +148,6 @@ p{margin:0}
 .tipp-info{font-size:.88rem;line-height:1.35;color:var(--tinte-weich);flex:1}
 .tipp-preis .preis{font-size:1.35rem}
 .gericht.ist-beliebt{scroll-margin-top:90px}
-.gericht:target{background:var(--gelb-blass);border-radius:10px;box-shadow:0 0 0 6px var(--gelb-blass)}
 @media (min-width:1100px){.tipps{width:auto;margin:0;padding:4px 0 12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
   .tipps-empfehlung{grid-template-columns:minmax(0,1fr)}
   .tipp-gross{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
