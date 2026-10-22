@@ -744,6 +744,9 @@ def vegetarisch_filtern(b, url):
     assert s.js("document.getElementById('nr-1').hidden") and not s.js("document.getElementById('nr-3').hidden")
     assert s.js("document.getElementById('kinder').hidden") and s.js("document.getElementById('lahmacun').hidden")
     assert not s.js("document.getElementById('nr-80').hidden")
+    karten = s.js("[...document.querySelectorAll('.beliebt .tipp:not([hidden])')].map(t=>t.dataset.k)")
+    assert karten == ["91", "125", "130"], karten
+    assert not s.js("document.querySelector('.beliebt').hidden")
     s.p.fill("#suche-feld", "pizza")
     sichtbar = s.js("[...document.querySelectorAll('.gericht:not([hidden])')].map(g=>g.dataset.k)")
     assert "80" in sichtbar and "82" not in sichtbar, sichtbar
@@ -898,6 +901,24 @@ def pescetarisch_und_auswahl_ohne_fleisch(b, url):
     s.p.click("[data-anpassen]")
     fuell = s.js("[...document.querySelectorAll('[data-fuell]')].map(b=>b.dataset.fuell)")
     assert "tonno" not in fuell and "huhn" not in fuell and "halloumi" in fuell, fuell
+    s.schliessen()
+
+
+@test
+def pizza_ohne_zutaten(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-87 .plus")
+    s.p.click("#nr-87 .wahl button >> nth=0")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    s.p.click("[data-anpassen]")
+    zut = s.js("[...document.querySelectorAll('[data-o=\"ohne\"]')].map(b=>b.dataset.w)")
+    assert zut == ["Thunfisch", "Zwiebel", "Käse"], zut
+    s.p.click('[data-o="ex"][data-w="Zwiebel"]')
+    s.p.click('[data-o="ohne"][data-w="Zwiebel"]')
+    assert not s.js("!!document.querySelector('[data-o=\"ex\"][data-w=\"Zwiebel\"]')"), "abgewählte Zutat noch als Extra"
+    text = s.wa_text()
+    assert "Pizza Tonno (24 cm), ohne Zwiebel: 8,50 €" in text, text
     s.schliessen()
 
 

@@ -355,3 +355,6 @@ VEGETARISCH = {
 
 # Pescetarisch = vegetarisch plus Gerichte mit Fisch (ohne Fleisch)
 FISCH = {"71", "87", "136", "154"}
+
+# Mit eigener Auswahl vegetarisch möglich (Zutaten bzw. Belag wählbar): zählen beim Filter mit, ohne Blatt-Symbol
+VEG_WAEHLBAR = {"91", "125"}
