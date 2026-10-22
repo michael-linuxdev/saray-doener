@@ -1792,7 +1792,7 @@ SEITE = r"""<!doctype html>
   <section class="buehne wrap" aria-labelledby="titel">
     <div class="buehne-text">
       <img class="koch-klein" src="%%IMG_KOCH%%" width="430" height="470" alt="">
-      <h1 id="titel" data-en-html="Fresh off the spit.&lt;br&gt; Since 1997.">Frisch vom Spieß.<br> Seit 1997.</h1>
+      <h1 id="titel" data-en-html="Fresh off the skewer.&lt;br&gt; Since 1997.">Frisch vom Spieß.<br> Seit 1997.</h1>
       <p class="lead" data-en="Döner, dürüm, pizza and salads – in Freital on Dresdner Straße and in Altenberg right by the station.">Döner, Dürüm, Pizza und Salate – in Freital an der Dresdner Straße und in Altenberg direkt am Bahnhof.</p>
       <ul class="schilder" aria-label="Unsere Läden">
 %%SCHILDER%%
