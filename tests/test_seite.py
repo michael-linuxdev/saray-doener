@@ -386,21 +386,13 @@ def sammelbestellung(b, url):
 
 
 @test
-def linkshaender_hinweis(b, url):
+def linkshaender_kein_hinweis_beim_plus(b, url):
+    """Linkshänder-Modus gibt es nur unten in der Fußzeile – kein Hinweis beim ersten „+“."""
     s = Seite(b, url, hand_tipp=True)
     s.p.click("#nr-1 .plus")
-    assert not s.js("document.getElementById('hand-tipp').hidden"), "Hinweis fehlt beim ersten Plus"
-    assert "Döner Kebap ist in Ihrer Bestellung" in s.p.text_content("#hand-tipp")
-    s.p.click("#hand-tipp >> text=Knöpfe nach links")
+    assert s.js("document.getElementById('hand-tipp').hidden"), "Hinweis beim ersten Plus"
+    s.p.click("footer [data-hand]")
     assert s.js("document.documentElement.classList.contains('links')")
-    s.p.click("#hand-tipp >> text=Rückgängig")
-    assert not s.js("document.documentElement.classList.contains('links')")
-    assert "Fußzeile" in s.p.text_content("#hand-tipp")
-    s.p.click("#hand-tipp >> text=OK")
-    s.p.reload()
-    s.p.wait_for_timeout(200)
-    s.p.click("#nr-2 .plus")
-    assert s.js("document.getElementById('hand-tipp').hidden"), "Hinweis kam ein zweites Mal"
     s.schliessen()
 
 
