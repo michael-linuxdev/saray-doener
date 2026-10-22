@@ -202,14 +202,18 @@
     return s.toLowerCase().replace(/ä|ae/g,'a').replace(/ö|oe/g,'o').replace(/ü|ue/g,'u').replace(/ß/g,'ss')
       .normalize('NFD').replace(/[̀-ͯ]/g,'');
   }
-  var vegK=document.getElementById('veg-schalter');
-  if(vegK)vegK.addEventListener('click',function(){vegK.setAttribute('aria-pressed',String(vegK.getAttribute('aria-pressed')!=='true'));suchen();});
+  /* Ernährung: '' | 'veg' | 'pesc' – filtert die Karte und blendet im Zettel Fleisch (und bei veg Fisch) aus */
+  var DIAET='',vegK=document.getElementById('veg-schalter');
+  document.querySelectorAll('[data-diaet]').forEach(function(k){k.addEventListener('click',function(){
+    DIAET=DIAET===k.dataset.diaet?'':k.dataset.diaet;
+    document.querySelectorAll('[data-diaet]').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.diaet===DIAET));});
+    suchen();try{zeichnen();}catch(e){}});});
   var feld=document.getElementById('suche-feld'),gerichte=[].slice.call(document.querySelectorAll('.gericht'));
   var treffer=document.querySelector('.treffer'),nichts=document.querySelector('.nichts'),wort=nichts&&nichts.querySelector('q');
   gerichte.forEach(function(g){g._s=norm(g.getAttribute('data-s'));});
   function suchen(){
-    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0,veg=vegK&&vegK.getAttribute('aria-pressed')==='true';
-    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;})&&(!veg||g.hasAttribute('data-veg'));g.hidden=!ok;if(ok)n++;});
+    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0,veg=!!DIAET;
+    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;})&&(!DIAET||g.hasAttribute('data-veg')||(DIAET==='pesc'&&g.hasAttribute('data-fisch')));g.hidden=!ok;if(ok)n++;});
     document.querySelectorAll('.liste').forEach(function(l){
       var v=l.querySelectorAll('.gericht:not([hidden])').length;l.style.setProperty('--zeilen',Math.max(1,Math.ceil(v/2)));
       l.closest('.abschnitt').hidden=v===0;
@@ -242,6 +246,9 @@
     halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen (Saray)','Döner + chicken (Saray)'],
     schinken:['Schinken','Ham'],schinkenananas:['Schinken + Ananas','Ham + pineapple'],hawaii:['Ananas','Pineapple'],tonno:['Thunfisch','Tuna'],
     bauern:['Bauernsalat (Käse, Oliven, Peperoni)','Farmer’s (cheese, olives, hot peppers)'],mozzarella:['Mozzarella','Mozzarella']};
+  var FLEISCH_F=['kalb','huhn','beide','hack','schinken','schinkenananas'],FISCH_F=['tonno'];
+  function erlaubtF(f){return !(DIAET&&FLEISCH_F.indexOf(f)>-1)&&!(DIAET==='veg'&&FISCH_F.indexOf(f)>-1);}
+  function ohneFleisch(liste){return DIAET?liste.filter(function(v){return FLEISCH.indexOf(v)<0&&['Salami','Schinken','Dönerfleisch','Hähnchen-Dönerfleisch'].indexOf(v)<0;}):liste;}
   var BEI=['S','P','SP'],BEI_NAME={S:['Salat','Salad'],P:['Pommes','Fries'],SP:['Salat + Pommes','Salad + fries']};
   [ /* k, Form, Füllung, Super, Käse, Beilage */
     ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
@@ -385,6 +392,7 @@
     if((x.t==='D'||x.t==='SA')&&va){
       var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',va.form==='salat'?L('Belag','Topping'):L('Füllung','Filling')));var fw=el('div','z-chips');
       FUELL.forEach(function(f){
+        if(f!==va.f&&!erlaubtF(f))return;
         var ziel=f===va.f?x.k:variante(x.k,{f:f});if(!ziel)return;
         var spF=f===va.f?null:(sperreZettel(ziel)||(function(){var nn=jetzt();var a=sperre(ziel,'freital',0,nn.min),b=sperre(ziel,'altenberg',0,nn.min);return a&&b&&a.art==='aus'&&b.art==='aus'?a:null;})());
         var fk=knopf(L(F_NAME[f][0],F_NAME[f][1])+(f===va.f?'':spF?' – '+sperrText(spF):preisDiff(x,ziel)),{'class':'chip','aria-pressed':String(f===va.f),'data-fuell':f,'data-u':x.u});
@@ -416,12 +424,12 @@
       gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(o.ohne.indexOf(c.dataset.w)<0));});
       box.appendChild(gg);
     }
-    if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
+    if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(ohneFleisch(FLEISCH),KAESE).concat(o.wahl.filter(function(v){return ohneFleisch([v]).length===0;})),o.wahl,'wahl',x.u));
     if(x.t==='R')box.appendChild(chips(L('Variante','Option'),(x.v||'').split('|').filter(Boolean),[o.va],'va',x.u));
-    if(x.t==='B')box.appendChild(chips(L('Belag (einer zur Wahl)','Topping (choose one)'),BELAG,[o.va],'va',x.u));
+    if(x.t==='B')box.appendChild(chips(L('Belag (einer zur Wahl)','Topping (choose one)'),ohneFleisch(BELAG).concat(o.va&&ohneFleisch([o.va]).length===0?[o.va]:[]),[o.va],'va',x.u));
     if(x.t==='P'||x.t==='S'||x.t==='R'){
       box.appendChild(chips(L('Extra je Zutat +1,50 €','Extra per topping +1,50 €'),GEMUESE,o.ex,'ex',x.u));
-      box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),FLEISCH.concat(KAESE),o.ex,'ex',x.u));
+      box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),ohneFleisch(FLEISCH).concat(KAESE).concat(o.ex.filter(function(v){return FLEISCH.indexOf(v)>-1&&DIAET;})),o.ex,'ex',x.u));
     }
     return box;
   }

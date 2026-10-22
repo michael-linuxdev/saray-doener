@@ -880,6 +880,28 @@ def salat_anpassen(b, url):
 
 
 @test
+def pescetarisch_und_auswahl_ohne_fleisch(b, url):
+    s = Seite(b, url)
+    s.p.click("#pesc-schalter")
+    sichtbar = set(s.js("[...document.querySelectorAll('.gericht:not([hidden])')].map(g=>g.dataset.k)"))
+    assert {"87", "136", "71", "130", "3"} <= sichtbar and not {"1", "82", "131"} & sichtbar, sichtbar
+    s.p.click("#nr-130 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-anpassen]")
+    fuell = s.js("[...document.querySelectorAll('[data-fuell]')].map(b=>b.dataset.fuell)")
+    assert "tonno" in fuell and "huhn" not in fuell and "kalb" not in fuell, fuell
+    s.p.click(".zettel-zu")
+    s.p.click("#veg-schalter")
+    assert s.js("document.getElementById('pesc-schalter').getAttribute('aria-pressed')") == "false"
+    assert s.js("document.getElementById('nr-87').hidden")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-anpassen]")
+    fuell = s.js("[...document.querySelectorAll('[data-fuell]')].map(b=>b.dataset.fuell)")
+    assert "tonno" not in fuell and "huhn" not in fuell and "halloumi" in fuell, fuell
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):

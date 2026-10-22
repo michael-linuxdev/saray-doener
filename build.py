@@ -9,7 +9,7 @@ Standorte/Zeiten: STANDORTE unten · Hinweis-Band: HINWEISE unten.
 WhatsApp-Nummern stehen nicht im Repo: optional in lokal.json (siehe README).
 """
 import base64, html, json, math, pathlib, re, shutil, sys, urllib.parse
-from menu import GRUPPEN, VEGETARISCH, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN
+from menu import GRUPPEN, VEGETARISCH, FISCH, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN
 import englisch as EN
 import anpassungen as ANP
 
@@ -175,6 +175,10 @@ VEG_ICON = (' <svg class="veg" viewBox="0 0 24 24" role="img" aria-label="vegeta
             '<path d="M5 19C5 10 11 5 20 4c0 9-5 15-14 15z" fill="#2E7D32"/><path d="M5 19c3-5 6-8 10-10" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
 
 
+FISCH_ICON = (' <svg class="veg" viewBox="0 0 24 24" role="img" aria-label="mit Fisch" data-en-aria="with fish"><title>mit Fisch</title>'
+              '<path d="M2 12c3-5 9-6 14-3l5-3-1 6 1 6-5-3c-5 3-11 2-14-3z" fill="#1565C0"/><circle cx="7" cy="11" r="1.2" fill="#fff"/></svg>')
+
+
 def gericht_html(g, gruppe, abschnitt, groessen):
     nr, name, desc, preise = g[:4]
     varianten = g[4] if len(g) > 4 else []
@@ -183,9 +187,10 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     beliebt = nr in BELIEBT
     empfohlen = nr in EMPFEHLUNG
     veg = (nr or name) in VEGETARISCH or gruppe == "Getränke" or "vegetarisch" in name.lower()
-    teile = [f'<li class="gericht{" ist-beliebt" if beliebt or empfohlen else ""}"{f' id="nr-{nr}"' if nr else ""} data-s="{e(suchtext)}{" beliebt" if beliebt else ""}{" empfehlung" if empfohlen else ""}{" vegetarisch vegetarian" if veg else ""}"{" data-veg" if veg else ""}{zettel_daten(nr, name, desc, preise, groessen, gericht_typ(nr, gruppe, abschnitt), varianten)}>']
+    fisch = (nr or name) in FISCH
+    teile = [f'<li class="gericht{" ist-beliebt" if beliebt or empfohlen else ""}"{f' id="nr-{nr}"' if nr else ""} data-s="{e(suchtext)}{" beliebt" if beliebt else ""}{" empfehlung" if empfohlen else ""}{" vegetarisch vegetarian" if veg else ""}{" pescetarisch pescetarian fisch fish" if fisch else ""}"{" data-veg" if veg else ""}{" data-fisch" if fisch else ""}{zettel_daten(nr, name, desc, preise, groessen, gericht_typ(nr, gruppe, abschnitt), varianten)}>']
     teile.append(f'<span class="nr">{chr(60) + "span class=" + chr(34) + "sr-only" + chr(34) + ">Nr. </span>" + e(nr) if nr else ""}</span>')
-    teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{VEG_ICON if veg and gruppe != "Getränke" else ""}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
+    teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{VEG_ICON if veg and gruppe != "Getränke" else ""}{FISCH_ICON if fisch else ""}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
     if groessen:
         for i, p in enumerate(preise):
             teile.append(preis(p, f"preis p{i + 1}", groessen[i]))
@@ -574,7 +579,7 @@ p{margin:0}
 .veg-schalter{display:inline-flex;align-items:center;gap:6px;margin-top:10px;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--tinte);
   background:#fff;color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
 .veg-schalter svg{width:18px;height:18px}
-.veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}
+.veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}.veg-schalter.pesc[aria-pressed=true]{background:#1565C0;border-color:#1565C0}.diaet{display:flex;flex-wrap:wrap;gap:8px}
 svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .suche input::placeholder{color:#8d7486}
 .suche input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:20px;height:20px;cursor:pointer;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233A1531' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat}
@@ -881,6 +886,9 @@ ZETTEL_JS = r'''
     halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen (Saray)','Döner + chicken (Saray)'],
     schinken:['Schinken','Ham'],schinkenananas:['Schinken + Ananas','Ham + pineapple'],hawaii:['Ananas','Pineapple'],tonno:['Thunfisch','Tuna'],
     bauern:['Bauernsalat (Käse, Oliven, Peperoni)','Farmer’s (cheese, olives, hot peppers)'],mozzarella:['Mozzarella','Mozzarella']};
+  var FLEISCH_F=['kalb','huhn','beide','hack','schinken','schinkenananas'],FISCH_F=['tonno'];
+  function erlaubtF(f){return !(DIAET&&FLEISCH_F.indexOf(f)>-1)&&!(DIAET==='veg'&&FISCH_F.indexOf(f)>-1);}
+  function ohneFleisch(liste){return DIAET?liste.filter(function(v){return FLEISCH.indexOf(v)<0&&['Salami','Schinken','Dönerfleisch','Hähnchen-Dönerfleisch'].indexOf(v)<0;}):liste;}
   var BEI=['S','P','SP'],BEI_NAME={S:['Salat','Salad'],P:['Pommes','Fries'],SP:['Salat + Pommes','Salad + fries']};
   [ /* k, Form, Füllung, Super, Käse, Beilage */
     ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
@@ -1024,6 +1032,7 @@ ZETTEL_JS = r'''
     if((x.t==='D'||x.t==='SA')&&va){
       var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',va.form==='salat'?L('Belag','Topping'):L('Füllung','Filling')));var fw=el('div','z-chips');
       FUELL.forEach(function(f){
+        if(f!==va.f&&!erlaubtF(f))return;
         var ziel=f===va.f?x.k:variante(x.k,{f:f});if(!ziel)return;
         var spF=f===va.f?null:(sperreZettel(ziel)||(function(){var nn=jetzt();var a=sperre(ziel,'freital',0,nn.min),b=sperre(ziel,'altenberg',0,nn.min);return a&&b&&a.art==='aus'&&b.art==='aus'?a:null;})());
         var fk=knopf(L(F_NAME[f][0],F_NAME[f][1])+(f===va.f?'':spF?' – '+sperrText(spF):preisDiff(x,ziel)),{'class':'chip','aria-pressed':String(f===va.f),'data-fuell':f,'data-u':x.u});
@@ -1055,12 +1064,12 @@ ZETTEL_JS = r'''
       gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(o.ohne.indexOf(c.dataset.w)<0));});
       box.appendChild(gg);
     }
-    if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
+    if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(ohneFleisch(FLEISCH),KAESE).concat(o.wahl.filter(function(v){return ohneFleisch([v]).length===0;})),o.wahl,'wahl',x.u));
     if(x.t==='R')box.appendChild(chips(L('Variante','Option'),(x.v||'').split('|').filter(Boolean),[o.va],'va',x.u));
-    if(x.t==='B')box.appendChild(chips(L('Belag (einer zur Wahl)','Topping (choose one)'),BELAG,[o.va],'va',x.u));
+    if(x.t==='B')box.appendChild(chips(L('Belag (einer zur Wahl)','Topping (choose one)'),ohneFleisch(BELAG).concat(o.va&&ohneFleisch([o.va]).length===0?[o.va]:[]),[o.va],'va',x.u));
     if(x.t==='P'||x.t==='S'||x.t==='R'){
       box.appendChild(chips(L('Extra je Zutat +1,50 €','Extra per topping +1,50 €'),GEMUESE,o.ex,'ex',x.u));
-      box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),FLEISCH.concat(KAESE),o.ex,'ex',x.u));
+      box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),ohneFleisch(FLEISCH).concat(KAESE).concat(o.ex.filter(function(v){return FLEISCH.indexOf(v)>-1&&DIAET;})),o.ex,'ex',x.u));
     }
     return box;
   }
@@ -1632,14 +1641,18 @@ JS = r"""
     return s.toLowerCase().replace(/ä|ae/g,'a').replace(/ö|oe/g,'o').replace(/ü|ue/g,'u').replace(/ß/g,'ss')
       .normalize('NFD').replace(/[̀-ͯ]/g,'');
   }
-  var vegK=document.getElementById('veg-schalter');
-  if(vegK)vegK.addEventListener('click',function(){vegK.setAttribute('aria-pressed',String(vegK.getAttribute('aria-pressed')!=='true'));suchen();});
+  /* Ernährung: '' | 'veg' | 'pesc' – filtert die Karte und blendet im Zettel Fleisch (und bei veg Fisch) aus */
+  var DIAET='',vegK=document.getElementById('veg-schalter');
+  document.querySelectorAll('[data-diaet]').forEach(function(k){k.addEventListener('click',function(){
+    DIAET=DIAET===k.dataset.diaet?'':k.dataset.diaet;
+    document.querySelectorAll('[data-diaet]').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.diaet===DIAET));});
+    suchen();try{zeichnen();}catch(e){}});});
   var feld=document.getElementById('suche-feld'),gerichte=[].slice.call(document.querySelectorAll('.gericht'));
   var treffer=document.querySelector('.treffer'),nichts=document.querySelector('.nichts'),wort=nichts&&nichts.querySelector('q');
   gerichte.forEach(function(g){g._s=norm(g.getAttribute('data-s'));});
   function suchen(){
-    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0,veg=vegK&&vegK.getAttribute('aria-pressed')==='true';
-    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;})&&(!veg||g.hasAttribute('data-veg'));g.hidden=!ok;if(ok)n++;});
+    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0,veg=!!DIAET;
+    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;})&&(!DIAET||g.hasAttribute('data-veg')||(DIAET==='pesc'&&g.hasAttribute('data-fisch')));g.hidden=!ok;if(ok)n++;});
     document.querySelectorAll('.liste').forEach(function(l){
       var v=l.querySelectorAll('.gericht:not([hidden])').length;l.style.setProperty('--zeilen',Math.max(1,Math.ceil(v/2)));
       l.closest('.abschnitt').hidden=v===0;
@@ -1780,7 +1793,10 @@ SEITE = r"""<!doctype html>
         <div class="suche" role="search">
           <label for="suche-feld" data-en="Search dishes">Gericht suchen</label>
           <div class="suche-feld">%%SUCH_ICON%%<input id="suche-feld" type="search" placeholder="Name oder Nummer" data-en-ph="Name or number" autocomplete="off" enterkeyhint="search"></div>
-          <button type="button" class="veg-schalter" id="veg-schalter" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 11 5 20 4c0 9-5 15-14 15z" fill="#2E7D32"/></svg><span data-en="Vegetarian only">Nur vegetarisch</span></button>
+          <div class="diaet" role="group" aria-label="Ernährung" data-en-aria="Diet">
+          <button type="button" class="veg-schalter" id="veg-schalter" data-diaet="veg" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 11 5 20 4c0 9-5 15-14 15z" fill="#2E7D32"/></svg><span data-en="Vegetarian">Vegetarisch</span></button>
+          <button type="button" class="veg-schalter pesc" id="pesc-schalter" data-diaet="pesc" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c3-5 9-6 14-3l5-3-1 6 1 6-5-3c-5 3-11 2-14-3z" fill="#1565C0"/></svg><span data-en="Pescetarian">Pescetarisch</span></button>
+          </div>
         </div>
         <div class="kat-marke" aria-hidden="true"></div>
         <nav class="kategorien" aria-label="Kategorien der Speisekarte"><ul>%%NAV%%</ul></nav>

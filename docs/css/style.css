@@ -180,7 +180,7 @@ p{margin:0}
 .veg-schalter{display:inline-flex;align-items:center;gap:6px;margin-top:10px;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--tinte);
   background:#fff;color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
 .veg-schalter svg{width:18px;height:18px}
-.veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}
+.veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}.veg-schalter.pesc[aria-pressed=true]{background:#1565C0;border-color:#1565C0}.diaet{display:flex;flex-wrap:wrap;gap:8px}
 svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .suche input::placeholder{color:#8d7486}
 .suche input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:20px;height:20px;cursor:pointer;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233A1531' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat}

@@ -352,3 +352,6 @@ VEGETARISCH = {
     "Paprika, Zwiebel, Champignon, Tomate, Peperoni, Ananas, Oliven, Brokkoli oder Mais", "Käse, Halloumikäse oder Fetakäse",
     "Fladenbrot mit Soße oder ganz", "Fladenbrot mit Soße und Käse",
 }
+
+# Pescetarisch = vegetarisch plus Gerichte mit Fisch (ohne Fleisch)
+FISCH = {"71", "87", "136", "154"}
