@@ -139,8 +139,8 @@ ICONS = {
     "kinder": f'<path d="M20 5 L24.5 14.5 L35 15.6 L27.2 22.6 L29.5 33 L20 27.7 L10.5 33 L12.8 22.6 L5 15.6 L15.5 14.5 Z" fill="#FFD21F" {_F}/><path d="M16.5 20.5 v1 M23.5 20.5 v1 M16.5 24.5 C18 26.5 22 26.5 23.5 24.5" {_K}/>',
     "getraenke": f'<path d="M11 13 H29 L26.5 35 H13.5 Z" fill="#C8371A" {_F}/><path d="M12 19 H28" stroke="#fff" stroke-width="2.6"/><path d="M20 13 L24 4 L29 4" {_K}/>',
 }
-EMPFEHLUNG = ["26", "91", "125"]   # „Wir empfehlen“: Saray-Teller (groß), Pizza Saray, Pizzabrötchen
-BELIEBT = ["1", "50", "23", "100", "105", "124"]   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
+EMPFEHLUNG = ["1", "26", "91", "125"]   # „Wir empfehlen“: alle gleich groß, ohne Koch
+BELIEBT = ["50", "23", "100", "105", "124"]   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
 GERICHT = {g[0]: (g, gr, ab) for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0]}
 
 
@@ -154,6 +154,8 @@ def gericht_typ(nr, gruppe, abschnitt):
         return "D"
     if gruppe == "Salate":
         return "SA"
+    if abschnitt == "Pizzabrötchen":
+        return "B"
     return ""
 
 
@@ -275,7 +277,7 @@ def beliebt_karte(nr, gross=False, koch=True):
 BELIEBT = [n for n in BELIEBT if n in GERICHT]
 BELIEBT_HTML = ('<section class="beliebt" aria-label="Empfehlungen">'
                 + ('<h3 class="beliebt-titel" data-en="Our recommendation">Wir empfehlen</h3><ul class="tipps tipps-empfehlung">'
-                   + "".join(beliebt_karte(n, True, i == 0) for i, n in enumerate(n for n in EMPFEHLUNG if n in GERICHT)) + '</ul>'
+                   + "".join(beliebt_karte(n, True, False) for n in EMPFEHLUNG if n in GERICHT) + '</ul>'
                    if any(n in GERICHT for n in EMPFEHLUNG) else "") +
                 '<h3 class="beliebt-titel" data-en="Popular with our guests">Beliebt bei unseren Gästen</h3>'
                 '<ul class="tipps">' + "".join(beliebt_karte(n) for n in BELIEBT) + '</ul></section>')
@@ -534,7 +536,7 @@ p{margin:0}
 .tipps-empfehlung .ohne-koch{flex-basis:calc(50% - 6px);min-width:0}
 .tipps-empfehlung .ohne-koch a{padding:14px 14px 16px}
 .tipps-empfehlung .ohne-koch .tipp-name{font-size:1.2rem}
-.tipps-empfehlung .ohne-koch .tipp-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tipps-empfehlung .ohne-koch .tipp-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:none;max-height:2.7em;margin-bottom:auto}
 .tipp-gross a{position:relative;padding:18px 120px 18px 20px;min-height:150px}
 .tipp-koch{position:absolute;right:10px;bottom:6px;width:104px}
 @media (min-width:700px){.tipp-gross a{padding-right:190px}.tipp-koch{width:150px;right:24px;bottom:4px}}
@@ -549,7 +551,7 @@ p{margin:0}
 .tipp-preis .preis{font-size:1.35rem}
 .gericht.ist-beliebt{scroll-margin-top:90px}
 @media (min-width:1100px){.tipps{width:auto;margin:0;padding:4px 0 12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
-  .tipps-empfehlung{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tipps-empfehlung{grid-template-columns:repeat(4,minmax(0,1fr))}
   .tipp-gross{grid-column:1/-1}.tipp-gross.ohne-koch{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
 @media (max-width:559px){
   .gericht{padding-block:5px}
@@ -715,6 +717,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .tipp.im-zettel > .plus{display:none}
 .tipp .mengen{position:absolute;right:10px;bottom:10px;padding:0}
 .tipp-gross .mengen{right:auto;left:120px;bottom:18px}
+.tipp-gross.ohne-koch .mengen{left:auto;right:10px;bottom:10px}
 .tipp:has(.mengen .st-g) .mengen{position:static;flex-direction:column;align-items:flex-start;gap:6px;padding:0 12px 12px}
 .wahl{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding-top:8px}
 .wahl button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--tinte);background:var(--gelb);color:var(--tinte);font:700 .92rem var(--text);cursor:pointer}
@@ -865,14 +868,17 @@ ZETTEL_JS = r'''
   var SOSSEN=['Knoblauch','Kräuter','Chili'],OHNE=['Zwiebeln','Tomaten','Gurken','Rotkohl','Weißkohl','Eisbergsalat'];
   var GEMUESE=['Paprika','Zwiebel','Champignon','Tomate','Peperoni','Ananas','Oliven','Brokkoli','Mais'];
   var FLEISCH=['Schinken','Salami','Dönerfleisch','Hähnchen-Dönerfleisch'],KAESE=['Käse','Halloumikäse','Fetakäse'];
+  /* Pizzabrötchen: ein Belag zur Wahl (laut Karte Salami, Schinken, Dönerfleisch oder nach Wahl) */
+  var BELAG=['Salami','Schinken','Dönerfleisch','Hähnchen-Dönerfleisch','Käse','Halloumikäse','Fetakäse','Gemüse'];
   var PAARE=[['1','2'],['3','4'],['6','7'],['9','10'],['11','12'],['13','14'],['15','16'],['23','25'],['30','31'],['32','33'],['36','37'],
     ['40','41'],['42','43'],['50','51'],['52','53'],['54','55'],['60','61'],['123','124']],OHNE_K={},MIT_K={};
   PAARE.forEach(function(pq){OHNE_K[pq[0]]=pq[1];MIT_K[pq[1]]=pq[0];});
   /* Varianten: Form, Füllung, extra Fleisch (Super), Käse, Beilage.
      Die Schalter im Zettel suchen damit das passende Gericht der Karte. */
-  var VAR={},FUELL=['kalb','huhn','veg','falafel','halloumi','hack'];
+  var VAR={},FUELL=['kalb','huhn','beide','veg','falafel','halloumi','hack'];
   var F_NAME={kalb:['Dönerfleisch','Döner meat'],huhn:['Hähnchen','Chicken'],veg:['ohne Fleisch','No meat'],falafel:['Falafel','Falafel'],
-    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat']};
+    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen (Saray)','Döner + chicken (Saray)']};
+  var BEI=['S','P','SP'],BEI_NAME={S:['Salat','Salad'],P:['Pommes','Fries'],SP:['Salat + Pommes','Salad + fries']};
   [ /* k, Form, Füllung, Super, Käse, Beilage */
     ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
     ['30','doener','huhn',0,0],['31','doener','huhn',0,1],['32','doener','huhn',1,0],['33','doener','huhn',1,1],
@@ -883,7 +889,7 @@ ZETTEL_JS = r'''
     ['13','box','kalb',0,0],['14','box','kalb',0,1],['15','box','huhn',0,0],['16','box','huhn',0,1],
     ['21','teller','kalb',0,0,'S'],['22','teller','kalb',0,0,'P'],['23','teller','kalb',0,0,'SP'],['25','teller','kalb',0,1,'SP'],
     ['34','teller','huhn',0,0,'S'],['35','teller','huhn',0,0,'P'],['36','teller','huhn',0,0,'SP'],['37','teller','huhn',0,1,'SP'],
-    ['24','teller','veg',0,0,'SP'],['28','ueber','kalb',0,0],['38','ueber','huhn',0,0],['18','kinder','kalb',0,0],['19','kinder','huhn',0,0],
+    ['24','teller','veg',0,0,'SP'],['26','teller','beide',0,0,'SPR'],['28','ueber','kalb',0,0],['38','ueber','huhn',0,0],['18','kinder','kalb',0,0],['19','kinder','huhn',0,0],
     ['121','lahmacun','hack',0,0],['123','lahmacun','kalb',0,0],['124','lahmacun','kalb',0,1]
   ].forEach(function(v){VAR[v[0]]={k:v[0],form:v[1],f:v[2],sup:v[3],kae:v[4],bei:v[5]||''};});
   /* bestes Gericht mit den gewünschten Merkmalen; Vorrang: Beilage, Käse, Super */
@@ -891,7 +897,7 @@ ZETTEL_JS = r'''
     var a=VAR[k];if(!a)return null;var w=Object.assign({},a,wunsch),best=null,bp=-1;
     Object.keys(VAR).forEach(function(kk){var v=VAR[kk];if(v.form!==a.form||v.f!==w.f||!gerichtLi(kk))return;
       if(streng&&(v.sup!==w.sup||v.kae!==w.kae||v.bei!==w.bei))return;
-      var pkt=(v.bei===w.bei?4:0)+(v.kae===w.kae?2:0)+(v.sup===w.sup?1:0);if(pkt>bp){bp=pkt;best=kk;}});
+      var pkt=(v.bei===w.bei?4:0)+(v.kae===w.kae?2:0)+(v.sup===w.sup?1:0)+(v.bei==='SP'?.5:0);if(pkt>bp){bp=pkt;best=kk;}});
     return best===k?null:best;
   }
   function kaesePartner(k){return VAR[k]?variante(k,{kae:VAR[k].kae?0:1},true):(OHNE_K[k]||MIT_K[k]||null);}
@@ -955,7 +961,7 @@ ZETTEL_JS = r'''
   function preisDiff(x,ziel){var li=gerichtLi(ziel);if(!li)return '';var d=(+li.dataset.p)-x.c;return d?' ('+(d<0?'−':'+')+euro(Math.abs(d))+')':'';}
   var W={'Knoblauch':'garlic','Kräuter':'herb','Chili':'chili','Zwiebeln':'onions','Tomaten':'tomatoes','Gurken':'cucumber','Rotkohl':'red cabbage',
     'Weißkohl':'white cabbage','Eisbergsalat':'iceberg lettuce','Paprika':'bell pepper','Zwiebel':'onion','Champignon':'mushrooms','Tomate':'tomato',
-    'Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
+    'Gemüse':'vegetables','Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
     'Dönerfleisch':'döner meat','Hähnchen-Dönerfleisch':'chicken döner meat','Käse':'cheese','Halloumikäse':'halloumi','Fetakäse':'feta'};
   function w(v){if(SP!=='en'||!W[v])return v;return W[v].charAt(0).toUpperCase()+W[v].slice(1);}
   function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"]');}
@@ -980,6 +986,7 @@ ZETTEL_JS = r'''
     if(o.ohne.length)t.push((en?'no ':'ohne ')+liste(tr(o.ohne),en));
     if(x.t==='S')t.push(o.wahl.length<3?(en?'choose '+(3-o.wahl.length)+' more toppings':'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?'with ':'mit ')+liste(tr(o.wahl),en));
     if(x.t==='R')t.push(o.va?(en?'option ':'Variante ')+o.va.charAt(0):(en?'choose option':'Variante wählen'));
+    if(x.t==='B')t.push(o.va?(en?'with ':'mit ')+(en?(W[o.va]||o.va):o.va):(en?'choose topping':'Belag wählen'));
     tr(o.ex).forEach(function(e){t.push('extra '+e);});
     return t.join(', ');
   }
@@ -1017,6 +1024,13 @@ ZETTEL_JS = r'''
         if(spF)fk.disabled=true;fw.appendChild(fk);
       });
       if(fw.children.length>1){fg.appendChild(fw);box.appendChild(fg);}
+      if(va.form==='teller'){ /* Beilage: Salat, Pommes oder beides – wechselt zum passenden Teller */
+        var bopt=BEI.filter(function(b){if(b===va.bei)return true;var z=variante(x.k,{bei:b});return z&&VAR[z].bei===b;});
+        if(bopt.length>1){var bg=el('div','z-gruppe');bg.appendChild(el('span','z-gruppe-titel',L('Beilage','Side')));var bw=el('div','z-chips');
+          bopt.forEach(function(b){var zb=b===va.bei?null:variante(x.k,{bei:b});
+            bw.appendChild(knopf(L(BEI_NAME[b][0],BEI_NAME[b][1])+(zb?preisDiff(x,zb):''),{'class':'chip','aria-pressed':String(b===va.bei),'data-bei':b,'data-u':x.u}));});
+          bg.appendChild(bw);box.appendChild(bg);}
+      }
       var su=variante(x.k,{sup:va.sup?0:1},true);
       if(su){var sg=el('div','z-gruppe');sg.appendChild(el('span','z-gruppe-titel',L('Fleisch','Meat')));var sw=el('div','z-chips');
         sw.appendChild(knopf(L('extra Fleisch (Super)','extra meat (Super)')+(va.sup?'':preisDiff(x,su)),{'class':'chip','aria-pressed':String(!!va.sup),'data-super':x.u}));
@@ -1037,6 +1051,7 @@ ZETTEL_JS = r'''
     }
     if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(FLEISCH,KAESE),o.wahl,'wahl',x.u));
     if(x.t==='R')box.appendChild(chips(L('Variante','Option'),(x.v||'').split('|').filter(Boolean),[o.va],'va',x.u));
+    if(x.t==='B')box.appendChild(chips(L('Belag (einer zur Wahl)','Topping (choose one)'),BELAG,[o.va],'va',x.u));
     if(x.t==='P'||x.t==='S'||x.t==='R'){
       box.appendChild(chips(L('Extra je Zutat +1,50 €','Extra per topping +1,50 €'),GEMUESE,o.ex,'ex',x.u));
       box.appendChild(chips(L('Extra je Zutat +2,00 €','Extra per topping +2,00 €'),FLEISCH.concat(KAESE),o.ex,'ex',x.u));
@@ -1101,7 +1116,7 @@ ZETTEL_JS = r'''
     var s1=sig(neu),x=zettel.find(function(y){return sig(y)===s1;});
     if(x)x.q++;else zettel.push(neu);
     speichern();zeichnen();
-    var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):'';
+    var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):neu.t==='B'?L(' Belag in der Bestellung wählen.',' Choose the topping in your order.'):'';
     var meldung=nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis;
     if(handTipp(meldung))zmeld.hidden=true;else melden(meldung);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
@@ -1141,6 +1156,9 @@ ZETTEL_JS = r'''
     var fu=ev.target.closest('[data-fuell]');
     if(fu){var zf=finde(fu.dataset.u);if(!zf)return;var zielF=variante(zf.k,{f:fu.dataset.fuell});if(!zielF)return;
       wechseln(zf,zielF);speichern();zeichnen();var fw2=zliste.querySelector('[data-fuell="'+fu.dataset.fuell+'"]');if(fw2)fw2.focus();return;}
+    var bb=ev.target.closest('[data-bei]');
+    if(bb){var zb2=finde(bb.dataset.u);if(!zb2||!VAR[zb2.k]||VAR[zb2.k].bei===bb.dataset.bei)return;var zielB=variante(zb2.k,{bei:bb.dataset.bei});if(!zielB)return;
+      wechseln(zb2,zielB);speichern();zeichnen();var bw2=zliste.querySelector('[data-bei="'+bb.dataset.bei+'"]');if(bw2)bw2.focus();return;}
     var sb=ev.target.closest('[data-super]');
     if(sb){var zs=finde(sb.dataset.super);if(!zs||!VAR[zs.k])return;var zielS=variante(zs.k,{sup:VAR[zs.k].sup?0:1},true);if(!zielS)return;
       wechseln(zs,zielS);speichern();zeichnen();var sw2=zliste.querySelector('[data-super]');if(sw2)sw2.focus();return;}

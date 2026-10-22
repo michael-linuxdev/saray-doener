@@ -142,7 +142,7 @@ p{margin:0}
 .tipps-empfehlung .ohne-koch{flex-basis:calc(50% - 6px);min-width:0}
 .tipps-empfehlung .ohne-koch a{padding:14px 14px 16px}
 .tipps-empfehlung .ohne-koch .tipp-name{font-size:1.2rem}
-.tipps-empfehlung .ohne-koch .tipp-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tipps-empfehlung .ohne-koch .tipp-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:none;max-height:2.7em;margin-bottom:auto}
 .tipp-gross a{position:relative;padding:18px 120px 18px 20px;min-height:150px}
 .tipp-koch{position:absolute;right:10px;bottom:6px;width:104px}
 @media (min-width:700px){.tipp-gross a{padding-right:190px}.tipp-koch{width:150px;right:24px;bottom:4px}}
@@ -157,7 +157,7 @@ p{margin:0}
 .tipp-preis .preis{font-size:1.35rem}
 .gericht.ist-beliebt{scroll-margin-top:90px}
 @media (min-width:1100px){.tipps{width:auto;margin:0;padding:4px 0 12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
-  .tipps-empfehlung{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tipps-empfehlung{grid-template-columns:repeat(4,minmax(0,1fr))}
   .tipp-gross{grid-column:1/-1}.tipp-gross.ohne-koch{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
 @media (max-width:559px){
   .gericht{padding-block:5px}
@@ -323,6 +323,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .tipp.im-zettel > .plus{display:none}
 .tipp .mengen{position:absolute;right:10px;bottom:10px;padding:0}
 .tipp-gross .mengen{right:auto;left:120px;bottom:18px}
+.tipp-gross.ohne-koch .mengen{left:auto;right:10px;bottom:10px}
 .tipp:has(.mengen .st-g) .mengen{position:static;flex-direction:column;align-items:flex-start;gap:6px;padding:0 12px 12px}
 .wahl{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding-top:8px}
 .wahl button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--tinte);background:var(--gelb);color:var(--tinte);font:700 .92rem var(--text);cursor:pointer}

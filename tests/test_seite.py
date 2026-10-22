@@ -836,6 +836,40 @@ def chef_app_zahlen(b, url):
 
 
 @test
+def pizzabroetchen_belag(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-125 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    assert "Belag wählen" in s.wa_text()
+    s.p.click("[data-anpassen]")
+    s.p.click('.z-optionen [data-o="va"][data-w="Dönerfleisch"]')
+    s.p.click('.z-optionen [data-o="va"][data-w="Schinken"]')
+    text = s.wa_text()
+    assert "Nr. 125 Pizzabrötchen, mit Schinken: 7,50 €" in text, text
+    s.schliessen()
+
+
+@test
+def teller_umwandeln(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-26 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    s.p.click("[data-anpassen]")
+    s.p.click('[data-fuell="kalb"]')
+    assert "Nr. 23 Döner-Teller" in s.wa_text()
+    s.p.click('[data-bei="P"]')
+    text = s.wa_text()
+    assert "Nr. 22 Döner-Teller" in text and "10,00 €" in text, text
+    s.p.click('[data-fuell="huhn"]')
+    assert "Nr. 35 Hähnchen-Döner-Teller" in s.wa_text()
+    s.p.click('[data-fuell="beide"]')
+    assert "Nr. 26 Saray-Teller" in s.wa_text()
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):
