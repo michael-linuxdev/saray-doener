@@ -284,7 +284,7 @@ function hinweisKarte(){ /* Hinweis-Band */
 }
 function zutatenKarte(){ /* einzelne Zutaten ausschalten – auf der Seite dann nicht wählbar */
   var t=heute();app.appendChild(el('h2',{text:'Zutaten'}));
-  var k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Antippen = aus'+(LADEN==='alle'?' (beide Läden)':' in '+(LADEN==='freital'?'Freital':'Altenberg'))+', bis Sie es wieder einschalten. Ausgeschaltetes kann auf der Seite nicht gewählt werden; Gerichte mit Pommes bzw. Reis sind dann nicht zu haben. Noch einmal antippen = wieder da.'})]);
+  var k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Antippen = aus'+(LADEN==='alle'?' (beide Läden)':' in '+(LADEN==='freital'?'Freital':'Altenberg'))+', bis Sie es wieder einschalten. Ausgeschaltetes kann auf der Seite nicht gewählt werden. Pommes/Reis aus: Gerichte gibt es ohne diese Beilage, je 0,50 € günstiger. Noch einmal antippen = wieder da.'})]);
   STD.zutaten.forEach(function(gr){
     k.appendChild(el('p',{class:'abschnitt',style:'margin:10px 0 6px',text:gr[0]}));
     k.appendChild(el('div',{class:'reihe'},gr[1].map(function(z){
@@ -604,7 +604,7 @@ start();
 
 
 # Zutaten, die der Inhaber einzeln ausschalten kann (Namen wie auf der Seite; „Zwiebel“ gilt auch für „Zwiebeln“).
-# Pommes/Reis: Gerichte mit dieser Beilage sind dann nicht zu haben (Gruppen z:Pommes, z:Reis in build.py)
+# Pommes/Reis: Gerichte gibt es dann ohne diese Beilage, je 0,50 € günstiger (BEILAGEN in build.py)
 ZUTATEN_SCHALTER = [
     ["Soßen", ["Knoblauch", "Kräuter", "Chili"]],
     ["Salat und Gemüse", ["Eisbergsalat", "Tomate", "Gurken", "Zwiebel", "Rotkohl", "Weißkohl", "Paprika", "Champignon",

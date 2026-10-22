@@ -970,15 +970,20 @@ def zutaten_aus(b, url):
 
 
 @test
-def pommes_aus(b, url):
-    s = Seite(b, url, regeln=[{"was": "z:Pommes"}])
-    assert s.js("document.getElementById('nr-23').classList.contains('nicht-da')")
-    assert s.js("document.getElementById('nr-72').classList.contains('nicht-da')")
-    assert not s.js("document.getElementById('nr-21').classList.contains('nicht-da')")
-    s.p.click("#nr-21 .plus")
+def pommes_und_reis_aus(b, url):
+    s = Seite(b, url, regeln=[{"was": "z:Pommes"}, {"was": "z:Reis"}])
+    assert s.js("document.getElementById('nr-72').classList.contains('nicht-da')"), "reine Pommes müssen aus sein"
+    assert not s.js("document.getElementById('nr-23').classList.contains('nicht-da')")
+    for nr in ("23", "26", "70"):
+        s.p.click(f"#nr-{nr} .plus")
     s.p.click("#zettel-leiste")
-    s.p.click("[data-anpassen]")
-    assert s.js("document.querySelector('[data-bei=\"P\"]').disabled") and s.js("document.querySelector('[data-bei=\"SP\"]').disabled")
+    s.p.click('[data-laden="freital"]')
+    text = s.wa_text()
+    assert "Nr. 23 Döner-Teller, Kräuter-Soße, ohne Pommes (heute aus, −0,50 €): 10,50 €" in text, text
+    assert "Nr. 26 Saray-Teller, Kräuter-Soße, ohne Pommes und Reis (heute aus, −1,00 €): 14,00 €" in text, text
+    assert "Nr. 70 Schnitzel, ohne Pommes (heute aus, −0,50 €): 9,50 €" in text, text
+    s.p.click("[data-anpassen] >> nth=0")
+    assert s.js("document.querySelector('[data-bei=\"P\"]').disabled")
     s.schliessen()
 
 

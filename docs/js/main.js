@@ -291,7 +291,7 @@
   }
   function kaesePartner(k){return VAR[k]?variante(k,{kae:VAR[k].kae?0:1},true):(OHNE_K[k]||MIT_K[k]||null);}
   /* Verfügbarkeit: feste Regeln aus build.py + tagesaktuelle aus status.json */
-  var SPERR={"doener": {"de": "Döner", "en": "Döner", "nr": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "30", "31", "32", "33", "34", "35", "36", "37", "38"]}, "duerum": {"de": "Dürüm", "en": "Dürüm", "nr": ["50", "51", "52", "53", "54", "55", "56", "57", "58", "40", "41", "42", "43"]}, "teller": {"de": "Box & Teller", "en": "Boxes & plates", "nr": ["13", "14", "15", "16", "21", "22", "23", "24", "25", "26", "28"]}, "pizza": {"de": "Pizza", "en": "Pizza", "nr": ["80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "125"]}, "lahmacun": {"de": "Lahmacun", "en": "Lahmacun", "nr": ["120", "121", "122", "123", "124"]}, "baguette": {"de": "Baguette", "en": "Baguette", "nr": ["150", "151", "152", "153", "154", "156", "157", "158", "159", "160"]}, "salate": {"de": "Salate", "en": "Salads", "nr": ["130", "131", "132", "133", "134", "135", "136", "137", "138", "139", "140", "141", "142", "143"]}, "schnitzel": {"de": "Schnitzel & Nuggets", "en": "Schnitzel & nuggets", "nr": ["70", "71", "72", "73", "60", "61", "62", "63", "64", "65"]}, "kinder": {"de": "Für Kinder", "en": "For kids", "nr": ["17", "18", "19", "20"]}, "getraenke": {"de": "Getränke", "en": "Drinks", "nr": []}, "huhn": {"de": "Hähnchen", "en": "Chicken", "nr": ["30", "31", "32", "33", "34", "35", "36", "37", "38", "40", "41", "42", "43", "15", "16", "26", "102", "105", "134", "135", "19"]}, "nuggets": {"de": "Nuggets", "en": "Nuggets", "nr": ["60", "61", "62", "63", "64", "65", "20"]}, "falafel": {"de": "Falafel", "en": "Falafel", "nr": ["11", "12", "58", "24", "142"]}, "halloumi": {"de": "Halloumi", "en": "Halloumi", "nr": ["5", "57", "24", "26", "98", "99", "158", "141"]}, "schnitzel-fleisch": {"de": "Schnitzel", "en": "Schnitzel", "nr": ["9", "10", "159", "70"]}, "fisch": {"de": "Fisch", "en": "Fish", "nr": ["71"]}, "z:Pommes": {"de": "Pommes", "en": "Fries", "nr": ["35", "36", "37", "13", "14", "15", "16", "22", "23", "24", "25", "26", "70", "71", "72", "73", "62", "64", "65", "17", "20"]}, "z:Reis": {"de": "Reis", "en": "Rice", "nr": ["26"]}},REGELN_FEST=[{"was": "schnitzel-fleisch", "laden": "freital", "datum": "2026-10-22"}, {"was": "fisch", "laden": "freital"}, {"was": "baguette"}],REGELN=REGELN_FEST.slice(),LADEN_N={freital:'Freital',altenberg:'Altenberg'};
+  var SPERR={"doener": {"de": "Döner", "en": "Döner", "nr": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "30", "31", "32", "33", "34", "35", "36", "37", "38"]}, "duerum": {"de": "Dürüm", "en": "Dürüm", "nr": ["50", "51", "52", "53", "54", "55", "56", "57", "58", "40", "41", "42", "43"]}, "teller": {"de": "Box & Teller", "en": "Boxes & plates", "nr": ["13", "14", "15", "16", "21", "22", "23", "24", "25", "26", "28"]}, "pizza": {"de": "Pizza", "en": "Pizza", "nr": ["80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "125"]}, "lahmacun": {"de": "Lahmacun", "en": "Lahmacun", "nr": ["120", "121", "122", "123", "124"]}, "baguette": {"de": "Baguette", "en": "Baguette", "nr": ["150", "151", "152", "153", "154", "156", "157", "158", "159", "160"]}, "salate": {"de": "Salate", "en": "Salads", "nr": ["130", "131", "132", "133", "134", "135", "136", "137", "138", "139", "140", "141", "142", "143"]}, "schnitzel": {"de": "Schnitzel & Nuggets", "en": "Schnitzel & nuggets", "nr": ["70", "71", "72", "73", "60", "61", "62", "63", "64", "65"]}, "kinder": {"de": "Für Kinder", "en": "For kids", "nr": ["17", "18", "19", "20"]}, "getraenke": {"de": "Getränke", "en": "Drinks", "nr": []}, "huhn": {"de": "Hähnchen", "en": "Chicken", "nr": ["30", "31", "32", "33", "34", "35", "36", "37", "38", "40", "41", "42", "43", "15", "16", "26", "102", "105", "134", "135", "19"]}, "nuggets": {"de": "Nuggets", "en": "Nuggets", "nr": ["60", "61", "62", "63", "64", "65", "20"]}, "falafel": {"de": "Falafel", "en": "Falafel", "nr": ["11", "12", "58", "24", "142"]}, "halloumi": {"de": "Halloumi", "en": "Halloumi", "nr": ["5", "57", "24", "26", "98", "99", "158", "141"]}, "schnitzel-fleisch": {"de": "Schnitzel", "en": "Schnitzel", "nr": ["9", "10", "159", "70"]}, "fisch": {"de": "Fisch", "en": "Fish", "nr": ["71"]}, "z:Pommes": {"de": "Pommes", "en": "Fries", "nr": ["72", "73"]}},REGELN_FEST=[{"was": "schnitzel-fleisch", "laden": "freital", "datum": "2026-10-22"}, {"was": "fisch", "laden": "freital"}, {"was": "baguette"}],REGELN=REGELN_FEST.slice(),LADEN_N={freital:'Freital',altenberg:'Altenberg'};
   function datumISO(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+off*864e5));}
   function minAus(t){var q=String(t).split(':');return (+q[0])*60+(+q[1]||0);}
   function trifft(r,k){var w=[].concat(r.was||[]);return w.some(function(v){v=String(v);return v===k||(SPERR[v]&&SPERR[v].nr.indexOf(k)>-1);});}
@@ -363,7 +363,10 @@
   function aktionZ(x){var li=gerichtLi(x.k);if(!li)return null;var gs=li.dataset.g?li.dataset.g.split('|'):[''];
     var tag=abh.tag||isoTag(0),zi=ZINFO[abh.zeit],min=zi?zi.min:(tag===isoTag(0)?jetzt().min:null);
     return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),tag,abh.laden||null,min);}
-  function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o);}
+  /* Beilage (Pommes/Reis) vom Laden ausgeschaltet: Gericht ohne diese Beilage, je 0,50 € weniger */
+  var BEILAGEN={"35": ["Pommes"], "36": ["Pommes"], "37": ["Pommes"], "13": ["Pommes"], "14": ["Pommes"], "15": ["Pommes"], "16": ["Pommes"], "22": ["Pommes"], "23": ["Pommes"], "24": ["Pommes"], "25": ["Pommes"], "26": ["Pommes", "Reis"], "70": ["Pommes"], "71": ["Pommes"], "62": ["Pommes"], "64": ["Pommes"], "65": ["Pommes"], "17": ["Pommes"], "20": ["Pommes"]},BEILAGE_RABATT=50;
+  function fehlend(x){return (BEILAGEN[x.k]||[]).filter(function(b){return zAus(b);});}
+  function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o)-fehlend(x).length*BEILAGE_RABATT;}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
@@ -373,6 +376,7 @@
       if(en)t.push(!so.length?'no sauce':liste(tr(so),true)+' sauce');
       else t.push(!so.length?'ohne Soße':so.length===1?so[0]+'-Soße':so.slice(0,-1).join('-, ')+'- und '+so[so.length-1]+'-Soße');}
     if(o.ohne.length)t.push((en?'no ':'ohne ')+liste(tr(o.ohne),en));
+    var fe=fehlend(x);if(fe.length)t.push((en?'no ':'ohne ')+liste(en?fe.map(function(b){return b==='Pommes'?'fries':'rice';}):fe,en)+(en?' (not available, −':' (heute aus, −')+euro(fe.length*BEILAGE_RABATT)+')');
     if(x.t==='S')t.push(o.wahl.length<3?(en?'choose '+(3-o.wahl.length)+' more toppings':'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?'with ':'mit ')+liste(tr(o.wahl),en));
     if(x.t==='R')t.push(o.va?(en?'option ':'Variante ')+o.va.charAt(0):(en?'choose option':'Variante wählen'));
     if(x.t==='B')t.push(o.va?(en?'with ':'mit ')+(en?(W[o.va]||o.va):o.va):(en?'choose topping':'Belag wählen'));
@@ -430,7 +434,7 @@
         var bopt=BEI.filter(function(b){if(b===va.bei)return true;var z=variante(x.k,{bei:b});return z&&VAR[z].bei===b;});
         if(bopt.length>1){var bg=el('div','z-gruppe');bg.appendChild(el('span','z-gruppe-titel',L('Beilage','Side')));var bw=el('div','z-chips');
           bopt.forEach(function(b){var zb=b===va.bei?null:variante(x.k,{bei:b});
-            var spB=zb?(sperreZettel(zb)||sperre(zb,abh.laden||null,0,jetzt().min)):null;
+            var spB=(b==='P'||b==='SP')&&zAus('Pommes')||(zb?(sperreZettel(zb)||sperre(zb,abh.laden||null,0,jetzt().min)):null);
             var kb2=knopf(L(BEI_NAME[b][0],BEI_NAME[b][1])+(spB?' – '+sperrText(spB):zb?preisDiff(x,zb):''),{'class':'chip'+(spB?' chip-aus':''),'aria-pressed':String(b===va.bei),'data-bei':b,'data-u':x.u});
             if(spB)kb2.disabled=true;bw.appendChild(kb2);});
           bg.appendChild(bw);box.appendChild(bg);}
@@ -480,7 +484,7 @@
       var li=el('li','z-eintrag'),kopf=el('div');
       var na=nameA(x);
       kopf.appendChild(el('span','z-name',na+(x.g?' ('+x.g+')':'')));
-      var wt=x.t?wuensche(x,SP==='en'):beschrA(x);if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
+      var wt=x.t?wuensche(x,SP==='en'):(fehlend(x).length?beschrA(x)+(beschrA(x)?' · ':'')+wuensche(x,SP==='en'):beschrA(x));if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
       if(x.fuer)kopf.appendChild(el('span','z-fuer',L('für ','for ')+x.fuer));if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
       var spZ=sperreZettel(x.k);
       if(spZ){var a0=abholung();kopf.appendChild(el('span','z-info z-fehlt',
@@ -717,7 +721,7 @@
     zettel.forEach(function(x){z.push(zeileText(x));});
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
-  function zeileText(x){var w=x.t?wuensche(x):'';
+  function zeileText(x){var w=x.t||fehlend(x).length?wuensche(x):'';
     return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(aktionZ(x)?' (Aktion)':'')+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
   /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
   function teilen(t,titel){

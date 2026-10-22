@@ -1004,7 +1004,10 @@ ZETTEL_JS = r'''
   function aktionZ(x){var li=gerichtLi(x.k);if(!li)return null;var gs=li.dataset.g?li.dataset.g.split('|'):[''];
     var tag=abh.tag||isoTag(0),zi=ZINFO[abh.zeit],min=zi?zi.min:(tag===isoTag(0)?jetzt().min:null);
     return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),tag,abh.laden||null,min);}
-  function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o);}
+  /* Beilage (Pommes/Reis) vom Laden ausgeschaltet: Gericht ohne diese Beilage, je 0,50 € weniger */
+  var BEILAGEN=%%BEILAGEN%%,BEILAGE_RABATT=%%BEILAGE_RABATT%%;
+  function fehlend(x){return (BEILAGEN[x.k]||[]).filter(function(b){return zAus(b);});}
+  function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o)-fehlend(x).length*BEILAGE_RABATT;}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
@@ -1014,6 +1017,7 @@ ZETTEL_JS = r'''
       if(en)t.push(!so.length?'no sauce':liste(tr(so),true)+' sauce');
       else t.push(!so.length?'ohne Soße':so.length===1?so[0]+'-Soße':so.slice(0,-1).join('-, ')+'- und '+so[so.length-1]+'-Soße');}
     if(o.ohne.length)t.push((en?'no ':'ohne ')+liste(tr(o.ohne),en));
+    var fe=fehlend(x);if(fe.length)t.push((en?'no ':'ohne ')+liste(en?fe.map(function(b){return b==='Pommes'?'fries':'rice';}):fe,en)+(en?' (not available, −':' (heute aus, −')+euro(fe.length*BEILAGE_RABATT)+')');
     if(x.t==='S')t.push(o.wahl.length<3?(en?'choose '+(3-o.wahl.length)+' more toppings':'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?'with ':'mit ')+liste(tr(o.wahl),en));
     if(x.t==='R')t.push(o.va?(en?'option ':'Variante ')+o.va.charAt(0):(en?'choose option':'Variante wählen'));
     if(x.t==='B')t.push(o.va?(en?'with ':'mit ')+(en?(W[o.va]||o.va):o.va):(en?'choose topping':'Belag wählen'));
@@ -1071,7 +1075,7 @@ ZETTEL_JS = r'''
         var bopt=BEI.filter(function(b){if(b===va.bei)return true;var z=variante(x.k,{bei:b});return z&&VAR[z].bei===b;});
         if(bopt.length>1){var bg=el('div','z-gruppe');bg.appendChild(el('span','z-gruppe-titel',L('Beilage','Side')));var bw=el('div','z-chips');
           bopt.forEach(function(b){var zb=b===va.bei?null:variante(x.k,{bei:b});
-            var spB=zb?(sperreZettel(zb)||sperre(zb,abh.laden||null,0,jetzt().min)):null;
+            var spB=(b==='P'||b==='SP')&&zAus('Pommes')||(zb?(sperreZettel(zb)||sperre(zb,abh.laden||null,0,jetzt().min)):null);
             var kb2=knopf(L(BEI_NAME[b][0],BEI_NAME[b][1])+(spB?' – '+sperrText(spB):zb?preisDiff(x,zb):''),{'class':'chip'+(spB?' chip-aus':''),'aria-pressed':String(b===va.bei),'data-bei':b,'data-u':x.u});
             if(spB)kb2.disabled=true;bw.appendChild(kb2);});
           bg.appendChild(bw);box.appendChild(bg);}
@@ -1121,7 +1125,7 @@ ZETTEL_JS = r'''
       var li=el('li','z-eintrag'),kopf=el('div');
       var na=nameA(x);
       kopf.appendChild(el('span','z-name',na+(x.g?' ('+x.g+')':'')));
-      var wt=x.t?wuensche(x,SP==='en'):beschrA(x);if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
+      var wt=x.t?wuensche(x,SP==='en'):(fehlend(x).length?beschrA(x)+(beschrA(x)?' · ':'')+wuensche(x,SP==='en'):beschrA(x));if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
       if(x.fuer)kopf.appendChild(el('span','z-fuer',L('für ','for ')+x.fuer));if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
       var spZ=sperreZettel(x.k);
       if(spZ){var a0=abholung();kopf.appendChild(el('span','z-info z-fehlt',
@@ -1358,7 +1362,7 @@ ZETTEL_JS = r'''
     zettel.forEach(function(x){z.push(zeileText(x));});
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
-  function zeileText(x){var w=x.t?wuensche(x):'';
+  function zeileText(x){var w=x.t||fehlend(x).length?wuensche(x):'';
     return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(aktionZ(x)?' (Aktion)':'')+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
   /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
   function teilen(t,titel){
@@ -2007,10 +2011,29 @@ def sperrgruppen():
     gruppen["halloumi"] = zutat("Halloumi", "Halloumi", lambda n, a, b: "Halloumi" in a + " " + b)
     gruppen["schnitzel-fleisch"] = zutat("Schnitzel", "Schnitzel", lambda n, a, b: "Schnitzel" in a)
     gruppen["fisch"] = zutat("Fisch", "Fish", lambda n, a, b: "Fisch" in a)
-    # Beilagen als Zutat (Chef-App „Zutaten“): Gerichte damit sind dann nicht zu haben
-    gruppen["z:Pommes"] = zutat("Pommes", "Fries", lambda n, a, b: "Pommes" in a + " " + b)
-    gruppen["z:Reis"] = zutat("Reis", "Rice", lambda n, a, b: "Reis" in b.replace("Reisen", ""))
+    # Pommes aus (Chef-App „Zutaten“): nur die reinen Pommes sind dann nicht zu haben;
+    # alle anderen Gerichte gibt es ohne Pommes bzw. ohne Reis, je 0,50 € günstiger (BEILAGEN unten)
+    gruppen["z:Pommes"] = zutat("Pommes", "Fries", lambda n, a, b: a.startswith("Pommes"))
     return gruppen
+
+
+def beilagen():
+    """Gerichte mit Pommes bzw. Reis als Beilage: {Nr: ["Pommes", "Reis"]}"""
+    aus = {}
+    for gr in GRUPPEN:
+        for ab in gr["abschnitte"]:
+            for g in ab["gerichte"]:
+                if not g[0] or g[1].startswith("Pommes"):
+                    continue
+                text = g[1] + " " + g[2]
+                b = [x for x in ("Pommes", "Reis") if x in text.replace("Reisen", "")]
+                if b:
+                    aus[g[0]] = b
+    return aus
+
+
+BEILAGEN = beilagen()
+BEILAGE_RABATT = 50   # Cent weniger je fehlender Beilage
 
 
 SPERRGRUPPEN = sperrgruppen()
@@ -2114,6 +2137,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
             .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE))
+            .replace("%%BEILAGEN%%", json.dumps(BEILAGEN)).replace("%%BEILAGE_RABATT%%", str(BEILAGE_RABATT))
             .replace("%%ZAEHLER%%", json.dumps("" if einzeln else ZAEHLER))
             .replace("%%SW%%", "false" if einzeln else "true"))
     ersetzen = {
