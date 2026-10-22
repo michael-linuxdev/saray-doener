@@ -1003,6 +1003,28 @@ def chef_app_zutaten(b, url):
 
 
 @test
+def chef_app_checkliste_und_gefahrenbereich(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
+    p.click('nav.tabs [data-tab="mehr"]')
+    assert "von 20 offen" in p.text_content(".checkliste summary")
+    p.check("#cl-domain")
+    p.fill("#cl-wa-altenberg-n", "0151 1234567")
+    p.press("#cl-wa-altenberg-n", "Tab")
+    assert "GitHub Pro" in p.text_content(".checkliste")
+    assert "Gefahrenbereich" in p.text_content("#app")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    assert gespeichert[-1]["checkliste"] == {"domain": {"ok": True}, "wa-altenberg": {"notiz": "0151 1234567"}}, gespeichert[-1]
+    p.click("text=Alles auf Standard zurücksetzen")
+    p.click(".blatt >> text=Ja, zurücksetzen")
+    p.wait_for_timeout(500)
+    assert gespeichert[-1] == {"checkliste": {"domain": {"ok": True}, "wa-altenberg": {"notiz": "0151 1234567"}}}, gespeichert[-1]
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):

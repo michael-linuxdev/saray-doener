@@ -91,6 +91,13 @@ nav.tabs button[aria-current=page]{color:var(--paprika)}
 .blatt > div{background:#fff;width:100%;max-width:720px;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 .blatt h3{margin:0 0 6px;font-size:1.2rem}
 .blatt .reihe{margin-top:14px}
+.gefahr-titel{color:var(--paprika)}
+.karte.gefahr{border:2px solid var(--paprika);background:#fff7f4}
+.checkliste summary{cursor:pointer;min-height:40px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.cl-punkt{padding:8px 0;border-bottom:1px solid var(--linie)}
+.cl-punkt .schalter{font-weight:700;align-items:flex-start}
+.cl-punkt.erledigt .schalter span{text-decoration:line-through;opacity:.6}
+.cl-punkt input[type=text]{margin-left:32px;width:calc(100% - 32px);min-height:40px}
 table.zahlen{width:100%;border-collapse:collapse;margin:4px 0 10px}.zahlen th,.zahlen td{padding:7px 4px;border-bottom:1px solid var(--linie);text-align:right}
 .zahlen th:first-child,.zahlen td:first-child{text-align:left}.zahlen th[scope=row]{text-align:left;font-weight:400}
 .zahlen td{font-weight:700;font-variant-numeric:tabular-nums}.zahlen th[scope=col]{font-size:.78rem;white-space:nowrap;width:3.6em}
@@ -176,7 +183,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 }
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
-  ['gerichte','zeiten','sonderzeiten','wartezeit'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
+  ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
   ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
 function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
@@ -519,6 +526,7 @@ function zahlenKarte(){
 }
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
+  checklisteKarte();
   hinweisKarte();
   zahlenKarte();
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
@@ -547,12 +555,39 @@ function mehrTab(){
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Letzte Änderung rückgängig'}),
     el('p',{class:'hinweis',text:'Holt den Stand vor dem letzten Speichern zurück.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf',text:'Rückgängig machen …',onclick:rueckgaengig})])]));
-  app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Standard wiederherstellen'}),
-    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren und Hinweise auf den ursprünglichen Stand zurück.'}),
+  /* Gefahrenbereich: Aktionen, die sich nicht so einfach zurücknehmen lassen */
+  app.appendChild(el('h2',{class:'gefahr-titel',text:'⚠️ Gefahrenbereich'}));
+  app.appendChild(el('div',{class:'karte gefahr'},[
+    el('p',{class:'hinweis',style:'margin:0 0 6px',text:'Nur benutzen, wenn Sie sicher sind.'}),
+    el('h3',{text:'Standard wiederherstellen'}),
+    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“ bleibt erhalten.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot voll',text:'Alles auf Standard zurücksetzen',onclick:function(){
-      frage('Wirklich alle Änderungen löschen und den Standard wiederherstellen?','Ja, zurücksetzen').then(function(j){if(!j)return;ANP={};speichern('Chef-App: Standard wiederhergestellt');});}})])]));
-  app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Zugang'}),el('p',{class:'hinweis',text:'Der Zugang ist nur auf diesem Gerät gespeichert.'}),
-    el('div',{class:'reihe'},[el('button',{class:'knopf',text:'Auf diesem Gerät abmelden',onclick:function(){frage('Zugang auf diesem Gerät löschen?','Abmelden').then(function(j){if(j){try{localStorage.removeItem(TK);}catch(e){}location.reload();}});}})])]));
+      frage('Wirklich alle Änderungen löschen und den Standard wiederherstellen?','Ja, zurücksetzen').then(function(j){if(!j)return;
+        var cl=ANP.checkliste;ANP=cl?{checkliste:cl}:{};speichern('Chef-App: Standard wiederhergestellt');});}})]),
+    el('h3',{style:'margin-top:18px',text:'Zugang auf diesem Gerät'}),
+    el('p',{class:'hinweis',text:'Der Zugang ist nur auf diesem Gerät gespeichert. Nach dem Abmelden braucht es einen neuen Zugangslink von Michael.'}),
+    el('div',{class:'reihe'},[el('button',{class:'knopf rot',text:'Auf diesem Gerät abmelden',onclick:function(){frage('Zugang auf diesem Gerät löschen?','Abmelden').then(function(j){if(j){try{localStorage.removeItem(TK);}catch(e){}location.reload();}});}})])]));
+}
+
+/* Checkliste vor dem Freischalten – gespeichert in anpassungen.json („checkliste“), für die Seite ohne Wirkung */
+var CHECKLISTE=%%CHECKLISTE%%;
+function checklisteKarte(){
+  var cl=ANP.checkliste||{},alle=[];CHECKLISTE.forEach(function(g){alle=alle.concat(g[1]);});
+  var offen=alle.filter(function(x){return !(cl[x[0]]&&cl[x[0]].ok);}).length;
+  var d=el('details',{class:'karte checkliste',open:offen?true:null},[el('summary',{},[el('b',{text:'Vor dem Freischalten'}),' · ',
+    el('span',{text:offen?offen+' von '+alle.length+' offen':'alles erledigt ✓'})])]);
+  CHECKLISTE.forEach(function(g){
+    d.appendChild(el('p',{class:'abschnitt',text:g[0]}));
+    g[1].forEach(function(x){var e=cl[x[0]]||{},id='cl-'+x[0];
+      var cb=el('input',{type:'checkbox',id:id});cb.checked=!!e.ok;
+      var no=el('input',{type:'text',id:id+'-n',placeholder:'Antwort / Notiz','aria-label':'Notiz: '+x[1],value:e.notiz||''});
+      function setzen(){ANP.checkliste=ANP.checkliste||{};var w={};if(cb.checked)w.ok=true;if(no.value.trim())w.notiz=no.value.trim();
+        if(Object.keys(w).length)ANP.checkliste[x[0]]=w;else delete ANP.checkliste[x[0]];leiste();}
+      cb.addEventListener('change',function(){setzen();zeichnen();});no.addEventListener('change',setzen);
+      d.appendChild(el('div',{class:'cl-punkt'+(e.ok?' erledigt':'')},[el('label',{class:'schalter',for:id},[cb,el('span',{},[x[1],x[3]?el('span',{class:'marke weg',text:'muss'}):null])]),
+        x[2]?el('p',{class:'hinweis',style:'margin:2px 0 4px 32px',text:x[2]}):null,no]));});
+  });
+  app.appendChild(d);
 }
 
 function rueckgaengig(){
@@ -615,6 +650,39 @@ ZUTATEN_SCHALTER = [
 ]
 
 
+# Offene Punkte vor dem Freischalten: [Gruppe, [[id, Text, Hinweis, muss]]]
+CHECKLISTE = [
+    ["Freischalten", [
+        ["domain", "Domain saraydöner.de", "Wer hat Zugang zu Domain und DNS? Wo liegt die alte Seite?", 1],
+        ["wa-freital", "WhatsApp Freital", "Ist 0157 37807403 das Laden-Handy für Bestellungen?", 1],
+        ["wa-altenberg", "WhatsApp Altenberg", "Welche Nummer nimmt Bestellungen an?", 1],
+        ["wa-wer", "Wer bestätigt die Bestellungen?", "Wer schaut während der Öffnungszeiten aufs Handy und antwortet?", 1],
+        ["impressum", "Impressum", "Anschrift (Bahnhof 3 oder Dresdner Str. 23?), Firmenform, USt-IdNr., E-Mail", 1],
+        ["zeiten-altenberg", "Öffnungszeiten Altenberg samstags", "Ab 10 oder ab 11 Uhr? Google zeigt 11 Uhr.", 0],
+        ["feiertage", "Feiertage", "Freital 11–22 Uhr, Altenberg? Reformationstag 31.10., Buß- und Bettag 18.11.", 0],
+        ["preise", "Preise der Karte", "Gilt die Karte vom 01.02.2024 noch? In beiden Läden gleich?", 0],
+        ["datenschutz", "Datenschutzerklärung", "Entwurf steht – wer prüft sie?", 0],
+    ]],
+    ["Chef-App und Abläufe", [
+        ["chef-wer", "Wer bedient die Chef-App, auf welchen Handys?", "Pro Person ein eigener Zugang.", 0],
+        ["einweisung", "Einweisung", "Heute aus, Zutaten, Wartezeit, besondere Tage, Aktionen, Hinweis, Drucken, Rückgängig", 0],
+        ["vorbestellung", "Vorbestellung", "Bis 14 Tage im Voraus, frühestens 20 Minuten nach der Bestellung – passt das?", 0],
+        ["beilage", "Pommes oder Reis aus = 0,50 € weniger", "So in Ordnung?", 0],
+        ["zahlung", "Nur Barzahlung", "Kommt irgendwann Kartenzahlung dazu?", 0],
+        ["aktion", "Erste Sonderaktion", "Zum Beispiel Mittagsangebot oder „Döner 5 €“", 0],
+        ["druck", "Flyer und Aufsteller", "Probedruck ansehen, Anzahl, selbst drucken oder Druckerei?", 0],
+    ]],
+    ["Google und Fotos", [
+        ["google", "Google-Unternehmensprofil", "Verwaltungszugriff, Link zur Seite, Zeiten angleichen, Barzahlung eintragen", 0],
+        ["fotos", "Fotos der Gerichte", "Dürfen wir Fotos machen? Wann passt es?", 0],
+    ]],
+    ["Laufende Kosten", [
+        ["domain-kosten", "Domain", "Wer zahlt die Domain, auf wen läuft sie?", 0],
+        ["github-pro", "GitHub Pro", "Rund 4 US-$ im Monat. Nötig, damit Seite und Chef-Daten in einem privaten Repository liegen können. Wer zahlt?", 0],
+    ]],
+]
+
+
 def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler=""):
     """Schreibt docs/chef/: index.html, standard.json, manifest.webmanifest."""
     import anpassungen as ANP
@@ -638,7 +706,8 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler=""):
                      "doener", "duerum", "teller", "pizza", "lahmacun", "baguette", "salate", "kinder"] if k in sperrgruppen],
     }
     (ordner / "standard.json").write_text(json.dumps(standard, ensure_ascii=False) + "\n", encoding="utf-8")
-    (ordner / "index.html").write_text(SEITE.replace("%%REPO%%", json.dumps(repo)), encoding="utf-8")
+    (ordner / "index.html").write_text(SEITE.replace("%%REPO%%", json.dumps(repo))
+                                        .replace("%%CHECKLISTE%%", json.dumps(CHECKLISTE, ensure_ascii=False)), encoding="utf-8")
     (ordner / "manifest.webmanifest").write_text(json.dumps({
         "name": "Saray Chef", "short_name": "Chef", "lang": "de", "start_url": "./", "scope": "./", "display": "standalone",
         "background_color": "#3A1531", "theme_color": "#3A1531",

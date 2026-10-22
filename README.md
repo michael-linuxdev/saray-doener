@@ -88,6 +88,8 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Mehr → Zahlen:** Seitenaufrufe, WhatsApp-Bestellungen und Anrufe je Laden, Teilen, Gemeinsam bestellen, Bewertungs-Klicks (heute / 7 Tage) aus GoatCounter. Einmal einen API-Schlüssel (nur Lesen) von GoatCounter eintragen; er bleibt auf dem Gerät.
 - **Sonderaktionen mit Uhrzeit:** z. B. Mittagsangebot 11–14 Uhr – gilt dann nur für Abholzeiten in diesem Fenster. Zu jeder Aktion gibt es unter „Drucken“ ein A4-Plakat fürs Schaufenster.
 - **Mehr → Drucken:** Flyer (A4 quer, beidseitig, Wickelfalz) und Aufsteller je Laden als PDF – immer mit den aktuellen Preisen. Erzeugt `druck.py` im GitHub-Workflow nach jedem Bauen (`docs/druck/`, nicht im Repo). Lokal: `python3 druck.py`.
+- **Mehr → Vor dem Freischalten:** Checkliste der offenen Punkte (abhaken, Antwort notieren), gespeichert in `daten/anpassungen.json` unter `checkliste`; Liste: `CHECKLISTE` in `chef_app.py`. Bleibt bei „Standard wiederherstellen“ erhalten.
+- **Mehr → Gefahrenbereich:** „Alles auf Standard zurücksetzen“ und „Auf diesem Gerät abmelden“, rot gekennzeichnet.
 - **Mehr:** Hinweis oben auf der Seite (Text mit Zeitraum), „Letzte Änderung rückgängig“ (holt den Stand vor dem letzten Speichern zurück), „Alles auf Standard zurücksetzen“, Abmelden.
 
 Gespeichert wird nur die Abweichung vom Standard in **`daten/anpassungen.json`** (Aufbau siehe `anpassungen.py`). Danach baut der GitHub-Workflow die Seite neu, testet sie und veröffentlicht sie – nach ca. 2–3 Minuten ist alles online; die App zeigt den Fortschritt an. Ungültige Einträge werden beim Bauen übersprungen (Warnung im Workflow-Log), der Standard bleibt dann stehen. Der Standard selbst steht weiter in `menu.py` und `STANDORTE` in `build.py`.
