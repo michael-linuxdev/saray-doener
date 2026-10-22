@@ -1,10 +1,4 @@
 {
-  "wartezeit": {
-    "freital": {
-      "datum": "2026-10-22",
-      "min": 30
-    }
-  },
   "verfuegbarkeit": [
     {
       "was": "schnitzel-fleisch",
