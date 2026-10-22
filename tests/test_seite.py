@@ -862,6 +862,24 @@ def teller_umwandeln(b, url):
 
 
 @test
+def salat_anpassen(b, url):
+    s = Seite(b, url)
+    assert s.js("!!document.querySelector('.tipps:not(.tipps-empfehlung) li[data-k=\"130\"]')"), "Salat fehlt bei Beliebt"
+    s.p.click("#nr-130 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    s.p.click("[data-anpassen]")
+    s.p.click('[data-fuell="huhn"]')
+    assert "Nr. 134 Salat mit Hähnchenfleisch" in s.wa_text()
+    s.p.click("[data-kaese]")
+    text = s.wa_text()
+    assert "Nr. 135 Salat mit Hähnchenfleisch und Käse" in text and "8,00 €" in text, text
+    s.p.click('[data-fuell="tonno"]')
+    assert "Nr. 136 Salat Tonno" in s.wa_text()
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):

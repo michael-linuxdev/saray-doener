@@ -140,7 +140,7 @@ ICONS = {
     "getraenke": f'<path d="M11 13 H29 L26.5 35 H13.5 Z" fill="#C8371A" {_F}/><path d="M12 19 H28" stroke="#fff" stroke-width="2.6"/><path d="M20 13 L24 4 L29 4" {_K}/>',
 }
 EMPFEHLUNG = ["1", "26", "91", "125"]   # „Wir empfehlen“: alle gleich groß, ohne Koch
-BELIEBT = ["50", "23", "100", "105", "124"]   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
+BELIEBT = ["50", "23", "130", "100", "105", "124"]   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
 GERICHT = {g[0]: (g, gr, ab) for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0]}
 
 
@@ -876,9 +876,11 @@ ZETTEL_JS = r'''
   PAARE.forEach(function(pq){OHNE_K[pq[0]]=pq[1];MIT_K[pq[1]]=pq[0];});
   /* Varianten: Form, Füllung, extra Fleisch (Super), Käse, Beilage.
      Die Schalter im Zettel suchen damit das passende Gericht der Karte. */
-  var VAR={},FUELL=['kalb','huhn','beide','veg','falafel','halloumi','hack'];
+  var VAR={},FUELL=['kalb','huhn','beide','veg','falafel','halloumi','hack','schinken','schinkenananas','hawaii','tonno','bauern','mozzarella'];
   var F_NAME={kalb:['Dönerfleisch','Döner meat'],huhn:['Hähnchen','Chicken'],veg:['ohne Fleisch','No meat'],falafel:['Falafel','Falafel'],
-    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen (Saray)','Döner + chicken (Saray)']};
+    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen (Saray)','Döner + chicken (Saray)'],
+    schinken:['Schinken','Ham'],schinkenananas:['Schinken + Ananas','Ham + pineapple'],hawaii:['Ananas','Pineapple'],tonno:['Thunfisch','Tuna'],
+    bauern:['Bauernsalat (Käse, Oliven, Peperoni)','Farmer’s (cheese, olives, hot peppers)'],mozzarella:['Mozzarella','Mozzarella']};
   var BEI=['S','P','SP'],BEI_NAME={S:['Salat','Salad'],P:['Pommes','Fries'],SP:['Salat + Pommes','Salad + fries']};
   [ /* k, Form, Füllung, Super, Käse, Beilage */
     ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
@@ -891,6 +893,9 @@ ZETTEL_JS = r'''
     ['21','teller','kalb',0,0,'S'],['22','teller','kalb',0,0,'P'],['23','teller','kalb',0,0,'SP'],['25','teller','kalb',0,1,'SP'],
     ['34','teller','huhn',0,0,'S'],['35','teller','huhn',0,0,'P'],['36','teller','huhn',0,0,'SP'],['37','teller','huhn',0,1,'SP'],
     ['24','teller','veg',0,0,'SP'],['26','teller','beide',0,0,'SPR'],['28','ueber','kalb',0,0],['38','ueber','huhn',0,0],['18','kinder','kalb',0,0],['19','kinder','huhn',0,0],
+    ['130','salat','veg',0,0],['132','salat','veg',0,1],['131','salat','kalb',0,0],['133','salat','kalb',0,1],['134','salat','huhn',0,0],['135','salat','huhn',0,1],
+    ['136','salat','tonno',0,0],['137','salat','hawaii',0,0],['138','salat','schinken',0,0],['139','salat','schinkenananas',0,0],['140','salat','bauern',0,0],
+    ['141','salat','halloumi',0,0],['142','salat','falafel',0,0],['143','salat','mozzarella',0,0],
     ['121','lahmacun','hack',0,0],['123','lahmacun','kalb',0,0],['124','lahmacun','kalb',0,1]
   ].forEach(function(v){VAR[v[0]]={k:v[0],form:v[1],f:v[2],sup:v[3],kae:v[4],bei:v[5]||''};});
   /* bestes Gericht mit den gewünschten Merkmalen; Vorrang: Beilage, Käse, Super */
@@ -1016,8 +1021,8 @@ ZETTEL_JS = r'''
     var box=el('div','z-optionen'),o=x.o;
     if(x.t==='D'||x.t==='SA')box.appendChild(chips(L('Soße (mehrere möglich)','Sauce (choose any)'),SOSSEN,o.s,'s',x.u));
     var va=VAR[x.k];
-    if(x.t==='D'&&va){
-      var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',L('Füllung','Filling')));var fw=el('div','z-chips');
+    if((x.t==='D'||x.t==='SA')&&va){
+      var fg=el('div','z-gruppe');fg.appendChild(el('span','z-gruppe-titel',va.form==='salat'?L('Belag','Topping'):L('Füllung','Filling')));var fw=el('div','z-chips');
       FUELL.forEach(function(f){
         var ziel=f===va.f?x.k:variante(x.k,{f:f});if(!ziel)return;
         var spF=f===va.f?null:(sperreZettel(ziel)||(function(){var nn=jetzt();var a=sperre(ziel,'freital',0,nn.min),b=sperre(ziel,'altenberg',0,nn.min);return a&&b&&a.art==='aus'&&b.art==='aus'?a:null;})());
@@ -1037,14 +1042,14 @@ ZETTEL_JS = r'''
         sw.appendChild(knopf(L('extra Fleisch (Super)','extra meat (Super)')+(va.sup?'':preisDiff(x,su)),{'class':'chip','aria-pressed':String(!!va.sup),'data-super':x.u}));
         sg.appendChild(sw);box.appendChild(sg);}
     }
-    var kp=x.t==='D'&&kaesePartner(x.k);
+    var kp=(x.t==='D'||x.t==='SA')&&kaesePartner(x.k);
     if(kp){
       var mit=VAR[x.k]?!!VAR[x.k].kae:!!MIT_K[x.k];
       var kg=el('div','z-gruppe');kg.appendChild(el('span','z-gruppe-titel',L('Käse','Cheese')));var kw=el('div','z-chips');
       kw.appendChild(knopf(L('mit Käse','with cheese')+(mit?'':preisDiff(x,kp)),{'class':'chip','aria-pressed':String(mit),'data-kaese':x.u}));
       kg.appendChild(kw);box.appendChild(kg);
     }
-    if(x.t==='D'){
+    if(x.t==='D'||x.t==='SA'){
       /* Gemüse: alles drin, Abgewähltes geht als „ohne …“ an den Laden */
       var gg=chips(L('Gemüse – abwählen, was nicht rein soll','Vegetables – tap to leave out'),OHNE,[],'ohne',x.u);
       gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(o.ohne.indexOf(c.dataset.w)<0));});
