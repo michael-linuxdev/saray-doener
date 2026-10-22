@@ -139,8 +139,10 @@ ICONS = {
     "kinder": f'<path d="M20 5 L24.5 14.5 L35 15.6 L27.2 22.6 L29.5 33 L20 27.7 L10.5 33 L12.8 22.6 L5 15.6 L15.5 14.5 Z" fill="#FFD21F" {_F}/><path d="M16.5 20.5 v1 M23.5 20.5 v1 M16.5 24.5 C18 26.5 22 26.5 23.5 24.5" {_K}/>',
     "getraenke": f'<path d="M11 13 H29 L26.5 35 H13.5 Z" fill="#C8371A" {_F}/><path d="M12 19 H28" stroke="#fff" stroke-width="2.6"/><path d="M20 13 L24 4 L29 4" {_K}/>',
 }
-EMPFEHLUNG = ["1", "26", "91", "125"]   # „Wir empfehlen“: alle gleich groß, ohne Koch
-BELIEBT = ["50", "23", "130", "100", "105", "124"]   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
+EMPFEHLUNG = ["1", "3", "26", "91", "125"]   # „Wir empfehlen“: alle gleich groß, ohne Koch
+BELIEBT = ["52", "5", "58", "24", "84", "50", "23", "130", "100", "105", "124"]
+# nur sichtbar, wenn „Vegetarisch“ oder „Pescetarisch“ eingeschaltet ist (Döner vegetarisch statt Döner Kebap usw.)
+NUR_DIAET = {"3", "52", "5", "58", "24", "84"}   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
 GERICHT = {g[0]: (g, gr, ab) for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0]}
 
 
@@ -184,8 +186,8 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     varianten = g[4] if len(g) > 4 else []
     suchtext = " ".join([nr, name, desc, abschnitt, gruppe] + [v for _, v in varianten]
                         + [EN.name(name), EN.text(desc), EN.titel(abschnitt), EN.titel(gruppe)] + [EN.text(v) for _, v in varianten])
-    beliebt = nr in BELIEBT
-    empfohlen = nr in EMPFEHLUNG
+    beliebt = nr in BELIEBT and nr not in NUR_DIAET
+    empfohlen = nr in EMPFEHLUNG and nr not in NUR_DIAET
     veg = (nr or name) in VEGETARISCH or gruppe == "Getränke" or "vegetarisch" in name.lower()
     fisch = (nr or name) in FISCH
     waehlbar = nr in VEG_WAEHLBAR
@@ -272,7 +274,7 @@ def beliebt_karte(nr, gross=False, koch=True):
     name, desc, preise = g[1], g[2], g[3]
     zusatz = f" ({ab['groessen'][0]})" if ab.get("groessen") else ""
     veg = nr in VEGETARISCH or nr in VEG_WAEHLBAR or "vegetarisch" in name.lower()
-    return (f'<li class="tipp{" tipp-gross" if gross else ""}{" ohne-koch" if gross and not koch else ""}"{" data-veg" if veg else ""}{" data-fisch" if nr in FISCH else ""}{zettel_daten(nr, name, desc, preise, ab.get("groessen"), gericht_typ(nr, gr["titel"], ab["titel"]), g[4] if len(g) > 4 else ())}><a href="#nr-{nr}">'
+    return (f'<li class="tipp{" tipp-gross" if gross else ""}{" ohne-koch" if gross and not koch else ""}"{" data-veg" if veg else ""}{" data-fisch" if nr in FISCH else ""}{" data-nur-diaet hidden" if nr in NUR_DIAET else ""}{zettel_daten(nr, name, desc, preise, ab.get("groessen"), gericht_typ(nr, gr["titel"], ab["titel"]), g[4] if len(g) > 4 else ())}><a href="#nr-{nr}">'
             f'<span class="tipp-nr"><span data-en="No.">Nr.</span> {nr}</span><b class="tipp-name" data-en="{e(EN.name(name))}">{e(name)}</b>'
             f'<span class="tipp-info" data-en="{e(EN.text(desc))}">{e(desc)}</span>'
             f'<span class="tipp-preis">{t("ab ", "from ") if zusatz else ""}{preis(preise[0])}</span>'
@@ -1685,7 +1687,7 @@ JS = r"""
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
     var bl=document.querySelector('.beliebt');if(bl){bl.hidden=teile.length>0;
-      bl.querySelectorAll('.tipp').forEach(function(t){t.hidden=!!DIAET&&!(t.hasAttribute('data-veg')||(DIAET==='pesc'&&t.hasAttribute('data-fisch')));});
+      bl.querySelectorAll('.tipp').forEach(function(t){t.hidden=DIAET?!(t.hasAttribute('data-veg')||(DIAET==='pesc'&&t.hasAttribute('data-fisch'))):t.hasAttribute('data-nur-diaet');});
       bl.querySelectorAll('ul.tipps').forEach(function(u){var leer=!u.querySelector('.tipp:not([hidden])');u.hidden=leer;
         var h=u.previousElementSibling;if(h&&h.classList.contains('beliebt-titel'))h.hidden=leer;});
       if(!bl.querySelector('.tipp:not([hidden])'))bl.hidden=true;}

@@ -745,7 +745,7 @@ def vegetarisch_filtern(b, url):
     assert s.js("document.getElementById('kinder').hidden") and s.js("document.getElementById('lahmacun').hidden")
     assert not s.js("document.getElementById('nr-80').hidden")
     karten = s.js("[...document.querySelectorAll('.beliebt .tipp:not([hidden])')].map(t=>t.dataset.k)")
-    assert karten == ["91", "125", "130"], karten
+    assert karten == ["3", "91", "125", "52", "5", "58", "24", "84", "130"], karten
     assert not s.js("document.querySelector('.beliebt').hidden")
     s.p.fill("#suche-feld", "pizza")
     sichtbar = s.js("[...document.querySelectorAll('.gericht:not([hidden])')].map(g=>g.dataset.k)")
@@ -753,6 +753,8 @@ def vegetarisch_filtern(b, url):
     s.p.fill("#suche-feld", "")
     s.p.click("#veg-schalter")
     assert not s.js("document.getElementById('nr-1').hidden")
+    karten = s.js("[...document.querySelectorAll('.beliebt .tipp:not([hidden])')].map(t=>t.dataset.k)")
+    assert karten == ["1", "26", "91", "125", "50", "23", "130", "100", "105", "124"], karten
     s.schliessen()
 
 

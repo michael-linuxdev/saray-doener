@@ -225,7 +225,7 @@
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
     var bl=document.querySelector('.beliebt');if(bl){bl.hidden=teile.length>0;
-      bl.querySelectorAll('.tipp').forEach(function(t){t.hidden=!!DIAET&&!(t.hasAttribute('data-veg')||(DIAET==='pesc'&&t.hasAttribute('data-fisch')));});
+      bl.querySelectorAll('.tipp').forEach(function(t){t.hidden=DIAET?!(t.hasAttribute('data-veg')||(DIAET==='pesc'&&t.hasAttribute('data-fisch'))):t.hasAttribute('data-nur-diaet');});
       bl.querySelectorAll('ul.tipps').forEach(function(u){var leer=!u.querySelector('.tipp:not([hidden])');u.hidden=leer;
         var h=u.previousElementSibling;if(h&&h.classList.contains('beliebt-titel'))h.hidden=leer;});
       if(!bl.querySelector('.tipp:not([hidden])'))bl.hidden=true;}
