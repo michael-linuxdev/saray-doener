@@ -927,6 +927,24 @@ def pizza_ohne_zutaten(b, url):
 
 
 @test
+def entwurf_band_verdeckt_zettel_nicht(b, url):
+    s = Seite(b, url, {"width": 390, "height": 664})
+    for nr in ("1", "130", "136", "3", "5"):
+        s.p.click(f"#nr-{nr} .plus")
+    s.js("window.scrollTo(0,0)")
+    s.p.click("#zettel-leiste")
+    for nr in range(3):
+        s.p.click(".z-eintrag [data-anpassen] >> nth=0") if nr == 0 else None
+    s.js("document.querySelector('.zettel').scrollTop=400")
+    s.p.wait_for_timeout(200)
+    oben = s.js("(()=>{const r=document.querySelector('.zettel-zu').getBoundingClientRect();const e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return e&&e.closest('.zettel-zu')?'ok':(e&&e.className)})()")
+    assert oben == "ok", f"Schließen-Knopf verdeckt von {oben}"
+    s.p.click(".zettel-zu")
+    assert s.js("document.getElementById('zettel').hidden")
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):
