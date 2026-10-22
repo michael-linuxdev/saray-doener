@@ -9,7 +9,7 @@ Standorte/Zeiten: STANDORTE unten · Hinweis-Band: HINWEISE unten.
 WhatsApp-Nummern stehen nicht im Repo: optional in lokal.json (siehe README).
 """
 import base64, html, json, math, pathlib, re, shutil, sys, urllib.parse
-from menu import GRUPPEN
+from menu import GRUPPEN, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN
 import englisch as EN
 import anpassungen as ANP
 
@@ -19,11 +19,13 @@ DOMAIN = "https://xn--saraydner-57a.de/"  # saraydöner.de (Canonical)
 CNAME = "saray.micana.de"
 REPO = "michael-linuxdev/saray-doener"     # Chef-App speichert Änderungen in diesem Repo (daten/anpassungen.json)                  # Adresse der GitHub Page
 VORSCHAU = True                            # True: Suchmaschinen sollen die Vorschau-Adresse nicht aufnehmen
+ZAEHLER = ""                               # GoatCounter-Kürzel (z. B. "saray-doener" für saray-doener.goatcounter.com); leer = kein Zählen
 
 STANDORTE = [
     {
         "id": "freital", "name": "Freital", "strasse": "Dresdner Str. 87", "plz": "01705", "ort": "Freital",
         "tel": "0351 27676660", "tel_href": "+4935127676660", "tel_ld": "+49 351 27676660",
+        "bar": True,  # nur Barzahlung
         "whatsapp": "491601836249",  # Testnummer (Michael) – vor dem Livegang durch die Ladennummer ersetzen; leer: Knopf ausgeblendet
         "zeilen": [("Montag bis Freitag", "10–22 Uhr", [1, 2, 3, 4, 5]), ("Samstag und Sonntag", "11–22 Uhr", [6, 0])],
         "zeilen_en": ["Monday to Friday", "Saturday and Sunday"], "extra_en": "Outdoor seating in good weather.",
@@ -34,6 +36,7 @@ STANDORTE = [
     {
         "id": "altenberg", "name": "Altenberg", "strasse": "Dresdner Str. 23", "plz": "01773", "ort": "Altenberg",
         "tel": "035056 23674", "tel_href": "+493505623674", "tel_ld": "+49 35056 23674",
+        "bar": True,
         "whatsapp": "491601836249",  # Testnummer (Michael)
         "zeilen": [("Montag bis Samstag", "10–21 Uhr", [1, 2, 3, 4, 5, 6]), ("Sonntag", "11–21 Uhr", [0])],
         "zeilen_en": ["Monday to Saturday", "Sunday"], "extra_en": "Right by the station.",
@@ -56,6 +59,11 @@ WARNUNGEN = []
 STANDARD_GRUPPEN = GRUPPEN
 GRUPPEN = ANP.karte(GRUPPEN, ANPASSUNGEN, WARNUNGEN.append)
 
+import datetime as _dt0, zoneinfo as _zi0
+HEUTE_ISO = os.environ.get("SARAY_HEUTE") or _dt0.datetime.now(_zi0.ZoneInfo("Europe/Berlin")).date().isoformat()  # Tests setzen das Datum fest
+SONDER = ANP.sonderzeiten(ANPASSUNGEN.get("sonderzeiten"), WARNUNGEN.append, HEUTE_ISO)
+WARTE = ANP.wartezeit(ANPASSUNGEN.get("wartezeit"), WARNUNGEN.append)
+
 for s in STANDORTE:
     std = {}
     for _, spanne, tage in s["zeilen"]:
@@ -65,6 +73,7 @@ for s in STANDORTE:
     s["zeiten"] = ANP.zeiten(std, (ANPASSUNGEN.get("zeiten") or {}).get(s["id"]), WARNUNGEN.append, s["name"])
     s["zeilen_neu"] = ANP.zeilen(s["zeiten"])
     s["kurz"] = ", ".join(f'{z["kurz"]} {z["zeit"]}' for z in s["zeilen_neu"])
+    s["sonder"] = [(tag, laeden[s["id"]]) for tag, laeden in SONDER.items() if s["id"] in laeden]
     s["maps"] = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote_plus(
         f"Saray Döner, {s['strasse']}, {s['plz']} {s['ort']}")
 
@@ -184,6 +193,29 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     return "".join(teile)
 
 
+def kennzeichnung_html(zahlen, buchstaben):
+    """Kurze Zeile „Inhaltsstoffe 1, 7 · Allergene a, b“ – Kürzel mit Erklärung, Klick führt zur Liste."""
+    z = ", ".join(f'<abbr title="{e(ZUTATEN[n][0])}">{n}</abbr>' for n in zahlen.split(","))
+    b = ", ".join(f'<abbr title="{e(ALLERGENE[x])}" data-en-title="{e(ALLERGENE_EN[x])}">{x}</abbr>' for x in buchstaben.split(","))
+    return (f'<p class="kennz"><a href="#allergene" data-allergene>{t("Inhaltsstoffe", "Ingredients")} {z} · '
+            f'{t("Allergene", "Allergens")} {b}</a></p>')
+
+
+def allergene_html():
+    zut = "".join(f'<li><b>{n} {e(name)}</b> – {e(text)}</li>' for n, (name, text) in ZUTATEN.items())
+    leg = "".join(f'<li><b>{x}</b> = <span data-en="{e(ALLERGENE_EN[x])}">{e(name)}</span></li>' for x, name in ALLERGENE.items())
+    return (
+        '<details class="allergene" id="allergene">'
+        f'<summary>{t("Zutaten und Allergene", "Ingredients and allergens")}</summary>'
+        f'<p>{t("Jede Kategorie der Karte nennt ihre Inhaltsstoffe (Zahlen) und Allergene (Buchstaben).", "Each menu category lists its ingredients (numbers) and allergens (letters).")}</p>'
+        f'<h4>{t("Allergene", "Allergens")}</h4><ul class="leg">{leg}</ul>'
+        f'<h4>{t("Soßen", "Sauces")}</h4><p>{t("Alle Gerichte mit Soße nach Wahl: " + SOSSEN[0], "All dishes with sauce of your choice: garlic, herbs, chili")} – '
+        f'{t("Inhaltsstoffe", "Ingredients")} {SOSSEN[1]} · {t("Allergene", "Allergens")} {", ".join(SOSSEN[2].split(","))}</p>'
+        f'<h4>{t("Inhaltsstoffe", "Ingredients")}</h4><ul class="zut" lang="de">{zut}</ul>'
+        f'<p>{t("Fragen Sie an der Theke nach Zutaten, Allergenen und Zusatzstoffen – unsere Allergiker-Speisekarte können Sie jederzeit einsehen.", "Ask at the counter about ingredients, allergens and additives – you can see our allergen menu at any time.")}</p>'
+        '</details>')
+
+
 def gruppe_html(gr):
     out = [f'<section class="gruppe" id="{gr["id"]}" aria-labelledby="g-{gr["id"]}">',
            f'<h3 class="band" id="g-{gr["id"]}"><svg class="band-icon" viewBox="0 0 40 40" aria-hidden="true">{ICONS[gr["id"]]}</svg>{t(gr["titel"], EN.titel(gr["titel"]))}</h3>']
@@ -210,6 +242,8 @@ def gruppe_html(gr):
         out.append("</ul>")
         if ab.get("notiz"):
             out.append(f'<p class="notiz" data-en="{e(EN.titel(ab["notiz"]))}">{e(ab["notiz"])}</p>')
+        if ab["titel"] in KENNZEICHNUNG:
+            out.append(kennzeichnung_html(*KENNZEICHNUNG[ab["titel"]]))
         out.append("</div>")
     out.append("</section>")
     return "\n".join(out)
@@ -247,6 +281,8 @@ TEL_ICON = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2
             '2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>')
 PIN_ICON = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
             '<circle cx="12" cy="10" r="3"/></svg>')
+BAR_ICON = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/>'
+            '<circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg>')
 SUCH_ICON = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/>'
              '<path d="M20 20l-4-4"/></svg>')
 
@@ -259,7 +295,7 @@ def status_html(s, klasse="status"):
 STATUS_KARTEN = "\n".join(
     f'''<li class="schild">
   <p class="schild-ort"><a class="schild-link" href="#ort-{s["id"]}" data-en-aria="{e(s["name"])}: opening hours and directions" aria-label="{e(s["name"])}: Öffnungszeiten und Anfahrt">{e(s["name"])}</a></p>
-  <p class="schild-adresse">{e(s["strasse"])}</p>
+  <p class="schild-adresse">{e(s["strasse"])}{t(" · nur Barzahlung", " · cash only") if s.get("bar") else ""}</p>
   {status_html(s)}
   <a class="schild-tel" href="tel:{s["tel_href"]}" aria-label="{e(s["name"])} anrufen: {e(s["tel"])}" title="{e(s["tel"])}">{TEL_ICON}</a>
 </li>''' for s in STANDORTE)
@@ -268,9 +304,22 @@ def karte_html(s):
     alt = {"freital": "Stadtplan Freital-Potschappel: Saray Döner an der Dresdner Straße, Ecke Turnerstraße",
            "altenberg": "Stadtplan Altenberg: Saray Döner an der Dresdner Straße am Bahnhof"}[s["id"]]
     return (f'<figure class="karte-bild"><a href="{e(s["maps"])}" target="_blank" rel="noopener" aria-label="Route zu Saray Döner {e(s["name"])} planen">'
-            f'<img src="{b64("karte_" + s["id"] + ".webp", "image/webp")}" width="940" height="680" loading="lazy" alt="{alt}">'
+            f'<img src="{b64("karte_" + s["id"] + ".webp", "image/webp")}" srcset="{b64("karte_" + s["id"] + "_480.webp", "image/webp")} 480w, {b64("karte_" + s["id"] + ".webp", "image/webp")} 940w" sizes="(min-width: 900px) 460px, 100vw" width="940" height="680" loading="lazy" decoding="async" alt="{alt}">'
             f'<svg class="pin" viewBox="0 0 40 52" aria-hidden="true"><path d="M20 50 C20 50 4 31 4 19 a16 16 0 0 1 32 0 C36 31 20 50 20 50 Z" fill="#C8371A" stroke="#3A1531" stroke-width="3"/><circle cx="20" cy="19" r="6.5" fill="#fff"/></svg></a>'
             f'<figcaption>{t("Karte", "Map")}: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>{t("-Mitwirkende", " contributors")}</figcaption></figure>')
+
+
+def sonder_html(s):
+    if not s["sonder"]:
+        return ""
+    zeilen = []
+    for tag, wert in s["sonder"]:
+        d = _dt0.date.fromisoformat(tag)
+        de = f'{ANP.KURZ[(d.weekday() + 1) % 7]}, {d.day:02d}.{d.month:02d}.'
+        en = f'{ANP.TAGE_EN[(d.weekday() + 1) % 7][:3]} {d.day} {d.strftime("%b")}'
+        zeit = (f"{ANP.uhr(wert[0])}–{ANP.uhr(wert[1])} Uhr", f"{ANP.uhr(wert[0], True)}–{ANP.uhr(wert[1], True)}") if wert else ("geschlossen", "closed")
+        zeilen.append(f'<li data-datum="{tag}"><b data-en="{e(en)}">{e(de)}</b> <span data-en="{e(zeit[1])}">{e(zeit[0])}</span></li>')
+    return (f'<div class="sonder"><p>{t("Abweichende Öffnungszeiten", "Special opening hours")}</p><ul>' + "".join(zeilen) + '</ul></div>')
 
 
 ORTE = "\n".join(
@@ -279,10 +328,12 @@ ORTE = "\n".join(
   {status_html(s)}
   <address>Saray Döner<br>{e(s["strasse"])}<br>{e(s["plz"])} {e(s["ort"])}<br>
   {t("Telefon", "Phone")} <a href="tel:{s["tel_href"]}">{e(s["tel"])}</a></address>
+  {('<p class="bar">' + BAR_ICON + t("Nur Barzahlung", "Cash only") + '</p>') if s.get("bar") else ""}
   {karte_html(s)}
   <table class="zeiten"><caption class="sr-only">Öffnungszeiten {e(s["name"])}</caption><tbody>
   {"".join(f'<tr data-tage="{",".join(map(str, z["tage"]))}"><th scope="row" data-en="{e(z["en"])}">{e(z["de"])}</th><td data-en="{e(z["zeit_en"])}">{e(z["zeit"])}</td></tr>' for z in s["zeilen_neu"])}
   </tbody></table>
+  {sonder_html(s)}
   <p class="ort-extra" data-en="{e(s["extra_en"])}">{e(s["extra"])}</p>
   <div class="knoepfe">
     <a class="knopf knopf-dunkel" href="tel:{s["tel_href"]}">{TEL_ICON}{t("Anrufen", "Call")}</a>
@@ -306,6 +357,7 @@ LD = {
         "telephone": s["tel_ld"],
         "servesCuisine": ["Döner", "Pizza", "Türkisch"],
         "priceRange": "€",
+        **({"paymentAccepted": "Cash", "currenciesAccepted": "EUR"} if s.get("bar") else {}),
         "hasMenu": DOMAIN + "#speisekarte",
         "address": {"@type": "PostalAddress", "streetAddress": s["strasse"], "postalCode": s["plz"],
                     "addressLocality": s["ort"], "addressCountry": "DE"},
@@ -314,9 +366,15 @@ LD = {
             "dayOfWeek": [TAGE_EN[t] for t in z["tage"]],
             "opens": f"{z['wert'][0] // 60:02d}:{z['wert'][0] % 60:02d}", "closes": f"{z['wert'][1] // 60:02d}:{z['wert'][1] % 60:02d}"}
             for z in s["zeilen_neu"] if z["wert"]],
+        **({"specialOpeningHoursSpecification": [{
+            "@type": "OpeningHoursSpecification", "validFrom": tag, "validThrough": tag,
+            "opens": f"{w[0] // 60:02d}:{w[0] % 60:02d}" if w else "00:00",
+            "closes": f"{w[1] // 60:02d}:{w[1] % 60:02d}" if w else "00:00"} for tag, w in s["sonder"]]} if s["sonder"] else {}),
     } for s in STANDORTE],
 }
 JS_ZEITEN = json.dumps({s["id"]: {str(k): list(v) for k, v in s["zeiten"].items()} for s in STANDORTE})
+JS_SONDER = json.dumps({s["id"]: {tag: (list(w) if w else None) for tag, w in s["sonder"]} for s in STANDORTE})
+JS_WARTE = json.dumps(WARTE)
 
 FAVICON = ("data:image/svg+xml," + urllib.parse.quote(
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='#C8371A'/>"
@@ -608,7 +666,7 @@ p{margin:0}
   font-weight:700;font-size:.82rem;color:var(--tinte-weich);text-align:right;padding-bottom:6px;border-bottom:2px solid var(--tinte)}
 .groessen-kopf .nur-breit{display:none}
 
-.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:16px 18px;max-width:62ch;font-size:.97rem}
+.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:8px 0 0;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
 
 @media (min-width:1100px){
   .karte-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:52px;align-items:start}
@@ -720,7 +778,7 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .abholung select,.abholung input{width:100%;min-height:44px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:400 1rem var(--text);color:var(--tinte);background:#fff}
 .knopf-whatsapp{background:#1E7B3C;color:#fff}
 .knopf-whatsapp:hover{background:#17652F}
-.abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}
+.abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}.wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
 .zettel-knoepfe{display:grid;gap:10px}
 .zettel-knoepfe .knopf{width:100%}
@@ -1100,8 +1158,8 @@ ZETTEL_JS = r'''
   function tagLang(off){var t=tagDatum(off,{weekday:'long',day:'2-digit',month:'2-digit'});return /\.$/.test(t)?t:t+'.';}   /* „Freitag, 24.10.“ */
   /* mögliche Abholzeiten eines Tages (Minuten), 15-Minuten-Raster, heute frühestens in 20 Minuten */
   function slots(off){
-    var n=jetzt(),z=ZEITEN[abh.laden],tag=(n.tag+off)%7,h=z[tag],res=[];if(!h)return res;
-    var start=h[0]+15;if(off===0)start=Math.max(start,Math.ceil((n.min+20)/15)*15);
+    var n=jetzt(),h=tagZeit(abh.laden,off),res=[];if(!h)return res;
+    var start=h[0]+15;if(off===0)start=Math.max(start,Math.ceil((n.min+20+warte(abh.laden))/15)*15);
     for(var m=start;m<=h[1]-15;m+=15)res.push(m);
     return res;
   }
@@ -1122,8 +1180,10 @@ ZETTEL_JS = r'''
     if(tage[0]>0){hinweisZ.textContent=L('Heute ist keine Abholung mehr möglich. Sie können vorbestellen.','Pickup is no longer possible today. You can pre-order.');hinweisZ.hidden=false;}
     /* Wert = Text für die Nachricht an den Laden (immer deutsch) */
     var vor=off===0?'heute':off===1?'morgen, '+tagLang(1):tagLang(off);
-    if(off===0&&n.min>=ZEITEN[abh.laden][n.tag][0]){
-      optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20};}
+    var wz=warte(abh.laden),h0=tagZeit(abh.laden,0);
+    if(off===0&&wz){hinweisZ.textContent=L('Gerade viel los: Abholung frühestens in ca. '+(wz+20)+' Minuten.','Busy right now: earliest pickup in about '+(wz+20)+' minutes.');hinweisZ.hidden=false;}
+    if(off===0&&h0&&n.min>=h0[0]){
+      optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20+wz};}
     slots(off).forEach(function(m){var v=vor+', '+zeitText(m);optionen.push({v:v,t:zeitText(m,en)});ZINFO[v]={off:off,min:m};});
     optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
@@ -1153,7 +1213,11 @@ ZETTEL_JS = r'''
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
   ladenZeigen();
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
-  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();});
+  var TEL=%%TEL%%,waGesendet=document.getElementById('wa-gesendet');
+  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
+    if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';
+    waGesendet.appendChild(document.createTextNode(L('Gesendet? Der Laden bestätigt Ihre Bestellung per WhatsApp. Ohne Antwort bitte anrufen: ','Sent? The shop confirms your order via WhatsApp. No reply? Please call: ')));
+    var a=el('a',null,tl[0]);a.href='tel:'+tl[1];waGesendet.appendChild(a);waGesendet.hidden=false;});
   /* „Wie letztes Mal“: Zettel merken, sobald er abgeschickt, kopiert oder vorgelesen wird */
   var LK='saray-letzte',letzte=null,boxL=document.getElementById('letzte');
   try{letzte=JSON.parse(localStorage.getItem(LK)||'null');}catch(e){letzte=null;}
@@ -1318,7 +1382,7 @@ ZETTEL_JS = r'''
 
 JS = r"""
 (function(){
-  var ZEITEN=%%ZEITEN%%;
+  var ZEITEN=%%ZEITEN%%,SONDER=%%SONDER%%,WARTE=%%WARTE%%;
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
@@ -1373,12 +1437,16 @@ JS = r"""
       .formatToParts(new Date()).forEach(function(p){o[p.type]=p.value;});
     return {tag:KURZ[o.weekday],min:(+o.hour)*60+(+o.minute)};
   }
+  /* ISO-Datum (deutsche Zeit) in off Tagen; Öffnungszeit dieses Tages – besondere Tage gehen vor */
+  function isoTag(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5));}
+  function tagZeit(ort,off){var s=SONDER[ort]||{},d=isoTag(off);if(d in s)return s[d];return ZEITEN[ort][(jetzt().tag+off)%7]||null;}
+  function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP==='en')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
-    var z=ZEITEN[ort],n=jetzt(),h=z[n.tag];
-    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:L('Jetzt geöffnet, bis ','Open now, until ')+uhr(h[1])};
+    var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
+    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:L('Jetzt geöffnet, bis ','Open now, until ')+uhr(h[1])+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
     if(h&&n.min<h[0])return{offen:false,text:L('Geschlossen, öffnet heute um ','Closed, opens today at ')+uhr(h[0])};
-    for(var i=1;i<=7;i++){var t=(n.tag+i)%7;if(z[t])return{offen:false,text:SP==='en'?'Closed, opens '+(i===1?'tomorrow':'on '+TAGE_E[t])+' at '+uhr(z[t][0]):'Geschlossen, öffnet '+(i===1?'morgen':'am '+TAGE[t])+' um '+uhr(z[t][0])};}
+    for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0]):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
     return{offen:false,text:''};
   }
   function aktualisieren(){
@@ -1386,12 +1454,33 @@ JS = r"""
       var s=lage(el.getAttribute('data-status'));el.setAttribute('data-offen',s.offen?'ja':'nein');
       el.querySelector('.status-text').textContent=s.text;
     });
-    var tag=jetzt().tag;
+    var tag=jetzt().tag,hi=isoTag(0);
+    document.querySelectorAll('.sonder li[data-datum]').forEach(function(li){li.hidden=li.dataset.datum<hi;li.classList.toggle('heute',li.dataset.datum===hi);});
+    document.querySelectorAll('.sonder').forEach(function(b){b.hidden=!b.querySelector('li:not([hidden])');});
     document.querySelectorAll('tr[data-tage]').forEach(function(tr){
       tr.classList.toggle('heute',tr.getAttribute('data-tage').split(',').indexOf(String(tag))>-1);
     });
   }
   try{aktualisieren();setInterval(aktualisieren,60000);}catch(e){}
+  /* Zählen ohne Cookies (GoatCounter-Pixel, nur wenn ZAEHLER gesetzt) */
+  var GC=%%ZAEHLER%%;
+  function zaehlen(pfad,ereignis){
+    if(!GC||navigator.doNotTrack==='1'||/^(localhost|127\.)/.test(location.hostname))return;
+    try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title)+'&r='+encodeURIComponent(document.referrer))+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
+  }
+  zaehlen(location.pathname);
+  document.addEventListener('click',function(ev){
+    var a=ev.target.closest('a,button');if(!a)return;var laden=a.dataset.anruf||'';
+    if(a.id==='zettel-whatsapp')zaehlen('whatsapp-bestellung');
+    else if(/^tel:/.test(a.getAttribute('href')||''))zaehlen('anrufen'+(laden?'-'+laden:''));
+    else if(a.id==='zettel-kopieren')zaehlen('bestellung-teilen');
+    else if(a.id==='sammel-einladen')zaehlen('gemeinsam-bestellen');
+  },true);
+  /* Offline: Speisekarte bleibt verfügbar (Service Worker, nur auf der echten Seite) */
+  if(%%SW%%&&'serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+  /* „Inhaltsstoffe … · Allergene …“ öffnet die Liste unten */
+  document.addEventListener('click',function(ev){if(!ev.target.closest('[data-allergene]'))return;var d=document.getElementById('allergene');if(d)d.open=true;});
+  if(location.hash==='#allergene'){var dA=document.getElementById('allergene');if(dA)dA.open=true;}
 
   /* Kategorien: Die angeklickte Kategorie wird sofort markiert und bleibt es.
      Erst wenn man selbst scrollt, wandert die Markierung mit dem Inhalt mit. */
@@ -1513,6 +1602,7 @@ JS = r"""
     document.querySelectorAll('[data-en-html]').forEach(function(x){if(x._de==null)x._de=x.innerHTML;x.innerHTML=l==='en'?x.dataset.enHtml:x._de;});
     document.querySelectorAll('[data-en-ph]').forEach(function(x){if(x._de==null)x._de=x.placeholder;x.placeholder=l==='en'?x.dataset.enPh:x._de;});
     document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');x.setAttribute('aria-label',l==='en'?x.dataset.enAria:x._dea);});
+    document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',l==='en'?x.dataset.enTitle:x._det);});
     spKnopf.textContent=l==='en'?'DE':'EN';spKnopf.lang=l==='en'?'de':'en';
     spKnopf.setAttribute('aria-label',l==='en'?'Auf Deutsch umschalten':'Switch to English');
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
@@ -1585,7 +1675,7 @@ SEITE = r"""<!doctype html>
       </ul>
     </div>
     <div class="bilder">
-      <figure class="foto"><img src="%%IMG_LADEN%%" width="894" height="700"
+      <figure class="foto"><img src="%%IMG_LADEN%%" srcset="%%IMG_LADEN_480%% 480w, %%IMG_LADEN%% 894w" sizes="(min-width: 900px) 440px, 100vw" width="894" height="700" decoding="async"
         alt="Der Laden von außen: Eckhaus mit grünen Schildern, davor Tische und bunte Stühle."></figure>
       <img class="koch" src="%%IMG_KOCH%%" width="430" height="470" alt="">
       <p class="sticker" aria-hidden="true"><small>Döner Kebap</small><b>%%STICKER%%</b></p>
@@ -1621,7 +1711,7 @@ SEITE = r"""<!doctype html>
         <div class="nichts" hidden><p><span data-en="No dish matches">Kein Gericht passt zu</span> <q></q>.</p><button type="button" class="knopf knopf-linie" data-en="Clear search">Suche löschen</button></div>
 %%BELIEBT%%
 %%KARTE%%
-        <p class="allergene" data-en="Ask at the counter about ingredients, allergens and additives – you can see our allergen menu at any time.">Fragen Sie an der Theke nach Zutaten, Allergenen und Zusatzstoffen – unsere Allergiker-Speisekarte können Sie jederzeit einsehen.</p>
+%%ALLERGENE%%
       </div>
     </div>
   </div>
@@ -1662,7 +1752,8 @@ SEITE = r"""<!doctype html>
       <details id="datenschutz"><summary data-en="Datenschutz (privacy policy)">Datenschutz</summary>
         <p><span class="platzhalter">[Datenschutzerklärung hier einfügen]</span></p>
         <p>Hinweis für die Erstellung: Diese Website setzt keine Cookies, nutzt kein Tracking und lädt nichts von fremden Servern.
-        Schriften und Bilder sind in die Seite eingebettet. Zu beschreiben sind vor allem der Webhoster und dessen Server-Logfiles.</p>
+        Schriften und Bilder liegen auf dem eigenen Server. Zu beschreiben sind vor allem der Webhoster (GitHub Pages) und dessen Server-Logfiles,
+        die Bestellung per WhatsApp (Weitergabe an WhatsApp/Meta, nur wenn der Gast den Knopf nutzt), das Speichern der Bestellung im Browser (localStorage, kein Cookie)%%ZAEHL_HINWEIS%%.</p>
       </details>
     </div>
   </div>
@@ -1695,9 +1786,11 @@ SEITE = r"""<!doctype html>
         <input id="abhol-name" type="text" autocomplete="given-name" placeholder="z. B. Michael" data-en-ph="e.g. Michael">
       </fieldset>
       <p class="zettel-hinweis" data-en="Order via WhatsApp or call and read it out. Your order is saved on this device.">Bestellen Sie per WhatsApp oder rufen Sie an und lesen Sie die Bestellung vor. Sie bleibt auf diesem Gerät gespeichert.</p>
+      %%ZETTEL_BAR%%
       <div class="zettel-knoepfe">
         <button type="button" class="knopf knopf-dunkel" id="sammel-teil" hidden><span></span></button>
         <a class="knopf knopf-whatsapp" id="zettel-whatsapp" href="#" target="_blank" rel="noopener">%%WA_ICON%%<span data-en="Order via WhatsApp">Per WhatsApp bestellen</span></a>
+        <p class="wa-gesendet" id="wa-gesendet" role="status" hidden></p>
         <p class="abhol-hinweis verf-hinweis" id="verf-hinweis" hidden></p>
         <p class="abhol-hinweis" id="wa-hinweis" hidden data-en="Choose the shop above to order via WhatsApp.">Bitte oben den Laden wählen, dann können Sie per WhatsApp bestellen.</p>
         %%ZETTEL_ANRUF%%
@@ -1779,17 +1872,38 @@ def whatsapp_nummern(einzeln):
     return nr
 
 
+SW = r"""/* Saray Döner – offline-Speicher. Seite und status.json: erst Netz, sonst Speicher. Rest: erst Speicher. */
+var V='saray-%%V%%',VOR=%%LISTE%%;
+self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(function(c){return c.addAll(VOR);}).then(function(){return self.skipWaiting();}));});
+self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==V&&k.indexOf('saray-')===0;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
+self.addEventListener('fetch',function(e){
+  var r=e.request,u=new URL(r.url);
+  if(r.method!=='GET'||u.origin!==location.origin||u.pathname.indexOf('/chef/')>-1)return;
+  var seite=r.mode==='navigate',schluessel=seite?'./':r;
+  if(seite||/status\.json$/.test(u.pathname)){
+    e.respondWith(fetch(r).then(function(res){if(res.ok){var k=res.clone();caches.open(V).then(function(c){c.put(schluessel,k);});}return res;})
+      .catch(function(){return caches.match(schluessel).then(function(m){return m||Response.error();});}));
+    return;
+  }
+  e.respondWith(caches.match(r).then(function(m){return m||fetch(r).then(function(res){if(res.ok){var k=res.clone();caches.open(V).then(function(c){c.put(r,k);});}return res;});}));
+});
+"""
+
+
 def bauen(hinweise=None, ziel=None, einzeln=False):
     """einzeln=True: eine Datei (ziel, Standard index.html). Sonst: Ordner (ziel, Standard docs/)."""
     css = (CSS.replace("%%SLAB_B%%", b64("Roboto-Slab-Bold.sub.woff", "font/woff"))
               .replace("%%SLAB_R%%", b64("Roboto-Slab-Regular.sub.woff", "font/woff"))
               .replace("%%LATO_R%%", b64("lato-normal.sub.woff", "font/woff"))
               .replace("%%LATO_B%%", b64("lato-bold.sub.woff", "font/woff")))
-    js = (JS.replace("%%ZEITEN%%", JS_ZEITEN).replace("%%ZETTEL_JS%%", ZETTEL_JS)
+    js = (JS.replace("%%ZEITEN%%", JS_ZEITEN).replace("%%SONDER%%", JS_SONDER).replace("%%WARTE%%", JS_WARTE).replace("%%ZETTEL_JS%%", ZETTEL_JS)
             .replace("%%WA%%", json.dumps(whatsapp_nummern(einzeln)))
+            .replace("%%TEL%%", json.dumps({st["id"]: [st["tel"], st["tel_href"]] for st in STANDORTE}))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
-            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)))
+            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE))
+            .replace("%%ZAEHLER%%", json.dumps("" if einzeln else ZAEHLER))
+            .replace("%%SW%%", "false" if einzeln else "true"))
     ersetzen = {
         "%%LD%%": json.dumps(LD, ensure_ascii=False),
         "%%DOMAIN%%": DOMAIN,
@@ -1797,13 +1911,18 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%IMG_KOPF%%": maskottchen("saray-koch-kopf.svg", "image/svg+xml"),
         "%%SCHILDER%%": STATUS_KARTEN,
         "%%IMG_KOCH%%": maskottchen("saray-koch.svg", "image/svg+xml"),
-        "%%IMG_LADEN%%": b64("laden_web.jpg", "image/jpeg"),
+        "%%IMG_LADEN%%": b64("laden_web.webp", "image/webp"),
+        "%%IMG_LADEN_480%%": b64("laden_480.webp", "image/webp"),
         "%%STICKER%%": preis(DOENER_PREIS, "sticker-preis") if DOENER_PREIS else "",
         "%%SUCH_ICON%%": SUCH_ICON,
         "%%NAV%%": NAV,
         "%%KARTE%%": KARTE,
         "%%BELIEBT%%": BELIEBT_HTML,
         "%%ORTE%%": ORTE,
+        "%%ZETTEL_BAR%%": ('<p class="zettel-bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
+        "%%ALLERGENE%%": allergene_html(),
+        "%%ZAEHL_HINWEIS%%": (" und die cookielose Besucherzählung mit GoatCounter (keine personenbezogenen Daten, keine Cookies; "
+                              "gezählt werden Seitenaufrufe und Klicks auf WhatsApp, Anrufen, Teilen, Gemeinsam bestellen)") if ZAEHLER else "",
         "%%FUSS_ORTE%%": FUSS_ORTE,
         "%%HINWEISE%%": hinweise_html(HINWEISE if hinweise is None else hinweise),
         "%%WA_ICON%%": '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3 2.5 6 6 6.5l1.2-1.4-2-1-.9.8c-1-.4-1.9-1.3-2.3-2.3l.8-.9-1-2L9.4 8.4"/></svg>',
@@ -1857,6 +1976,13 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         assert "%%" not in inhalt, f"Platzhalter übrig in {name}"
         (aus / name).write_text(inhalt.strip() + "\n", encoding="utf-8")
     (aus / ".nojekyll").write_text("")
+    # Service Worker: Seite, CSS, JS, Schriften und Bilder für offline; Version aus dem Inhalt (ohne „Stand“-Zeit)
+    import hashlib
+    ohne_stand = re.sub(r'<small class="stand">.*?</small>', "", seite)
+    vor = ["./"] + re.findall(r'(?:href|src)="((?:css|js)/[^"]+)"', seite) \
+        + sorted({"img/" + f.name for f in (aus / "img").iterdir() if f.suffix == ".svg"} | {"fonts/" + f.name for f in (aus / "fonts").iterdir()})
+    (aus / "sw.js").write_text(SW.replace("%%V%%", hashlib.sha1((ohne_stand + css + js).encode()).hexdigest()[:10])
+                               .replace("%%LISTE%%", json.dumps(vor)))
     for g in (192, 512):
         shutil.copyfile(MASKOTT / f"app-{g}.png", aus / "img" / f"app-{g}.png")
     (aus / "manifest.webmanifest").write_text(json.dumps({

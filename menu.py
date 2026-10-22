@@ -297,3 +297,45 @@ GRUPPEN = [
         ],
     },
 ]
+
+
+# ---------- Zutaten und Allergene – abgeschrieben von der gedruckten Karte („Gültig ab 01.02.2024“) ----------
+# Zahlen = Bestandteile (ZUTATEN), Buchstaben = Allergene (ALLERGENE). Bitte vom Inhaber prüfen lassen.
+ALLERGENE = {
+    "a": "Weizenmehl", "b": "Milch und Milcherzeugnisse", "c": "Sellerie, Senf, Soja", "d": "Erbsen",
+    "e": "Süßmolkepulver", "f": "Hühnereiweißpulver", "g": "Sesam",
+}
+ALLERGENE_EN = {
+    "a": "Wheat flour", "b": "Milk and milk products", "c": "Celery, mustard, soy", "d": "Peas",
+    "e": "Sweet whey powder", "f": "Egg white powder", "g": "Sesame",
+}
+ZUTATEN = {
+    "1": ("Döner", "Hackfleischdrehspieß mit Kalb- und Putenfleisch, gewürzt, z. T. fein zerkleinert, tiefgefroren. Zutaten: Kalbfleisch (68 %), Putenfleisch (22 %), WEIZEN GLUTEN, Zwiebel, Gewürze, (SENF), Zuckerstoffe, Kochsalz, Stabilisator E450. Kann SESAM, SOJA, EI enthalten."),
+    "2": ("Chicken Döner", "Tiefgefroren. Zutaten: Hähnchenfleisch (Keule), Paprika, Gewürze (SENF, GLUTEN, SOJA, EI, SESAM), Kochsalz, Zuckerstoffe, Stabilisator E450, Säureregulator E262, E331."),
+    "3": ("Gekochter Truthahnschinken", "Geformt, mit 1 % SOJAEIWEISS. Zutaten: Truthahnschinken 57 %, Wasser, Kartoffelstärke, Glukosesirup, Salz, Gewürze (enthält LAKTOSE), Stabilisator E451(i), Geliermittel E407, Antioxidationsmittel E301, Konservierungsstoffe E250–E262."),
+    "4": ("Hähnchenschnitzel", "Geformt. Zutaten: Hähnchenbrustfleisch 65 %, Paniermehl (WEIZENMEHL), pflanzliches Öl, Säureregulator, Trinatriumcitrat, Würze, Gewürze, Gewürzextrakt, natürliche Aromen."),
+    "5": ("Salami rein Rind", "Zutaten: Rindfleisch, Rindfleischfett, jodiertes Nitritpökelsalz, Konservierungsstoff (Natriumnitrit), Gewürzmischung, SENF, Dextrose, Maltodextrin, Saccharose, Würze, Antioxidationsmittel E301, Gewürzextrakte, Konservierungsstoff E202."),
+    "6": ("Türkische Salami", "Zutaten: Rindfleisch, Rindfleischfett, Kochsalz, Gewürzmischung, Dextrose, Maltodextrin, Antioxidationsmittel (E301), Geschmacksverstärker (E621), Konservierungsstoff (E250), Säuerungsmittel, Citronensäure, Gewürzextrakt, Reifekultur."),
+    "7": ("Fladenbrot", "Zutaten: WEIZENMEHL, Trinkwasser, Hefe, Verdickungsmittel (E412), Emulgator (E472e), Farbstoff (E170), Antioxidationsmittel (E300), Salz, SESAM."),
+    "8": ("Soße", "Zutaten: 50 % Rapsöl, Wasser, Branntweinessig, Zucker, 2,7 % Eigelb, modifizierte Stärke, SENF, MAGERMILCHPULVER, Guarkernmehl, E385."),
+    "9": ("Käse in Salzlake, 40 % Fett i. Tr.", "Zutaten: pasteurisierte Kuhmilch, Speisesalz, mikrobielles Lab, Milchsäurekulturen."),
+}
+# je Abschnitt (Titel wie oben): (Bestandteile, Allergene) – so wie auf der gedruckten Karte
+KENNZEICHNUNG = {
+    "Döner": ("1,7,8,9", "a,b,c,f,g"),
+    "Hähnchen-Döner": ("2,7,8,9", "a,b,c,f,g"),
+    "Dürüm": ("1,2,7,8,9", "a,b,c,f,g"),
+    "Hähnchen-Dürüm": ("2,7,8,9", "a,b,c,f,g"),
+    "Dönerbox": ("1,2,7,8,9", "a,b,c,f,g"),
+    "Kindermenü": ("1,2,7,8,9", "a,b,c,f,g"),
+    "Dönerteller": ("1,2,7,8,9", "a,b,c,f,g"),
+    "Pizza": ("1,2,3,5,6,8,9", "a,b,c,f,g"),
+    "Extras auf die Pizza": ("1,2,3,5,6,8,9", "a,b,c,f,g"),
+    "Pizzabrötchen": ("1,2,3,5,6,8,9", "a,b,c,f,g"),
+    "Türkische Pizza": ("1,2,7,8,9", "a,b,c,d,f,g"),
+    "Baguette": ("1,2,3,5,6,7,8,9", "a,b,c,f,g"),
+    "Gemischte Salate": ("1,2,7,8,9", "a,b,c,f,g"),
+    "Schnitzel, Fisch und Pommes": ("1,2,4,7,8,9", "a,b,c,f,g"),
+    "Chicken Nuggets": ("4,8", "a,b,c,f,g"),   # auf dem Foto teils verdeckt – bitte prüfen
+}
+SOSSEN = ("Knoblauch, Kräuter, Chili", "8", "b,c,e")

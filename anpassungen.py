@@ -11,7 +11,9 @@ Aufbau (alle Teile optional):
   "neu":       [{"gruppe": "doener", "abschnitt": "Döner", "nr": "13a", "name": "...", "desc": "...", "preise": ["8,00"]}],
   "zeiten":    {"freital": {"1": ["10:00", "22:00"], "0": null}},      # Wochentag 0 = Sonntag; null = geschlossen
   "verfuegbarkeit": [{"was": "huhn", "datum": "2026-10-21"}],          # wie VERFUEGBARKEIT in build.py
-  "hinweise":  [{"text": "...", "en": "...", "von": "2026-12-20", "bis": "2026-12-24"}]
+  "hinweise":  [{"text": "...", "en": "...", "von": "2026-12-20", "bis": "2026-12-24"}],
+  "sonderzeiten": {"2026-12-24": {"freital": ["10:00", "16:00"], "altenberg": null}},   # einzelne Tage; null = geschlossen
+  "wartezeit": {"freital": {"datum": "2026-10-22", "min": 30}}                      # gilt nur an diesem Tag
 }
 Schlüssel eines Gerichts: seine Nummer, bei Gerichten ohne Nummer "<gruppe>|<abschnitt>|<name>".
 """
@@ -209,4 +211,40 @@ def hinweise(liste, warnen):
                        "von": h["von"], "bis": h["bis"]})
         else:
             warnen(f"Hinweis {h!r} ungültig")
+    return ok
+
+
+LAEDEN = ("freital", "altenberg")
+
+
+def sonderzeiten(d, warnen, ab_datum):
+    """{"2026-12-24": {"freital": (600, 960) | None}} – nur Tage ab ab_datum (ISO), sortiert."""
+    ok = {}
+    for tag, laeden in sorted(d.items()) if isinstance(d, dict) else []:
+        if not (isinstance(tag, str) and DATUM_RE.match(tag)) or not isinstance(laeden, dict):
+            warnen(f"Besonderer Tag {tag!r} ungültig")
+            continue
+        if tag < ab_datum:
+            continue
+        for laden, wert in laeden.items():
+            if laden not in LAEDEN:
+                continue
+            if wert is None:
+                ok.setdefault(tag, {})[laden] = None
+            elif (isinstance(wert, list) and len(wert) == 2 and all(isinstance(w, str) and ZEIT_RE.match(w) for w in wert)
+                  and _min(wert[0]) < _min(wert[1])):
+                ok.setdefault(tag, {})[laden] = (_min(wert[0]), _min(wert[1]))
+            else:
+                warnen(f"Besonderer Tag {tag} {laden}: {wert!r} ungültig")
+    return ok
+
+
+def wartezeit(d, warnen):
+    ok = {}
+    for laden, w in d.items() if isinstance(d, dict) else []:
+        if laden in LAEDEN and isinstance(w, dict) and isinstance(w.get("datum"), str) and DATUM_RE.match(w["datum"]) \
+                and isinstance(w.get("min"), int) and 0 < w["min"] <= 120:
+            ok[laden] = {"datum": w["datum"], "min": w["min"]}
+        else:
+            warnen(f"Wartezeit {laden}: {w!r} ungültig")
     return ok

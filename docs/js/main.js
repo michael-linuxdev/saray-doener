@@ -1,5 +1,5 @@
 (function(){
-  var ZEITEN={"freital": {"1": [600, 1320], "2": [600, 1320], "3": [600, 1320], "4": [600, 1320], "5": [600, 1320], "6": [660, 1320], "0": [660, 1320]}, "altenberg": {"1": [600, 1260], "2": [600, 1260], "3": [600, 1260], "4": [600, 1260], "5": [600, 1260], "6": [600, 1260], "0": [660, 1260]}};
+  var ZEITEN={"freital": {"1": [600, 1320], "2": [600, 1320], "3": [600, 1320], "4": [600, 1320], "5": [600, 1320], "6": [660, 1320], "0": [660, 1320]}, "altenberg": {"1": [600, 1260], "2": [600, 1260], "3": [600, 1260], "4": [600, 1260], "5": [600, 1260], "6": [600, 1260], "0": [660, 1260]}},SONDER={"freital": {}, "altenberg": {}},WARTE={};
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
@@ -54,12 +54,16 @@
       .formatToParts(new Date()).forEach(function(p){o[p.type]=p.value;});
     return {tag:KURZ[o.weekday],min:(+o.hour)*60+(+o.minute)};
   }
+  /* ISO-Datum (deutsche Zeit) in off Tagen; Öffnungszeit dieses Tages – besondere Tage gehen vor */
+  function isoTag(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5));}
+  function tagZeit(ort,off){var s=SONDER[ort]||{},d=isoTag(off);if(d in s)return s[d];return ZEITEN[ort][(jetzt().tag+off)%7]||null;}
+  function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP==='en')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
-    var z=ZEITEN[ort],n=jetzt(),h=z[n.tag];
-    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:L('Jetzt geöffnet, bis ','Open now, until ')+uhr(h[1])};
+    var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
+    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:L('Jetzt geöffnet, bis ','Open now, until ')+uhr(h[1])+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
     if(h&&n.min<h[0])return{offen:false,text:L('Geschlossen, öffnet heute um ','Closed, opens today at ')+uhr(h[0])};
-    for(var i=1;i<=7;i++){var t=(n.tag+i)%7;if(z[t])return{offen:false,text:SP==='en'?'Closed, opens '+(i===1?'tomorrow':'on '+TAGE_E[t])+' at '+uhr(z[t][0]):'Geschlossen, öffnet '+(i===1?'morgen':'am '+TAGE[t])+' um '+uhr(z[t][0])};}
+    for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0]):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
     return{offen:false,text:''};
   }
   function aktualisieren(){
@@ -67,12 +71,33 @@
       var s=lage(el.getAttribute('data-status'));el.setAttribute('data-offen',s.offen?'ja':'nein');
       el.querySelector('.status-text').textContent=s.text;
     });
-    var tag=jetzt().tag;
+    var tag=jetzt().tag,hi=isoTag(0);
+    document.querySelectorAll('.sonder li[data-datum]').forEach(function(li){li.hidden=li.dataset.datum<hi;li.classList.toggle('heute',li.dataset.datum===hi);});
+    document.querySelectorAll('.sonder').forEach(function(b){b.hidden=!b.querySelector('li:not([hidden])');});
     document.querySelectorAll('tr[data-tage]').forEach(function(tr){
       tr.classList.toggle('heute',tr.getAttribute('data-tage').split(',').indexOf(String(tag))>-1);
     });
   }
   try{aktualisieren();setInterval(aktualisieren,60000);}catch(e){}
+  /* Zählen ohne Cookies (GoatCounter-Pixel, nur wenn ZAEHLER gesetzt) */
+  var GC="";
+  function zaehlen(pfad,ereignis){
+    if(!GC||navigator.doNotTrack==='1'||/^(localhost|127\.)/.test(location.hostname))return;
+    try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title)+'&r='+encodeURIComponent(document.referrer))+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
+  }
+  zaehlen(location.pathname);
+  document.addEventListener('click',function(ev){
+    var a=ev.target.closest('a,button');if(!a)return;var laden=a.dataset.anruf||'';
+    if(a.id==='zettel-whatsapp')zaehlen('whatsapp-bestellung');
+    else if(/^tel:/.test(a.getAttribute('href')||''))zaehlen('anrufen'+(laden?'-'+laden:''));
+    else if(a.id==='zettel-kopieren')zaehlen('bestellung-teilen');
+    else if(a.id==='sammel-einladen')zaehlen('gemeinsam-bestellen');
+  },true);
+  /* Offline: Speisekarte bleibt verfügbar (Service Worker, nur auf der echten Seite) */
+  if(true&&'serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+  /* „Inhaltsstoffe … · Allergene …“ öffnet die Liste unten */
+  document.addEventListener('click',function(ev){if(!ev.target.closest('[data-allergene]'))return;var d=document.getElementById('allergene');if(d)d.open=true;});
+  if(location.hash==='#allergene'){var dA=document.getElementById('allergene');if(dA)dA.open=true;}
 
   /* Kategorien: Die angeklickte Kategorie wird sofort markiert und bleibt es.
      Erst wenn man selbst scrollt, wandert die Markierung mit dem Inhalt mit. */
@@ -481,8 +506,8 @@
   function tagLang(off){var t=tagDatum(off,{weekday:'long',day:'2-digit',month:'2-digit'});return /\.$/.test(t)?t:t+'.';}   /* „Freitag, 24.10.“ */
   /* mögliche Abholzeiten eines Tages (Minuten), 15-Minuten-Raster, heute frühestens in 20 Minuten */
   function slots(off){
-    var n=jetzt(),z=ZEITEN[abh.laden],tag=(n.tag+off)%7,h=z[tag],res=[];if(!h)return res;
-    var start=h[0]+15;if(off===0)start=Math.max(start,Math.ceil((n.min+20)/15)*15);
+    var n=jetzt(),h=tagZeit(abh.laden,off),res=[];if(!h)return res;
+    var start=h[0]+15;if(off===0)start=Math.max(start,Math.ceil((n.min+20+warte(abh.laden))/15)*15);
     for(var m=start;m<=h[1]-15;m+=15)res.push(m);
     return res;
   }
@@ -503,8 +528,10 @@
     if(tage[0]>0){hinweisZ.textContent=L('Heute ist keine Abholung mehr möglich. Sie können vorbestellen.','Pickup is no longer possible today. You can pre-order.');hinweisZ.hidden=false;}
     /* Wert = Text für die Nachricht an den Laden (immer deutsch) */
     var vor=off===0?'heute':off===1?'morgen, '+tagLang(1):tagLang(off);
-    if(off===0&&n.min>=ZEITEN[abh.laden][n.tag][0]){
-      optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20};}
+    var wz=warte(abh.laden),h0=tagZeit(abh.laden,0);
+    if(off===0&&wz){hinweisZ.textContent=L('Gerade viel los: Abholung frühestens in ca. '+(wz+20)+' Minuten.','Busy right now: earliest pickup in about '+(wz+20)+' minutes.');hinweisZ.hidden=false;}
+    if(off===0&&h0&&n.min>=h0[0]){
+      optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20+wz};}
     slots(off).forEach(function(m){var v=vor+', '+zeitText(m);optionen.push({v:v,t:zeitText(m,en)});ZINFO[v]={off:off,min:m};});
     optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
@@ -534,7 +561,11 @@
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
   ladenZeigen();
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
-  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();});
+  var TEL={"freital": ["0351 27676660", "+4935127676660"], "altenberg": ["035056 23674", "+493505623674"]},waGesendet=document.getElementById('wa-gesendet');
+  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
+    if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';
+    waGesendet.appendChild(document.createTextNode(L('Gesendet? Der Laden bestätigt Ihre Bestellung per WhatsApp. Ohne Antwort bitte anrufen: ','Sent? The shop confirms your order via WhatsApp. No reply? Please call: ')));
+    var a=el('a',null,tl[0]);a.href='tel:'+tl[1];waGesendet.appendChild(a);waGesendet.hidden=false;});
   /* „Wie letztes Mal“: Zettel merken, sobald er abgeschickt, kopiert oder vorgelesen wird */
   var LK='saray-letzte',letzte=null,boxL=document.getElementById('letzte');
   try{letzte=JSON.parse(localStorage.getItem(LK)||'null');}catch(e){letzte=null;}
@@ -726,6 +757,7 @@
     document.querySelectorAll('[data-en-html]').forEach(function(x){if(x._de==null)x._de=x.innerHTML;x.innerHTML=l==='en'?x.dataset.enHtml:x._de;});
     document.querySelectorAll('[data-en-ph]').forEach(function(x){if(x._de==null)x._de=x.placeholder;x.placeholder=l==='en'?x.dataset.enPh:x._de;});
     document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');x.setAttribute('aria-label',l==='en'?x.dataset.enAria:x._dea);});
+    document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',l==='en'?x.dataset.enTitle:x._det);});
     spKnopf.textContent=l==='en'?'DE':'EN';spKnopf.lang=l==='en'?'de':'en';
     spKnopf.setAttribute('aria-label',l==='en'?'Auf Deutsch umschalten':'Switch to English');
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}

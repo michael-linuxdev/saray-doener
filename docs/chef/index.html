@@ -136,6 +136,8 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
   var t=heute();
   if(o.verfuegbarkeit)o.verfuegbarkeit=o.verfuegbarkeit.filter(function(r){return !r.datum||r.datum>=t;});
   if(o.hinweise)o.hinweise=o.hinweise.filter(function(h){return h.bis>=t;});
+  if(o.sonderzeiten)Object.keys(o.sonderzeiten).forEach(function(d){if(d<t||!Object.keys(o.sonderzeiten[d]).length)delete o.sonderzeiten[d];});
+  if(o.wartezeit)Object.keys(o.wartezeit).forEach(function(l){var w=o.wartezeit[l];if(!w||w.datum<t||!w.min)delete o.wartezeit[l];});
   Object.keys(o).forEach(function(k){var v=o[k];if(v==null||(Array.isArray(v)&&!v.length)||(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length))delete o[k];});
   if(o.zeiten)Object.keys(o.zeiten).forEach(function(l){if(!Object.keys(o.zeiten[l]).length)delete o.zeiten[l];});
   if(o.zeiten&&!Object.keys(o.zeiten).length)delete o.zeiten;
@@ -143,7 +145,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 }
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
-  ['gerichte','zeiten'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
+  ['gerichte','zeiten','sonderzeiten','wartezeit'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
   ['geloescht','neu','verfuegbarkeit','hinweise'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
 function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
@@ -203,7 +205,19 @@ function regelText(r){var t=r.ab?'ab '+r.ab+' Uhr':r.bis?'bis '+r.bis+' Uhr':(r.
 function regelNeu(was,art,zeit,immer){var r={was:was};if(art==='ab')r.ab=zeit;if(!immer)r.datum=heute();if(LADEN!=='alle')r.laden=LADEN;
   ANP.verfuegbarkeit=(ANP.verfuegbarkeit||[]).filter(function(x){return !(x.was===was&&(x.laden||'alle')===LADEN);});
   ANP.verfuegbarkeit.push(r);zeichnen();}
+function wartezeitKarte(){
+  var t=heute(),k=el('div',{class:'karte'},[el('h3',{text:'Wartezeit heute'}),
+    el('p',{class:'hinweis',text:'Bei viel Betrieb: Online-Bestellungen können erst später abgeholt werden. Gilt nur heute.'})]);
+  STD.laeden.forEach(function(l){var w=(ANP.wartezeit||{})[l.id],akt=w&&w.datum===t?w.min:0;
+    k.appendChild(el('p',{style:'margin:10px 0 4px;font-weight:700',text:l.name}));
+    k.appendChild(el('div',{class:'wahl'},[0,15,30,45].map(function(m){
+      return el('button',{'aria-pressed':String(akt===m),text:m?'+'+m+' Min.':'Normal',onclick:function(){
+        ANP.wartezeit=ANP.wartezeit||{};if(m)ANP.wartezeit[l.id]={datum:t,min:m};else delete ANP.wartezeit[l.id];zeichnen();}});})));
+  });
+  return k;
+}
 function heuteTab(){
+  app.appendChild(wartezeitKarte());
   app.appendChild(el('h2',{text:'Was gibt es heute nicht?'}));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Für welchen Laden?'}),
     el('div',{class:'wahl'},[['alle','Beide'],['freital','Freital'],['altenberg','Altenberg']].map(function(x){
@@ -321,18 +335,64 @@ function zeitenTab(){
     if(Object.keys(anp).length)k.appendChild(el('div',{class:'reihe',style:'margin-top:10px'},[el('button',{class:'knopf klein',text:'Standardzeiten für '+l.name,onclick:function(){delete ANP.zeiten[l.id];zeichnen();}})]));
     app.appendChild(k);
   });
-  app.appendChild(el('p',{class:'hinweis',text:'Gelb markierte Tage weichen vom Standard ab. Für einzelne Tage (z. B. Feiertag) besser einen Hinweis unter „Heute“ setzen.'}));
+  app.appendChild(el('p',{class:'hinweis',text:'Gelb markierte Tage weichen vom Standard ab.'}));
+  sonderKarte();
+}
+function sonderKarte(){
+  app.appendChild(el('h2',{text:'Besondere Tage'}));
+  var t=heute(),k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Z. B. Heiligabend, Feiertag, Betriebsferien. Gilt nur an diesem Datum – die Seite zeigt es an und bietet passende Abholzeiten an.'})]);
+  var SZ=ANP.sonderzeiten||{},namen={};STD.laeden.forEach(function(l){namen[l.id]=l.name;});
+  Object.keys(SZ).sort().forEach(function(d){if(d<t)return;Object.keys(SZ[d]).forEach(function(l){var w=SZ[d][l];
+    k.appendChild(el('p',{},[el('span',{class:'chip'},[datumDE(d)+' '+namen[l]+': '+(w?w[0]+'–'+w[1]+' Uhr':'geschlossen'),
+      el('button',{'aria-label':'Eintrag entfernen',text:'✕',onclick:function(){delete SZ[d][l];if(!Object.keys(SZ[d]).length)delete SZ[d];zeichnen();}})])]));});});
+  var zeiten=zeitListe(6*60,24*60-30,30),datum=el('input',{type:'date',id:'s-datum',value:heute(1),min:t});
+  var laden='alle',auf=false;
+  var wahlL=el('div',{class:'wahl'}),wahlA=el('div',{class:'wahl'});
+  var von=el('select',{id:'s-von','aria-label':'von'},zeiten.map(function(z){return el('option',{value:z,text:z});}));
+  var bis=el('select',{id:'s-bis','aria-label':'bis'},zeiten.concat(['24:00']).map(function(z){return el('option',{value:z,text:z});}));
+  von.value='10:00';bis.value='16:00';var zeitReihe=el('div',{class:'reihe',hidden:true},[von,'–',bis]);
+  function wahl(box,opts,akt,setz){box.textContent='';opts.forEach(function(o){box.appendChild(el('button',{'aria-pressed':String(akt()===o[0]),text:o[1],onclick:function(){setz(o[0]);wahl(box,opts,akt,setz);}}));});}
+  wahl(wahlL,[['alle','Beide'],['freital','Freital'],['altenberg','Altenberg']],function(){return laden;},function(v){laden=v;});
+  wahl(wahlA,[[false,'Geschlossen'],[true,'Andere Zeiten']],function(){return auf;},function(v){auf=v;zeitReihe.hidden=!v;});
+  [el('label',{for:'s-datum',text:'Datum'}),datum,el('label',{text:'Laden'}),wahlL,el('label',{text:'An diesem Tag'}),wahlA,zeitReihe,
+   el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'Tag hinzufügen',onclick:function(){
+     var d=datum.value,w=auf?[von.value,bis.value==='24:00'?'23:59':bis.value]:null;
+     if(!d||d<t){status('Bitte ein Datum ab heute wählen.','rot',3000);return;}
+     if(w&&w[0]>=w[1]){status('„bis“ muss nach „von“ liegen.','rot',3000);return;}
+     ANP.sonderzeiten=ANP.sonderzeiten||{};var e=ANP.sonderzeiten[d]=ANP.sonderzeiten[d]||{};
+     (laden==='alle'?STD.laeden.map(function(l){return l.id;}):[laden]).forEach(function(l){e[l]=w;});zeichnen();}})])
+  ].forEach(function(x){k.appendChild(x);});
+  app.appendChild(k);
 }
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
+  app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Letzte Änderung rückgängig'}),
+    el('p',{class:'hinweis',text:'Holt den Stand vor dem letzten Speichern zurück.'}),
+    el('div',{class:'reihe'},[el('button',{class:'knopf',text:'Rückgängig machen …',onclick:rueckgaengig})])]));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Standard wiederherstellen'}),
     el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren und Hinweise auf den ursprünglichen Stand zurück.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot voll',text:'Alles auf Standard zurücksetzen',onclick:function(){
       frage('Wirklich alle Änderungen löschen und den Standard wiederherstellen?','Ja, zurücksetzen').then(function(j){if(!j)return;ANP={};speichern('Chef-App: Standard wiederhergestellt');});}})])]));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Zugang'}),el('p',{class:'hinweis',text:'Der Zugang ist nur auf diesem Gerät gespeichert.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf',text:'Auf diesem Gerät abmelden',onclick:function(){frage('Zugang auf diesem Gerät löschen?','Abmelden').then(function(j){if(j){try{localStorage.removeItem(TK);}catch(e){}location.reload();}});}})])]));
+}
+
+function rueckgaengig(){
+  if(geaendert()){status('Bitte zuerst speichern oder verwerfen.','rot',4000);return;}
+  status('Sucht die letzte Änderung …');
+  api('/commits?path='+encodeURIComponent(DATEI)+'&sha=main&per_page=2',{cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('GitHub antwortet nicht ('+r.status+')');return r.json();
+  }).then(function(c){
+    if(!c.length)throw new Error('Es gibt noch keine gespeicherte Änderung');
+    var letzte=c[0],davor=c[1],wann=new Date(letzte.commit.author.date).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    var inhalt=davor?api('/contents/'+DATEI+'?ref='+davor.sha,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('Alter Stand nicht lesbar ('+r.status+')');return r.json();})
+      .then(function(d){return JSON.parse(b64dec(d.content)||'{}');}):Promise.resolve({});
+    return inhalt.then(function(alt){document.getElementById('status').hidden=true;
+      return frage('Letzte Änderung vom '+wann+' rückgängig machen? („'+letzte.commit.message.split('\n')[0]+'“)','Ja, rückgängig').then(function(j){
+        if(!j)return;ANP=alt&&typeof alt==='object'?alt:{};speichern('Chef-App: Rückgängig ('+wann+')');});});
+  }).catch(function(e){status(e.message,'rot',6000);});
 }
 
 /* ---------- Einrichten ---------- */

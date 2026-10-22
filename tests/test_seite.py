@@ -468,7 +468,7 @@ def barrierefreiheit(b, url):
     ctx.close()
 
 
-def chef_oeffnen(b, url, anp=None, gespeichert=None):
+def chef_oeffnen(b, url, anp=None, gespeichert=None, vorher=None):
     """Öffnet die Chef-App mit nachgebildeter GitHub-API (es wird nichts wirklich gespeichert)."""
     import base64
     ctx = b.new_context(viewport=HANDY, locale="de-DE", timezone_id="Europe/Berlin", is_mobile=True, has_touch=True)
@@ -480,7 +480,12 @@ def chef_oeffnen(b, url, anp=None, gespeichert=None):
 
     def github(route):
         r = route.request
-        if r.method == "PUT":
+        if "/commits?" in r.url:
+            route.fulfill(status=200, json=[{"sha": "c2", "commit": {"message": "Chef-App: 1 Änderung(en)", "author": {"date": "2026-10-21T15:00:00Z"}}},
+                                            {"sha": "c1", "commit": {"message": "vorher", "author": {"date": "2026-10-20T15:00:00Z"}}}])
+        elif "ref=c1" in r.url:
+            route.fulfill(status=200, json={"sha": "x", "content": base64.b64encode(json.dumps(vorher or {}).encode()).decode()})
+        elif r.method == "PUT":
             body = json.loads(r.post_data)
             assert r.headers.get("authorization") == "Bearer TESTTOKEN", r.headers
             gespeichert.append(json.loads(base64.b64decode(body["content"]).decode("utf-8")))
@@ -501,7 +506,7 @@ def chef_app_aenderungen(b, url):
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
     assert "token" not in p.url, "Token steht noch in der Adresse"
     # Heute: Hähnchen aus (nur Freital), Nuggets ab 17 Uhr jeden Tag
-    p.click("text=Freital")
+    p.click(".wahl button:text-is('Freital')")
     p.locator(".karte", has=p.locator("h3", has_text="Hähnchen")).locator("text=Heute aus").click()
     p.locator(".karte", has=p.locator("h3", has_text="Nuggets")).locator("text=Ab Uhrzeit …").click()
     p.select_option("#ab-zeit", "17:00")
@@ -575,6 +580,102 @@ def chef_app_standard_wiederherstellen(b, url):
     p.click(".blatt >> text=Ja, zurücksetzen")
     p.wait_for_selector(".status.ok")
     assert gespeichert == [{}], gespeichert
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
+def allergene_und_barzahlung(b, url):
+    s = Seite(b, url)
+    assert s.js("document.querySelectorAll('.kennz').length") >= 14
+    assert s.js("document.querySelector('#doener .kennz').textContent").replace("\xa0", " ").startswith("Inhaltsstoffe 1, 7, 8, 9 · Allergene a, b, c, f, g")
+    assert not s.js("document.getElementById('allergene').open")
+    s.p.click("#doener .kennz a")
+    s.p.wait_for_timeout(200)
+    assert s.js("document.getElementById('allergene').open")
+    assert "Süßmolkepulver" in s.p.text_content("#allergene")
+    assert s.js("document.querySelectorAll('.ort .bar').length") == 2
+    # Bestellen: „nur bar“ im Zettel, nach WhatsApp der Hinweis mit Telefonnummer
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    assert "nur bar" in s.p.text_content(".zettel-bar")
+    s.p.click('[data-laden="freital"]')
+    assert s.js("document.getElementById('wa-gesendet').hidden")
+    s.wa_text()
+    assert not s.js("document.getElementById('wa-gesendet').hidden")
+    assert s.p.get_attribute("#wa-gesendet a", "href") == "tel:+4935127676660"
+    s.schliessen()
+
+
+def bauen_mit(anp, ordner):
+    datei = pathlib.Path(ordner) / "anp.json"
+    datei.write_text(json.dumps(anp))
+    out = subprocess.run([sys.executable, "-c", f"import build; build.bauen(ziel={str(pathlib.Path(ordner) / 'docs')!r})"],
+                         cwd=REPO, env=dict(os.environ, SARAY_ANPASSUNGEN=str(datei), SARAY_HEUTE="2026-10-21"), capture_output=True, text=True)
+    assert out.returncode == 0 and "WARNUNG" not in out.stdout, out.stdout + out.stderr
+    handler = functools.partial(Leise, directory=str(pathlib.Path(ordner) / "docs"))
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}/"
+
+
+@test
+def besondere_tage_und_wartezeit(b, url):
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"sonderzeiten": {"2026-10-20": {"freital": None}, "2026-10-21": {"freital": None},
+                                             "2026-10-22": {"freital": ["12:00", "15:00"]}},
+                            "wartezeit": {"altenberg": {"datum": "2026-10-21", "min": 30}}}, tmp)
+        seite = (pathlib.Path(tmp) / "docs" / "index.html").read_text()
+        assert 'data-datum="2026-10-20"' not in seite, "vergangener Tag steht noch drin"
+        assert '"specialOpeningHoursSpecification"' in seite
+        s = Seite(b, u)
+        st = s.js("Object.fromEntries([...document.querySelectorAll('.schild [data-status]')].map(x=>[x.dataset.status,x.textContent]))")
+        assert st["freital"].startswith("Geschlossen, öffnet morgen um 12 Uhr"), st
+        assert "Wartezeit ca. 30 Min." in st["altenberg"], st
+        s.p.click("#nr-1 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click('[data-laden="altenberg"]')
+        zeiten = s.js("[...document.querySelectorAll('#abhol-zeit option')].map(o=>o.value)")
+        assert zeiten[0] == "heute, so schnell wie möglich" and zeiten[1] == "heute, 18:45 Uhr", zeiten
+        assert "frühestens in ca. 50 Minuten" in s.p.text_content("#abhol-hinweis")
+        s.p.click('[data-laden="freital"]')
+        tage = s.js("[...document.querySelectorAll('#abhol-tag option')].map(o=>o.value)")
+        assert tage[0] == "2026-10-22", tage
+        zeiten = s.js("[...document.querySelectorAll('#abhol-zeit option')].map(o=>o.value)")
+        assert zeiten[0].endswith("12:15 Uhr") and zeiten[-1].endswith("14:45 Uhr"), zeiten
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
+def chef_app_wartezeit_tage_rueckgaengig(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert, vorher={"hinweise": []})
+    p.locator(".karte", has=p.locator("h3", has_text="Wartezeit")).locator("button", has_text="+30 Min.").first.click()
+    p.click('nav.tabs [data-tab="zeiten"]')
+    p.fill("#s-datum", "2026-12-24")
+    p.click(".wahl >> text=Freital")
+    p.click("text=Andere Zeiten")
+    p.select_option("#s-von", "10:00")
+    p.select_option("#s-bis", "14:00")
+    p.click("text=Tag hinzufügen")
+    p.fill("#s-datum", "2026-12-25")
+    p.click(".wahl >> text=Beide")
+    p.click("text=Geschlossen")
+    p.click("text=Tag hinzufügen")
+    assert "24.12. Freital: 10:00–14:00 Uhr" in p.text_content("#app")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert d["wartezeit"] == {"freital": {"datum": "2026-10-21", "min": 30}}, d
+    assert d["sonderzeiten"] == {"2026-12-24": {"freital": ["10:00", "14:00"]},
+                                 "2026-12-25": {"freital": None, "altenberg": None}}, d
+    # Rückgängig: holt den Stand vor der letzten Speicherung
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click("text=Rückgängig machen …")
+    p.click(".blatt >> text=Ja, rückgängig")
+    p.wait_for_selector(".status.ok >> text=Online")
+    assert gespeichert[-1] == {}, gespeichert[-1]
     assert not fehler, fehler
     ctx.close()
 
