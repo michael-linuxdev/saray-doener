@@ -79,6 +79,8 @@ nav.tabs button[aria-current=page]{color:var(--paprika)}
 .blatt > div{background:#fff;width:100%;max-width:720px;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 .blatt h3{margin:0 0 6px;font-size:1.2rem}
 .blatt .reihe{margin-top:14px}
+.frueher{margin-top:12px;padding:8px 10px;background:var(--blass);border-radius:10px}.frueher .reihe{margin-top:6px}
+a.knopf{color:inherit}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -132,10 +134,23 @@ function gerichte(){ /* aktuelle Karte = Standard + Änderungen, für die Anzeig
   });});
   return res;
 }
+function schl(x){return x.neu?(x.nr||x.g.id+'|'+x.a.titel+'|'+x.name):x.k;}   /* gleicher Schlüssel wie build.py */
+function preisSetzen(x,p){
+  if(x.neu){ANP.neu[x.index].preise=p.slice();return;}
+  ANP.gerichte=ANP.gerichte||{};var o=ANP.gerichte[x.k]||{};
+  if(JSON.stringify(p)===JSON.stringify(x.std.preise))delete o.preise;else o.preise=p.slice();
+  if(Object.keys(o).length)ANP.gerichte[x.k]=o;else delete ANP.gerichte[x.k];
+}
+function staende(){ /* [{name, preise:{schlüssel:[…]}, grund:true}] – Grundstand = gedruckte Karte */
+  var grund={name:'Stand '+STD.grundstand,grund:true,preise:{}};
+  STD.gruppen.forEach(function(g){g.abschnitte.forEach(function(a){a.gerichte.forEach(function(x){grund.preise[x.k]=x.preise;});});});
+  return [grund].concat(ANP.staende||[]);
+}
 function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
   var t=heute();
   if(o.verfuegbarkeit)o.verfuegbarkeit=o.verfuegbarkeit.filter(function(r){return !r.datum||r.datum>=t;});
   if(o.hinweise)o.hinweise=o.hinweise.filter(function(h){return h.bis>=t;});
+  if(o.aktionen)o.aktionen=o.aktionen.filter(function(a){return a.bis>=t;});
   if(o.sonderzeiten)Object.keys(o.sonderzeiten).forEach(function(d){if(d<t||!Object.keys(o.sonderzeiten[d]).length)delete o.sonderzeiten[d];});
   if(o.wartezeit)Object.keys(o.wartezeit).forEach(function(l){var w=o.wartezeit[l];if(!w||w.datum<t||!w.min)delete o.wartezeit[l];});
   Object.keys(o).forEach(function(k){var v=o[k];if(v==null||(Array.isArray(v)&&!v.length)||(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length))delete o[k];});
@@ -146,7 +161,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
   ['gerichte','zeiten','sonderzeiten','wartezeit'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
-  ['geloescht','neu','verfuegbarkeit','hinweise'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
+  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
 function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
   document.getElementById('speichern-text').textContent=(n===1?'1 Änderung':n+' Änderungen')+' – noch nicht gespeichert';}
@@ -258,7 +273,17 @@ function abUhrzeit(g){
   document.body.appendChild(b);
 }
 
+function aktionText(a){var t=a.name+' · '+datumDE(a.von)+'–'+datumDE(a.bis);
+  if(a.tage&&a.tage.length)t+=' · '+a.tage.map(function(d){return TAGE[d];}).join(', ');
+  if(a.laden)t+=' · nur '+(a.laden==='freital'?'Freital':'Altenberg');return t;}
 function karteTab(){
+  app.appendChild(el('h2',{text:'Sonderaktionen'}));
+  var ak=el('div',{class:'karte'}),t=heute();
+  (ANP.aktionen||[]).forEach(function(a,i){if(a.bis<t)return;
+    ak.appendChild(el('p',{},[el('button',{class:'chip',style:'cursor:pointer;padding-right:12px','data-aktion':i,onclick:function(){aktionBearbeiten(i);}},[aktionText(a)])]));});
+  if(!(ANP.aktionen||[]).some(function(a){return a.bis>=t;}))ak.appendChild(el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Z. B. „Döner 5 €, Dürüm 6 €“ für eine Woche oder jeden Mittwoch. Die Seite zeigt den alten Preis durchgestrichen und rechnet mit dem Aktionspreis.'}));
+  ak.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'+ Neue Aktion',onclick:function(){aktionBearbeiten(null);}})]));
+  app.appendChild(ak);
   app.appendChild(el('h2',{text:'Speisekarte'}));
   var such=el('input',{type:'search',placeholder:'Name oder Nummer suchen',value:SUCHE,'aria-label':'Suchen',oninput:function(){SUCHE=such.value;liste();}});
   app.appendChild(el('div',{class:'reihe'},[el('div',{style:'flex:1'},[such]),el('button',{class:'knopf voll',text:'+ Neues Gericht',onclick:function(){bearbeiten(null);}})]));
@@ -290,6 +315,12 @@ function bearbeiten(x){
     x&&!x.neu?null:el('div',{},[el('label',{for:'b-nr',text:'Nummer (optional, muss frei sein)'}),nr]),
     el('label',{for:'b-name',text:'Name'}),name,el('label',{for:'b-desc',text:'Beschreibung'}),desc,preisBox,fehler]);
   preisFelder();
+  if(x){var frueher=staende().filter(function(st){var p=st.preise[schl(x)];return p&&JSON.stringify(p)!==JSON.stringify(x.preise);});
+    if(frueher.length){var fb=el('div',{class:'frueher'},[el('label',{text:'Frühere Preise'})]);
+      frueher.forEach(function(st){var p=st.preise[schl(x)];
+        fb.appendChild(el('div',{class:'reihe'},[el('span',{style:'flex:1',text:st.name+': '+p.join(' / ')+' €'}),
+          el('button',{class:'knopf klein',text:'Übernehmen',onclick:function(){[].forEach.call(preisBox.querySelectorAll('input'),function(f,i){f.value=p[i]||p[0];});}})]));});
+      preisBox.after(fb);}}
   function uebernehmen(){
     var preise=[].map.call(preisBox.querySelectorAll('input'),function(f){return preisNorm(f.value);});
     if(!name.value.trim()){fehler.textContent='Bitte einen Namen eingeben.';fehler.hidden=false;return;}
@@ -307,12 +338,52 @@ function bearbeiten(x){
   if(x&&x.neu)knoepfe.push(el('button',{class:'knopf rot',text:'Löschen',onclick:function(){ANP.neu.splice(x.index,1);b.remove();zeichnen();}}));
   else if(x&&x.geloescht)knoepfe.push(el('button',{class:'knopf gelb',text:'Wieder anzeigen',onclick:function(){ANP.geloescht=ANP.geloescht.filter(function(k){return k!==x.k;});b.remove();zeichnen();}}));
   else if(x)knoepfe.push(el('button',{class:'knopf rot',text:'Löschen',onclick:function(){(ANP.geloescht=ANP.geloescht||[]).push(x.k);b.remove();zeichnen();}}));
-  if(x&&x.geaendert)knoepfe.push(el('button',{class:'knopf klein',text:'Standard',onclick:function(){delete ANP.gerichte[x.k];b.remove();zeichnen();}}));
+  if(x&&x.geaendert)knoepfe.push(el('button',{class:'knopf klein',text:'Alles wie Stand '+STD.grundstand,onclick:function(){delete ANP.gerichte[x.k];b.remove();zeichnen();}}));
   if(!x||!x.geloescht)knoepfe.push(el('button',{class:'knopf voll',text:'Übernehmen',onclick:uebernehmen}));
   inhalt.appendChild(el('div',{class:'reihe'},knoepfe));b.appendChild(inhalt);document.body.appendChild(b);name.focus();
 }
 
 var TAGE=['So','Mo','Di','Mi','Do','Fr','Sa'],WOCHE=[1,2,3,4,5,6,0];
+function aktionBearbeiten(index){
+  var alt=index==null?{name:'',von:heute(),bis:heute(6),preise:{}}:kopie(ANP.aktionen[index]),a=kopie(alt);
+  var alle=gerichte().filter(function(x){return !x.geloescht;}),nach={};alle.forEach(function(x){nach[schl(x)]=x;});
+  var b=el('div',{class:'blatt'}),inhalt=el('div');b.appendChild(inhalt);document.body.appendChild(b);
+  var name=el('input',{type:'text',id:'a-name',maxlength:'60',value:a.name,placeholder:'z. B. Döner 5 €, Dürüm 6 €'});
+  var von=el('input',{type:'date',id:'a-von',value:a.von}),bis=el('input',{type:'date',id:'a-bis',value:a.bis});
+  var tageBox=el('div',{class:'wahl'}),ladenBox=el('div',{class:'wahl'}),liste=el('div'),such=el('input',{type:'search',id:'a-such',placeholder:'Gericht hinzufügen: Name oder Nummer','aria-label':'Gericht suchen'}),treffer=el('div');
+  var fehler=el('p',{class:'fehler',hidden:true});
+  function tageZeichnen(){tageBox.textContent='';var ts=a.tage||[];
+    tageBox.appendChild(el('button',{'aria-pressed':String(!ts.length),text:'Jeden Tag',onclick:function(){delete a.tage;tageZeichnen();}}));
+    WOCHE.forEach(function(d){tageBox.appendChild(el('button',{'aria-pressed':String(ts.indexOf(d)>-1),text:TAGE[d],onclick:function(){
+      var n=(a.tage||[]).slice(),i=n.indexOf(d);if(i>-1)n.splice(i,1);else n.push(d);if(n.length)a.tage=n;else delete a.tage;tageZeichnen();}}));});}
+  function ladenZeichnen(){ladenBox.textContent='';[['','Beide'],['freital','Freital'],['altenberg','Altenberg']].forEach(function(o){
+    ladenBox.appendChild(el('button',{'aria-pressed':String((a.laden||'')===o[0]),text:o[1],onclick:function(){if(o[0])a.laden=o[0];else delete a.laden;ladenZeichnen();}}));});}
+  function listeZeichnen(){liste.textContent='';Object.keys(a.preise).forEach(function(k){var x=nach[k];if(!x)return;
+    var felder=x.preise.map(function(p,i){return el('input',{type:'text',inputmode:'decimal',value:a.preise[k][i]||'','aria-label':'Aktionspreis '+x.name+(x.a.groessen.length?' '+x.a.groessen[i]:''),
+      'data-ak':k,style:'width:92px;min-height:40px',oninput:function(ev){a.preise[k][i]=ev.target.value;}});});
+    liste.appendChild(el('div',{class:'tag'},[el('span',{style:'flex:1',text:(x.nr?x.nr+' ':'')+x.name+' (sonst '+x.preise.join(' / ')+' €)'})].concat(felder,
+      [el('button',{class:'knopf klein','aria-label':'Entfernen',text:'✕',onclick:function(){delete a.preise[k];listeZeichnen();}})])));});
+    if(!Object.keys(a.preise).length)liste.appendChild(el('p',{class:'hinweis',text:'Noch keine Gerichte.'}));}
+  such.addEventListener('input',function(){treffer.textContent='';var q=such.value.trim().toLowerCase();if(!q)return;
+    alle.filter(function(x){return (x.nr+' '+x.name).toLowerCase().indexOf(q)>-1&&!a.preise[schl(x)];}).slice(0,8).forEach(function(x){
+      treffer.appendChild(el('button',{class:'liste-gericht',onclick:function(){a.preise[schl(x)]=x.preise.map(function(){return '';});such.value='';treffer.textContent='';listeZeichnen();
+        var f=liste.querySelector('[data-ak="'+schl(x).replace(/"/g,'')+'"]');if(f)f.focus();}},[el('span',{class:'nr',text:x.nr}),el('span',{class:'nm',text:x.name}),el('span',{class:'pr',text:x.preise.join(' / ')+' €'})]));});});
+  function speichernA(){
+    a.name=name.value.trim();a.von=von.value;a.bis=bis.value;
+    if(!a.name){fehler.textContent='Bitte einen Namen eingeben, z. B. „Döner 5 €“.';fehler.hidden=false;return;}
+    if(!a.von||!a.bis||a.bis<a.von){fehler.textContent='Bitte einen gültigen Zeitraum wählen.';fehler.hidden=false;return;}
+    var ks=Object.keys(a.preise);if(!ks.length){fehler.textContent='Bitte mindestens ein Gericht hinzufügen.';fehler.hidden=false;return;}
+    for(var i=0;i<ks.length;i++){var ps=a.preise[ks[i]].map(preisNorm);if(ps.some(function(p){return !p;})){fehler.textContent='Aktionspreis für '+nach[ks[i]].name+' bitte so eingeben: 5,00';fehler.hidden=false;return;}a.preise[ks[i]]=ps;}
+    ANP.aktionen=ANP.aktionen||[];if(index==null)ANP.aktionen.push(a);else ANP.aktionen[index]=a;b.remove();zeichnen();}
+  var knoepfe=[el('button',{class:'knopf',text:'Abbrechen',onclick:function(){b.remove();}})];
+  if(index!=null)knoepfe.push(el('button',{class:'knopf rot',text:'Aktion löschen',onclick:function(){ANP.aktionen.splice(index,1);b.remove();zeichnen();}}));
+  knoepfe.push(el('button',{class:'knopf voll',text:'Übernehmen',onclick:speichernA}));
+  [el('h3',{text:index==null?'Neue Sonderaktion':'Sonderaktion ändern'}),el('label',{for:'a-name',text:'Name (steht oben auf der Seite)'}),name,
+   el('div',{class:'reihe'},[el('div',{style:'flex:1'},[el('label',{for:'a-von',text:'von'}),von]),el('div',{style:'flex:1'},[el('label',{for:'a-bis',text:'bis'}),bis])]),
+   el('label',{text:'An welchen Tagen?'}),tageBox,el('label',{text:'Welcher Laden?'}),ladenBox,
+   el('label',{text:'Gerichte und Aktionspreise'}),liste,such,treffer,fehler,el('div',{class:'reihe'},knoepfe)].forEach(function(n){inhalt.appendChild(n);});
+  tageZeichnen();ladenZeichnen();listeZeichnen();name.focus();
+}
 function zeitenTab(){
   app.appendChild(el('h2',{text:'Öffnungszeiten'}));
   var zeiten=zeitListe(6*60,24*60-30,30);
@@ -368,6 +439,26 @@ function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
+  /* Preis-Stände */
+  var sk=el('div',{class:'karte'},[el('h3',{text:'Preis-Stände'}),el('p',{class:'hinweis',text:'Den Stand '+STD.grundstand+' (gedruckte Karte) gibt es immer. Dazu bis zu drei eigene Stände, z. B. vor einer Preiserhöhung. Einzelne Preise holen Sie beim Gericht unter „Frühere Preise“ zurück.'})]);
+  staende().forEach(function(st,i){
+    var n=0;gerichte().forEach(function(x){var p=st.preise[schl(x)];if(p&&JSON.stringify(p)!==JSON.stringify(x.preise))n++;});
+    var kn=[el('button',{class:'knopf klein',text:'Alle Preise so',disabled:!n,onclick:function(){frage('Alle Preise auf „'+st.name+'“ setzen? ('+n+' Preise ändern sich)','Ja, übernehmen').then(function(j){if(!j)return;
+      gerichte().forEach(function(x){var p=st.preise[schl(x)];if(p&&p.length===x.preise.length)preisSetzen(x,p);});zeichnen();});}})];
+    if(!st.grund)kn.push(el('button',{class:'knopf klein rot',text:'Löschen',onclick:function(){frage('„'+st.name+'“ löschen?','Löschen').then(function(j){if(j){ANP.staende.splice(i-1,1);zeichnen();}});}}));
+    sk.appendChild(el('div',{class:'tag'},[el('span',{style:'flex:1;font-weight:700',text:st.name+(n?' · '+n+' Preise anders als jetzt':' · wie jetzt')})].concat(kn)));
+  });
+  var eigene=(ANP.staende||[]).length;
+  sk.appendChild(el('div',{class:'reihe',style:'margin-top:10px'},[el('button',{class:'knopf voll',text:'Heutige Preise als Stand festlegen',disabled:eigene>=3,onclick:function(){
+    var d=heute(),p=d.split('-'),st={name:'Stand '+p[2]+'.'+p[1]+'.'+p[0],datum:d,preise:{}};
+    gerichte().forEach(function(x){if(!x.geloescht)st.preise[schl(x)]=x.preise.slice();});
+    ANP.staende=(ANP.staende||[]).filter(function(s){return s.name!==st.name;}).concat([st]);zeichnen();}})]));
+  if(eigene>=3)sk.appendChild(el('p',{class:'hinweis',text:'Höchstens drei eigene Stände – zum Festlegen bitte erst einen löschen.'}));
+  app.appendChild(sk);
+  /* Drucken */
+  app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
+    el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}))
+      .map(function(d){return el('a',{class:'knopf',href:d[0],target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:d[1]});}))]));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Letzte Änderung rückgängig'}),
     el('p',{class:'hinweis',text:'Holt den Stand vor dem letzten Speichern zurück.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf',text:'Rückgängig machen …',onclick:rueckgaengig})])]));

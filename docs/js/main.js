@@ -1,5 +1,5 @@
 (function(){
-  var ZEITEN={"freital": {"1": [600, 1320], "2": [600, 1320], "3": [600, 1320], "4": [600, 1320], "5": [600, 1320], "6": [660, 1320], "0": [660, 1320]}, "altenberg": {"1": [600, 1260], "2": [600, 1260], "3": [600, 1260], "4": [600, 1260], "5": [600, 1260], "6": [600, 1260], "0": [660, 1260]}},SONDER={"freital": {}, "altenberg": {}},WARTE={};
+  var ZEITEN={"freital": {"1": [600, 1320], "2": [600, 1320], "3": [600, 1320], "4": [600, 1320], "5": [600, 1320], "6": [660, 1320], "0": [660, 1320]}, "altenberg": {"1": [600, 1260], "2": [600, 1260], "3": [600, 1260], "4": [600, 1260], "5": [600, 1260], "6": [600, 1260], "0": [660, 1260]}},SONDER={"freital": {}, "altenberg": {}},WARTE={},AKTIONEN=[];
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
@@ -57,6 +57,37 @@
   /* ISO-Datum (deutsche Zeit) in off Tagen; Öffnungszeit dieses Tages – besondere Tage gehen vor */
   function isoTag(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5));}
   function tagZeit(ort,off){var s=SONDER[ort]||{},d=isoTag(off);if(d in s)return s[d];return ZEITEN[ort][(jetzt().tag+off)%7]||null;}
+  /* Sonderaktion für Gericht k (Größe i) an Datum iso und Laden (null = noch nicht gewählt) */
+  function aktion(k,i,iso,laden){
+    var wt=new Date(iso+'T12:00:00Z').getUTCDay();
+    for(var j=0;j<AKTIONEN.length;j++){var a=AKTIONEN[j],p=a.p[k];
+      if(!p||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.laden&&a.laden!==laden))continue;
+      return {c:p[Math.min(i||0,p.length-1)],a:a};}
+    return null;
+  }
+  function euroK(c){return (c/100).toFixed(2).replace('.',',')+' €';}
+  /* Speisekarte: heute laufende Aktionen markieren (alter Preis durchgestrichen, Aktionspreis als Marke) */
+  function aktionenZeigen(){
+    var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay();
+    document.querySelectorAll('.marke-aktion').forEach(function(m){m.remove();});
+    document.querySelectorAll('.preis-alt').forEach(function(m){m.classList.remove('preis-alt');});
+    AKTIONEN.forEach(function(a){
+      if(iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0))return;
+      Object.keys(a.p).forEach(function(k){
+        var st=document.querySelector('.sticker');
+        if(k==='1'&&st&&!a.laden){var c=a.p[k][0],sp=st.querySelector('.sticker-preis');st.querySelector('small').textContent=L('Aktion','Offer');
+          if(sp)sp.innerHTML=Math.floor(c/100)+'<span class="ct">'+('0'+c%100).slice(-2)+'</span>';st.classList.add('sticker-aktion');}
+        document.querySelectorAll('li[data-k="'+(window.CSS&&CSS.escape?CSS.escape(k):k)+'"]').forEach(function(li){
+          var ziel=li.querySelector('.name, .tipp-name');if(!ziel)return;
+          var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
+          var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
+          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
+          ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
+          li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
+        });
+      });
+    });
+  }
   function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP==='en')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
@@ -79,8 +110,9 @@
     });
   }
   try{aktualisieren();setInterval(aktualisieren,60000);}catch(e){}
+  try{aktionenZeigen();}catch(e){}
   /* Zählen ohne Cookies (GoatCounter-Pixel, nur wenn ZAEHLER gesetzt) */
-  var GC="";
+  var GC="saraymicana";
   function zaehlen(pfad,ereignis){
     if(!GC||navigator.doNotTrack==='1'||/^(localhost|127\.)/.test(location.hostname))return;
     try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title)+'&r='+encodeURIComponent(document.referrer))+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
@@ -294,7 +326,9 @@
   function euro(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   function grund(t){return {s:(t==='D'||t==='SA')?['Kräuter']:[],ohne:[],ex:[],wahl:[],va:''};}
   function exPreis(o){return (o.ex||[]).reduce(function(a,e){return a+(GEMUESE.indexOf(e)>-1?150:200);},0);}
-  function stueck(x){return x.c+exPreis(x.o);}
+  function aktionZ(x){var li=gerichtLi(x.k);if(!li)return null;var gs=li.dataset.g?li.dataset.g.split('|'):[''];
+    return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),abh.tag||isoTag(0),abh.laden||null);}
+  function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o);}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
@@ -538,7 +572,7 @@
     abhSpeichern();zeichnenSpaeter();
   }
   var zsp=false;function zeichnenSpaeter(){if(zsp)return;zsp=true;setTimeout(function(){zsp=false;zeichnen();waAktualisieren();},0);}
-  var WA={"freital": "491601836249", "altenberg": "491601836249"},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
+  var WA={"freital": "4915737807403", "altenberg": "491601836249"},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
   var verfHinweis=document.getElementById('verf-hinweis');
   function konflikte(){return zettel.filter(function(x){return sperreZettel(x.k);}).length;}
   function waAktualisieren(){
@@ -612,7 +646,7 @@
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
   function zeileText(x){var w=x.t?wuensche(x):'';
-    return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
+    return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(aktionZ(x)?' (Aktion)':'')+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
   /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
   function teilen(t,titel){
     var kopiert=L('Bestellung kopiert – jetzt in WhatsApp, SMS, E-Mail oder Teams einfügen.','Order copied – now paste it into WhatsApp, a text message, e-mail or Teams.');

@@ -19,14 +19,14 @@ DOMAIN = "https://xn--saraydner-57a.de/"  # saraydöner.de (Canonical)
 CNAME = "saray.micana.de"
 REPO = "michael-linuxdev/saray-doener"     # Chef-App speichert Änderungen in diesem Repo (daten/anpassungen.json)                  # Adresse der GitHub Page
 VORSCHAU = True                            # True: Suchmaschinen sollen die Vorschau-Adresse nicht aufnehmen
-ZAEHLER = ""                               # GoatCounter-Kürzel (z. B. "saray-doener" für saray-doener.goatcounter.com); leer = kein Zählen
+ZAEHLER = "saraymicana"                            # GoatCounter-Kürzel (z. B. "saray-doener" für saray-doener.goatcounter.com); leer = kein Zählen
 
 STANDORTE = [
     {
         "id": "freital", "name": "Freital", "strasse": "Dresdner Str. 87", "plz": "01705", "ort": "Freital",
         "tel": "0351 27676660", "tel_href": "+4935127676660", "tel_ld": "+49 351 27676660",
         "bar": True,  # nur Barzahlung
-        "whatsapp": "491601836249",  # Testnummer (Michael) – vor dem Livegang durch die Ladennummer ersetzen; leer: Knopf ausgeblendet
+        "whatsapp": "4915737807403",  # Handy Freital 0157 37807403 (von der gedruckten Karte, im Test); leer: Knopf ausgeblendet
         "zeilen": [("Montag bis Freitag", "10–22 Uhr", [1, 2, 3, 4, 5]), ("Samstag und Sonntag", "11–22 Uhr", [6, 0])],
         "zeilen_en": ["Monday to Friday", "Saturday and Sunday"], "extra_en": "Outdoor seating in good weather.",
         "kurz": "Mo–Fr 10–22 Uhr, Sa–So 11–22 Uhr",
@@ -666,7 +666,7 @@ p{margin:0}
   font-weight:700;font-size:.82rem;color:var(--tinte-weich);text-align:right;padding-bottom:6px;border-bottom:2px solid var(--tinte)}
 .groessen-kopf .nur-breit{display:none}
 
-.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:8px 0 0;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
+.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:8px 0 0;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
 
 @media (min-width:1100px){
   .karte-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:52px;align-items:start}
@@ -946,7 +946,9 @@ ZETTEL_JS = r'''
   function euro(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   function grund(t){return {s:(t==='D'||t==='SA')?['Kräuter']:[],ohne:[],ex:[],wahl:[],va:''};}
   function exPreis(o){return (o.ex||[]).reduce(function(a,e){return a+(GEMUESE.indexOf(e)>-1?150:200);},0);}
-  function stueck(x){return x.c+exPreis(x.o);}
+  function aktionZ(x){var li=gerichtLi(x.k);if(!li)return null;var gs=li.dataset.g?li.dataset.g.split('|'):[''];
+    return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),abh.tag||isoTag(0),abh.laden||null);}
+  function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o);}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
@@ -1264,7 +1266,7 @@ ZETTEL_JS = r'''
     z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
   }
   function zeileText(x){var w=x.t?wuensche(x):'';
-    return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
+    return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(aktionZ(x)?' (Aktion)':'')+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
   /* Teilen: Teilen-Menü des Handys (WhatsApp, SMS, Mail, Teams …); sonst in die Zwischenablage kopieren */
   function teilen(t,titel){
     var kopiert=L('Bestellung kopiert – jetzt in WhatsApp, SMS, E-Mail oder Teams einfügen.','Order copied – now paste it into WhatsApp, a text message, e-mail or Teams.');
@@ -1382,7 +1384,7 @@ ZETTEL_JS = r'''
 
 JS = r"""
 (function(){
-  var ZEITEN=%%ZEITEN%%,SONDER=%%SONDER%%,WARTE=%%WARTE%%;
+  var ZEITEN=%%ZEITEN%%,SONDER=%%SONDER%%,WARTE=%%WARTE%%,AKTIONEN=%%AKTIONEN%%;
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
@@ -1440,6 +1442,37 @@ JS = r"""
   /* ISO-Datum (deutsche Zeit) in off Tagen; Öffnungszeit dieses Tages – besondere Tage gehen vor */
   function isoTag(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5));}
   function tagZeit(ort,off){var s=SONDER[ort]||{},d=isoTag(off);if(d in s)return s[d];return ZEITEN[ort][(jetzt().tag+off)%7]||null;}
+  /* Sonderaktion für Gericht k (Größe i) an Datum iso und Laden (null = noch nicht gewählt) */
+  function aktion(k,i,iso,laden){
+    var wt=new Date(iso+'T12:00:00Z').getUTCDay();
+    for(var j=0;j<AKTIONEN.length;j++){var a=AKTIONEN[j],p=a.p[k];
+      if(!p||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.laden&&a.laden!==laden))continue;
+      return {c:p[Math.min(i||0,p.length-1)],a:a};}
+    return null;
+  }
+  function euroK(c){return (c/100).toFixed(2).replace('.',',')+' €';}
+  /* Speisekarte: heute laufende Aktionen markieren (alter Preis durchgestrichen, Aktionspreis als Marke) */
+  function aktionenZeigen(){
+    var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay();
+    document.querySelectorAll('.marke-aktion').forEach(function(m){m.remove();});
+    document.querySelectorAll('.preis-alt').forEach(function(m){m.classList.remove('preis-alt');});
+    AKTIONEN.forEach(function(a){
+      if(iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0))return;
+      Object.keys(a.p).forEach(function(k){
+        var st=document.querySelector('.sticker');
+        if(k==='1'&&st&&!a.laden){var c=a.p[k][0],sp=st.querySelector('.sticker-preis');st.querySelector('small').textContent=L('Aktion','Offer');
+          if(sp)sp.innerHTML=Math.floor(c/100)+'<span class="ct">'+('0'+c%100).slice(-2)+'</span>';st.classList.add('sticker-aktion');}
+        document.querySelectorAll('li[data-k="'+(window.CSS&&CSS.escape?CSS.escape(k):k)+'"]').forEach(function(li){
+          var ziel=li.querySelector('.name, .tipp-name');if(!ziel)return;
+          var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
+          var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
+          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
+          ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
+          li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
+        });
+      });
+    });
+  }
   function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP==='en')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
@@ -1462,6 +1495,7 @@ JS = r"""
     });
   }
   try{aktualisieren();setInterval(aktualisieren,60000);}catch(e){}
+  try{aktionenZeigen();}catch(e){}
   /* Zählen ohne Cookies (GoatCounter-Pixel, nur wenn ZAEHLER gesetzt) */
   var GC=%%ZAEHLER%%;
   function zaehlen(pfad,ereignis){
@@ -1815,6 +1849,22 @@ SEITE = r"""<!doctype html>
 HINWEISE = []
 HINWEISE = HINWEISE + ANP.hinweise(ANPASSUNGEN.get("hinweise"), WARNUNGEN.append)
 
+# Sonderaktionen aus der Chef-App: Aktionspreis gilt am Abholtag; oben erscheint automatisch ein Hinweis
+AKTIONEN = [a for a in ANP.aktionen(ANPASSUNGEN.get("aktionen"), GRUPPEN, WARNUNGEN.append) if a["bis"] >= HEUTE_ISO]
+_WT = ["sonntags", "montags", "dienstags", "mittwochs", "donnerstags", "freitags", "samstags"]
+_WT_EN = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"]
+for _a in AKTIONEN:
+    _bis = f'{_a["bis"][8:]}.{_a["bis"][5:7]}.'
+    _tage = (" " + ", ".join(_WT[t] for t in _a["tage"])) if _a.get("tage") else ""
+    _tage_en = (" on " + ", ".join(_WT_EN[t] for t in _a["tage"])) if _a.get("tage") else ""
+    _laden = next((f" – nur in {s['name']}" for s in STANDORTE if s["id"] == _a.get("laden")), "")
+    _laden_en = next((f" – {s['name']} only" for s in STANDORTE if s["id"] == _a.get("laden")), "")
+    HINWEISE.append({"text": f"Aktion: {_a['name']}{_tage} – bis {_bis}{_laden}",
+                     "en": f"Special offer: {_a['name']}{_tage_en} – until {_bis}{_laden_en}",
+                     "von": _a["von"], "bis": _a["bis"], "aktion": True})
+JS_AKTIONEN = json.dumps([{"n": a["name"], "von": a["von"], "bis": a["bis"], "tage": a.get("tage"), "laden": a.get("laden"),
+                           "p": {k: [int(x.replace(",", "")) for x in v] for k, v in a["preise"].items()}} for a in AKTIONEN], ensure_ascii=False)
+
 
 # Verfügbarkeit: feste Regeln, die immer gelten (tagesaktuelle Änderungen: docs/status.json).
 # "was": Gruppe aus SPERRGRUPPEN (siehe unten) oder Gerichtsnummer, auch als Liste.
@@ -1854,7 +1904,7 @@ SPERRGRUPPEN = sperrgruppen()
 
 def hinweise_html(liste):
     return "".join(
-        f'<div class="hinweis-band" data-von="{h["von"]}" data-bis="{h["bis"]}" hidden><p class="wrap">'
+        f'<div class="hinweis-band{" hinweis-aktion" if h.get("aktion") else ""}" data-von="{h["von"]}" data-bis="{h["bis"]}" hidden><p class="wrap">'
         f'<span data-en="{e(h.get("en") or h["text"])}">{e(h["text"])}</span></p></div>' for h in liste)
 
 
@@ -1878,7 +1928,7 @@ self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(func
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==V&&k.indexOf('saray-')===0;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
 self.addEventListener('fetch',function(e){
   var r=e.request,u=new URL(r.url);
-  if(r.method!=='GET'||u.origin!==location.origin||u.pathname.indexOf('/chef/')>-1)return;
+  if(r.method!=='GET'||u.origin!==location.origin||u.pathname.indexOf('/chef/')>-1||u.pathname.indexOf('/druck/')>-1)return;
   var seite=r.mode==='navigate',schluessel=seite?'./':r;
   if(seite||/status\.json$/.test(u.pathname)){
     e.respondWith(fetch(r).then(function(res){if(res.ok){var k=res.clone();caches.open(V).then(function(c){c.put(schluessel,k);});}return res;})
@@ -1896,7 +1946,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
               .replace("%%SLAB_R%%", b64("Roboto-Slab-Regular.sub.woff", "font/woff"))
               .replace("%%LATO_R%%", b64("lato-normal.sub.woff", "font/woff"))
               .replace("%%LATO_B%%", b64("lato-bold.sub.woff", "font/woff")))
-    js = (JS.replace("%%ZEITEN%%", JS_ZEITEN).replace("%%SONDER%%", JS_SONDER).replace("%%WARTE%%", JS_WARTE).replace("%%ZETTEL_JS%%", ZETTEL_JS)
+    js = (JS.replace("%%ZEITEN%%", JS_ZEITEN).replace("%%SONDER%%", JS_SONDER).replace("%%AKTIONEN%%", JS_AKTIONEN).replace("%%WARTE%%", JS_WARTE).replace("%%ZETTEL_JS%%", ZETTEL_JS)
             .replace("%%WA%%", json.dumps(whatsapp_nummern(einzeln)))
             .replace("%%TEL%%", json.dumps({st["id"]: [st["tel"], st["tel_href"]] for st in STANDORTE}))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
@@ -1932,8 +1982,8 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%TITEL_PRAEFIX%%": "[Nicht freigeschaltet] " if VORSCHAU else "",
         "%%BODY_KLASSE%%": ' class="vorschau"' if VORSCHAU else "",
         "%%VORSCHAU_BAND%%": ('<div class="vorschau-band" role="note"><strong data-en="NOT RELEASED">NICHT FREIGESCHALTET</strong> '
-                              '<span data-en="Draft – not yet the official website of Saray Döner. Orders go to a test number.">'
-                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span>'
+                              '<span data-en="Draft – not yet the official website of Saray Döner. Orders are tests only.">'
+                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen sind nur Tests.</span>'
                               f' <small class="stand">Stand {STAND}</small></div>')
                              if VORSCHAU else "",
         "%%APP_KOPF%%": "" if einzeln else (
@@ -1995,7 +2045,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
     (aus / "status.json").write_text(status or '{\n  "regeln": []\n}\n')
     if CNAME:
         (aus / "CNAME").write_text(CNAME + "\n")
-    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\n"))
+    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\n"))
     import chef_app
     chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())

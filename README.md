@@ -36,7 +36,7 @@ Nur Python 3, keine Pakete nötig. Nach jeder Änderung `python3 build.py` laufe
 - **Preise oder Gerichte:** `menu.py`, bei neuen Gerichten auch `englisch.py`.
 - **Öffnungszeiten, Telefon:** `STANDORTE` in `build.py`.
 - **Hinweis oben (Urlaub, Feiertag, Angebot):** `HINWEISE` in `build.py`, mit `von`/`bis` als Datum. Außerhalb des Zeitraums blendet sich das Band von selbst aus.
-- **Zutaten und Allergene:** `ALLERGENE`, `ZUTATEN`, `KENNZEICHNUNG` (je Abschnitt) und `SOSSEN` in `menu.py`, abgeschrieben von der gedruckten Karte („Gültig ab 01.02.2024“). Unter jedem Abschnitt steht eine Zeile „Inhaltsstoffe … · Allergene …“, unten die aufklappbare Liste. Die Kennzeichnung der Chicken Nuggets war auf dem Foto teils verdeckt (eingetragen: 4, 8 · a, b, c, f, g) – bitte prüfen.
+- **Zutaten und Allergene:** `ALLERGENE`, `ZUTATEN`, `KENNZEICHNUNG` (je Abschnitt) und `SOSSEN` in `menu.py`, abgeschrieben von der gedruckten Karte („Gültig ab 01.02.2024“). Unter jedem Abschnitt steht eine Zeile „Inhaltsstoffe … · Allergene …“, unten die aufklappbare Liste.
 - **Barzahlung:** `"bar": True` je Laden in `STANDORTE` – zeigt „Nur Barzahlung“ beim Laden, in den Schildern oben, in „Meine Bestellung“ und in den Suchmaschinen-Daten.
 - **Besucher zählen (ohne Cookies):** `ZAEHLER` in `build.py` auf das GoatCounter-Kürzel setzen (Konto auf goatcounter.com, kostenlos für kleine Seiten). Gezählt werden Seitenaufrufe und Klicks auf WhatsApp, Anrufen, Teilen und Gemeinsam bestellen. Leer = aus. Der Datenschutz-Hinweis passt sich an.
 - **Empfehlung und „Beliebt“:** `EMPFEHLUNG` und `BELIEBT` in `build.py`.
@@ -79,6 +79,9 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Karte:** Preise, Namen und Beschreibungen ändern, Gerichte löschen (und wieder anzeigen), neue Gerichte anlegen.
 - **Heute → Wartezeit:** bei viel Betrieb +15/+30/+45 Minuten je Laden, nur für heute. Die früheste Abholzeit verschiebt sich, die Schilder zeigen „Wartezeit ca. … Min.“.
 - **Zeiten:** Öffnungszeiten je Laden und Wochentag, auch „geschlossen“. Darunter **Besondere Tage** (Heiligabend, Feiertag, Urlaub): an einem Datum geschlossen oder andere Zeiten. Die Seite zeigt sie beim Laden an, Status und Abholzeiten richten sich danach; vergangene Tage verschwinden von selbst.
+- **Karte → Sonderaktionen:** z. B. „Döner 5 €, Dürüm 6 €“ mit Zeitraum, optional nur an bestimmten Wochentagen oder in einem Laden. Die Seite zeigt den alten Preis durchgestrichen mit roter Marke „Aktion 5,00 €“, oben ein Hinweisband, und die Bestellung rechnet am Abholtag mit dem Aktionspreis („(Aktion)“ in der Nachricht). Abgelaufene Aktionen verschwinden von selbst.
+- **Mehr → Preis-Stände:** Stand 01.02.2024 (gedruckte Karte) ist fest; dazu bis zu drei eigene Stände („Heutige Preise als Stand festlegen“). Ein Stand lässt sich ganz übernehmen; einzelne Preise holt man beim Gericht unter „Frühere Preise“ zurück.
+- **Mehr → Drucken:** Flyer (A4 quer, beidseitig, Wickelfalz) und Aufsteller je Laden als PDF – immer mit den aktuellen Preisen. Erzeugt `druck.py` im GitHub-Workflow nach jedem Bauen (`docs/druck/`, nicht im Repo). Lokal: `python3 druck.py`.
 - **Mehr:** „Letzte Änderung rückgängig“ (holt den Stand vor dem letzten Speichern zurück), „Alles auf Standard zurücksetzen“, Abmelden.
 
 Gespeichert wird nur die Abweichung vom Standard in **`daten/anpassungen.json`** (Aufbau siehe `anpassungen.py`). Danach baut der GitHub-Workflow die Seite neu, testet sie und veröffentlicht sie – nach ca. 2–3 Minuten ist alles online; die App zeigt den Fortschritt an. Ungültige Einträge werden beim Bauen übersprungen (Warnung im Workflow-Log), der Standard bleibt dann stehen. Der Standard selbst steht weiter in `menu.py` und `STANDORTE` in `build.py`.
@@ -117,7 +120,6 @@ Optional nur lokal: `lokal.json` (steht in `.gitignore`) überschreibt die Numme
 
 - `VORSCHAU = False` in `build.py`. Das entfernt das Band „Nicht freigeschaltet“, das Wasserzeichen, den Titel-Zusatz, den TEST-Hinweis in der WhatsApp-Nachricht, `noindex` und die Sperre in `robots.txt`.
 - `CNAME` in `build.py` auf die endgültige Domain setzen und den DNS-Eintrag umstellen.
-- Testnummer bei `whatsapp` durch die Nummern der Läden ersetzen.
+- Freital nutzt schon das Laden-Handy 0157 37807403 (im Test); bei Altenberg die Testnummer durch die Ladennummer ersetzen.
 - Datenschutzerklärung fertigstellen (inkl. Hinweis auf WhatsApp/Meta).
-- Zutaten/Allergene vom Inhaber prüfen lassen (besonders Chicken Nuggets).
 - Offline: Die Seite legt Speisekarte, Schriften und Bilder im Browser ab (`docs/sw.js`), damit sie auch ohne Netz öffnet. Seite und `status.json` kommen immer zuerst frisch aus dem Netz.

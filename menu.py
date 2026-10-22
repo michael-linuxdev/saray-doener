@@ -1,4 +1,5 @@
 # Speisekarte Saray Döner Freital – abgeschrieben von der Karte (Stand: Foto vom 10.10.2026)
+GRUNDSTAND = "01.02.2024"   # Preisstand der gedruckten Karte = Standard; in der Chef-App „Stand 01.02.2024“
 # Format je Gericht: (Nr, Name, Beschreibung, [Preise])  – Preise als Text mit Komma.
 # Bei Pizza zwei Preise: [24 cm, 30 cm].
 
@@ -300,7 +301,7 @@ GRUPPEN = [
 
 
 # ---------- Zutaten und Allergene – abgeschrieben von der gedruckten Karte („Gültig ab 01.02.2024“) ----------
-# Zahlen = Bestandteile (ZUTATEN), Buchstaben = Allergene (ALLERGENE). Bitte vom Inhaber prüfen lassen.
+# Zahlen = Bestandteile (ZUTATEN), Buchstaben = Allergene (ALLERGENE). Vom Inhaber bestätigt (Okt. 2026).
 ALLERGENE = {
     "a": "Weizenmehl", "b": "Milch und Milcherzeugnisse", "c": "Sellerie, Senf, Soja", "d": "Erbsen",
     "e": "Süßmolkepulver", "f": "Hühnereiweißpulver", "g": "Sesam",
@@ -336,6 +337,6 @@ KENNZEICHNUNG = {
     "Baguette": ("1,2,3,5,6,7,8,9", "a,b,c,f,g"),
     "Gemischte Salate": ("1,2,7,8,9", "a,b,c,f,g"),
     "Schnitzel, Fisch und Pommes": ("1,2,4,7,8,9", "a,b,c,f,g"),
-    "Chicken Nuggets": ("4,8", "a,b,c,f,g"),   # auf dem Foto teils verdeckt – bitte prüfen
+    "Chicken Nuggets": ("4,8", "a,b,c,f,g"),
 }
 SOSSEN = ("Knoblauch, Kräuter, Chili", "8", "b,c,e")

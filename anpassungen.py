@@ -248,3 +248,34 @@ def wartezeit(d, warnen):
         else:
             warnen(f"Wartezeit {laden}: {w!r} ungültig")
     return ok
+
+
+def aktionen(liste, gruppen, warnen):
+    """Sonderaktionen: [{"name", "von", "bis", "tage"?, "laden"?, "preise": {schlüssel: ["5,00"]}}].
+    Gibt die gültigen zurück, Schlüssel umgestellt auf das data-k der Seite (Nummer oder Name)."""
+    gerichte = {schluessel(gr["id"], ab["titel"], g): (g[0] or g[1], len(g[3]))
+                for gr in gruppen for ab in gr["abschnitte"] for g in ab["gerichte"]}
+    ok = []
+    for a in liste if isinstance(liste, list) else []:
+        if not (isinstance(a, dict) and _text_ok(a.get("name"), 60, leer=False)
+                and all(isinstance(a.get(f), str) and DATUM_RE.match(a[f]) for f in ("von", "bis")) and a["von"] <= a["bis"]):
+            warnen(f"Aktion {a!r} ungültig (Name, von, bis)")
+            continue
+        preise = {}
+        for k, p in (a.get("preise") or {}).items() if isinstance(a.get("preise"), dict) else []:
+            if k not in gerichte:
+                continue  # Gericht gibt es nicht mehr: still überspringen
+            if _preise_ok(p, gerichte[k][1]):
+                preise[gerichte[k][0]] = list(p)
+            else:
+                warnen(f"Aktion {a['name']!r}: Preise für {k} ungültig")
+        if not preise:
+            warnen(f"Aktion {a['name']!r}: keine gültigen Gerichte")
+            continue
+        sauber = {"name": a["name"].strip(), "von": a["von"], "bis": a["bis"], "preise": preise}
+        if isinstance(a.get("tage"), list) and a["tage"] and all(isinstance(x, int) and 0 <= x <= 6 for x in a["tage"]):
+            sauber["tage"] = sorted(set(a["tage"]))
+        if a.get("laden") in LAEDEN:
+            sauber["laden"] = a["laden"]
+        ok.append(sauber)
+    return ok

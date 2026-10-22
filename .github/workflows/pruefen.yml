@@ -57,6 +57,11 @@ jobs:
             git push
           fi
 
+      - name: Druckvorlagen (Flyer, Aufsteller) als PDF
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: python3 druck.py docs/druck
+
       - name: Pages-Paket hochladen
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3

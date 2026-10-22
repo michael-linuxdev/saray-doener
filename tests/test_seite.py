@@ -681,6 +681,69 @@ def chef_app_wartezeit_tage_rueckgaengig(b, url):
 
 
 @test
+def sonderaktion_auf_der_seite(b, url):
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"aktionen": [
+            {"name": "Döner 5 €", "von": "2026-10-20", "bis": "2026-10-25", "preise": {"1": ["5,00"], "80": ["5,00", "6,00"]}},
+            {"name": "Dürüm-Donnerstag", "von": "2026-10-20", "bis": "2026-10-30", "tage": [4], "laden": "altenberg", "preise": {"50": ["6,00"]}},
+            {"name": "Vorbei", "von": "2026-10-01", "bis": "2026-10-05", "preise": {"1": ["1,00"]}}]}, tmp)
+        s = Seite(b, u)
+        assert "Aktion 5,00 €" in s.p.text_content("#nr-1 .marke-aktion")
+        assert s.js("document.querySelector('#nr-1 .preis').classList.contains('preis-alt')")
+        assert "5,00 € / 6,00 €" in s.p.text_content("#nr-80 .marke-aktion")
+        assert not s.js("!!document.querySelector('#nr-50 .marke-aktion')"), "Donnerstags-Aktion schon am Mittwoch"
+        baender = s.js("[...document.querySelectorAll('.hinweis-band:not([hidden])')].map(x=>x.textContent)")
+        assert any("Aktion: Döner 5 € – bis 25.10." in x for x in baender), baender
+        assert not any("Vorbei" in x for x in baender)
+        s.p.click("#nr-1 .plus")
+        s.p.click("#nr-50 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click('[data-laden="altenberg"]')
+        s.p.select_option("#abhol-tag", "2026-10-22")
+        text = s.wa_text()
+        assert "Nr. 1 Döner Kebap, Kräuter-Soße: 5,00 € (Aktion)" in text, text
+        assert "Nr. 50 Dürüm, Kräuter-Soße: 6,00 € (Aktion)" in text, text
+        assert "Summe: 11,00 €" in text, text
+        s.p.select_option("#abhol-tag", "2026-10-23")
+        text = s.wa_text()
+        assert "Nr. 50 Dürüm, Kräuter-Soße: 8,00 €" in text and "Summe: 13,00 €" in text, text
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
+def chef_app_aktion_und_preisstaende(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, anp={"gerichte": {"1": {"preise": ["7,50"]}}}, gespeichert=gespeichert)
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click("text=Heutige Preise als Stand festlegen")
+    assert "Stand 21.10.2026" in p.text_content("#app")
+    p.click('nav.tabs [data-tab="karte"]')
+    p.click('.liste-gericht[data-k="1"]')
+    p.locator(".frueher .reihe", has_text="Stand 01.02.2024").locator("button").click()
+    assert p.input_value("#b-preis-0") == "7,00"
+    p.click(".blatt >> text=Übernehmen >> nth=-1")
+    p.click("text=+ Neue Aktion")
+    p.fill("#a-name", "Dürüm 6 €")
+    p.fill("#a-such", "Dürüm")
+    p.locator(".blatt .liste-gericht", has_text="Dürüm").first.click()
+    p.fill("[data-ak='50']", "6")
+    p.click(".blatt >> text=Übernehmen")
+    assert "Dürüm 6 €" in p.text_content("#app")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert "gerichte" not in d, d
+    assert d["staende"][0]["name"] == "Stand 21.10.2026" and d["staende"][0]["preise"]["1"] == ["7,50"], d["staende"]
+    assert d["aktionen"] == [{"name": "Dürüm 6 €", "von": "2026-10-21", "bis": "2026-10-27", "preise": {"50": ["6,00"]}}], d["aktionen"]
+    assert not fehler, fehler
+    ctx.close()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit(d, tmp)
+        srv.shutdown()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):
