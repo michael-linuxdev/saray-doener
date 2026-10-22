@@ -238,6 +238,8 @@ def gruppe_html(gr):
                 out.append(f'<p class="abschnitt-titel solo">{info}</p>')
         else:
             out.append(f'<h4 class="abschnitt-titel">{t(ab["titel"], EN.titel(ab["titel"]))}{info}</h4>')
+        if ab["titel"] in KENNZEICHNUNG:
+            out.append(kennzeichnung_html(*KENNZEICHNUNG[ab["titel"]]))
         if groessen:
             kopf = "".join(f"<span>{e(x)}</span>" for x in groessen) + "<span></span>"
             out.append(f'<div class="groessen-kopf" aria-hidden="true"><div class="groessen"><span></span><span></span>{kopf}</div>'
@@ -251,8 +253,6 @@ def gruppe_html(gr):
         out.append("</ul>")
         if ab.get("notiz"):
             out.append(f'<p class="notiz" data-en="{e(EN.titel(ab["notiz"]))}">{e(ab["notiz"])}</p>')
-        if ab["titel"] in KENNZEICHNUNG:
-            out.append(kennzeichnung_html(*KENNZEICHNUNG[ab["titel"]]))
         out.append("</div>")
     out.append("</section>")
     return "\n".join(out)
@@ -686,7 +686,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
   font-weight:700;font-size:.82rem;color:var(--tinte-weich);text-align:right;padding-bottom:6px;border-bottom:2px solid var(--tinte)}
 .groessen-kopf .nur-breit{display:none}
 
-.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:8px 0 0;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
+.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:-2px 0 8px;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
 
 @media (min-width:1100px){
   .karte-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:52px;align-items:start}
