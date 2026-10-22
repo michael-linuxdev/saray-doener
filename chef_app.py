@@ -968,6 +968,7 @@ CHECKLISTE = [
         ["impressum", "Impressum Altenberg (Ahmet)", "Anschrift (Bahnhof 3 oder Dresdner Str. 23?), Firmenform, USt-IdNr. (falls vorhanden), E-Mail. Mehr als 10 Beschäftigte? Dann Hinweis zur Verbraucherschlichtung (§ 36 VSBG) nötig.", 1],
         ["impressum-freital", "Impressum Freital (Khan)", "Vollständiger Name, Anschrift, E-Mail, Firmenform, USt-IdNr. (falls vorhanden), Beschäftigtenzahl (§ 36 VSBG).", 1],
         ["betreiber", "Wer betreibt die Website?", "Beide gemeinsam (dann Vereinbarung als gemeinsam Verantwortliche, Art. 26 DSGVO) oder jeder für seinen Laden?", 1],
+        ["eine-oder-zwei", "Eine Website oder zwei?", "Eine gemeinsame Seite für Freital und Altenberg (so wie jetzt) oder je Laden eine eigene Seite mit eigener Adresse, eigenem Impressum und eigener Chef-App?", 1],
         ["uebersetzungen", "Übersetzungen gegenlesen lassen", "Tschechisch, Türkisch, Russisch und Arabisch sind maschinennah übersetzt. Je eine Person mit der Muttersprache kurz drüberschauen lassen (Seite → Sprache wählen).", 0],
         ["allergene", "Allergene ergänzen und bestätigen", "Neu: h = Fisch (Nr. 71, 87, 97, 136, 154) und i = Ei in der Soße. Es fehlen noch Angaben für Extra-Portion, Fladenbrot und die Milchgetränke (Kaffee mit Milch, Kakao).", 1],
         ["goatcounter-av", "Besucherzählung: Auftragsverarbeitung", "Mit GoatCounter einen Vertrag zur Auftragsverarbeitung klären (oder Zählung abschalten).", 0],

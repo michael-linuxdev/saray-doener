@@ -1073,7 +1073,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 31 offen" in p.text_content(".checkliste summary")
+    assert "von 32 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1439,7 +1439,7 @@ def chef_app_tuerkisch(b, url):
     p.click('nav.tabs [data-tab="karte"]')
     assert "Pizza Margherita" in p.text_content("#app"), "Gerichtsnamen bleiben deutsch"
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "Hediye çekleri" in p.text_content("#app") and "31 / 31 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    assert "Hediye çekleri" in p.text_content("#app") and "32 / 32 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
     p.click("#sprache")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
