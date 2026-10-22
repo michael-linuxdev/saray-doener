@@ -718,6 +718,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .tipp .mengen{position:absolute;right:10px;bottom:10px;padding:0}
 .tipp-gross .mengen{right:auto;left:120px;bottom:18px}
 .tipp-gross.ohne-koch .mengen{left:auto;right:10px;bottom:10px}
+.tipp:has(> .wahl) > .plus{display:none}
 .tipp:has(.mengen .st-g) .mengen{position:static;flex-direction:column;align-items:flex-start;gap:6px;padding:0 12px 12px}
 .wahl{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding-top:8px}
 .wahl button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--tinte);background:var(--gelb);color:var(--tinte);font:700 .92rem var(--text);cursor:pointer}
