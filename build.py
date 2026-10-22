@@ -878,7 +878,7 @@ ZETTEL_JS = r'''
      Die Schalter im Zettel suchen damit das passende Gericht der Karte. */
   var VAR={},FUELL=['kalb','huhn','beide','veg','falafel','halloumi','hack'];
   var F_NAME={kalb:['Dönerfleisch','Döner meat'],huhn:['Hähnchen','Chicken'],veg:['ohne Fleisch','No meat'],falafel:['Falafel','Falafel'],
-    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen + Halloumikäse + Pommes','Döner + chicken + halloumi + fries']};
+    halloumi:['Halloumi','Halloumi'],hack:['Hackfleisch','Minced meat'],beide:['Döner + Hähnchen (Saray)','Döner + chicken (Saray)']};
   var BEI=['S','P','SP'],BEI_NAME={S:['Salat','Salad'],P:['Pommes','Fries'],SP:['Salat + Pommes','Salad + fries']};
   [ /* k, Form, Füllung, Super, Käse, Beilage */
     ['1','doener','kalb',0,0],['2','doener','kalb',0,1],['6','doener','kalb',1,0],['7','doener','kalb',1,1],
