@@ -139,10 +139,11 @@ ICONS = {
     "kinder": f'<path d="M20 5 L24.5 14.5 L35 15.6 L27.2 22.6 L29.5 33 L20 27.7 L10.5 33 L12.8 22.6 L5 15.6 L15.5 14.5 Z" fill="#FFD21F" {_F}/><path d="M16.5 20.5 v1 M23.5 20.5 v1 M16.5 24.5 C18 26.5 22 26.5 23.5 24.5" {_K}/>',
     "getraenke": f'<path d="M11 13 H29 L26.5 35 H13.5 Z" fill="#C8371A" {_F}/><path d="M12 19 H28" stroke="#fff" stroke-width="2.6"/><path d="M20 13 L24 4 L29 4" {_K}/>',
 }
-EMPFEHLUNG = ["1", "3", "26", "91", "125"]   # „Wir empfehlen“: alle gleich groß, ohne Koch
+EMPFEHLUNG = ["87", "1", "3", "26", "91", "125"]   # „Wir empfehlen“: alle gleich groß, ohne Koch
 BELIEBT = ["52", "5", "58", "24", "84", "50", "23", "130", "100", "105", "124"]
-# nur sichtbar, wenn „Vegetarisch“ oder „Pescetarisch“ eingeschaltet ist (Döner vegetarisch statt Döner Kebap usw.)
-NUR_DIAET = {"3", "52", "5", "58", "24", "84"}   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
+# nur sichtbar, wenn „Vegetarisch“ oder „Pescetarisch“ eingeschaltet ist (Döner vegetarisch statt Döner Kebap usw.);
+# Fischgerichte darunter (Pizza Tonno) erscheinen nur bei „Pescetarisch“
+NUR_DIAET = {"87", "3", "52", "5", "58", "24", "84"}   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
 GERICHT = {g[0]: (g, gr, ab) for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0]}
 
 

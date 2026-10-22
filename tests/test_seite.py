@@ -890,6 +890,8 @@ def pescetarisch_und_auswahl_ohne_fleisch(b, url):
     s.p.click("#pesc-schalter")
     sichtbar = set(s.js("[...document.querySelectorAll('.gericht:not([hidden])')].map(g=>g.dataset.k)"))
     assert {"87", "136", "71", "130", "3"} <= sichtbar and not {"1", "82", "131"} & sichtbar, sichtbar
+    karten = s.js("[...document.querySelectorAll('.tipps-empfehlung .tipp:not([hidden])')].map(t=>t.dataset.k)")
+    assert karten == ["87", "3", "91", "125"], karten
     s.p.click("#nr-130 .plus")
     s.p.click("#zettel-leiste")
     s.p.click("[data-anpassen]")
