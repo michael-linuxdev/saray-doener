@@ -175,7 +175,33 @@ def englisch_aber_bestellung_deutsch(b, url):
     assert "Nr. 1 Döner Kebap, Kräuter-Soße" in text and "Abholung: heute" in text, text
     s.p.click(".zettel-zu")
     s.p.click("#sprache")
+    s.p.click("#sprachen-menu [data-sp=de]")
     assert s.js("document.documentElement.lang") == "de"
+    s.schliessen()
+
+
+@test
+def weitere_sprachen(b, url):
+    s = Seite(b, url)
+    erwartet = {"cs": "Nyní otevřeno", "tr": "Şu an açık", "ru": "Открыто", "ar": "مفتوح الآن"}
+    for code, anfang in erwartet.items():
+        s.p.click("#sprache")
+        s.p.click(f"#sprachen-menu [data-sp={code}]")
+        s.p.wait_for_function(f"document.documentElement.lang==='{code}'")
+        s.p.wait_for_timeout(200)
+        status = s.js("document.querySelector('.status-text').textContent")
+        assert status.startswith(anfang), (code, status)
+        rtl = s.js("document.documentElement.dir")
+        assert (rtl == "rtl") == (code == "ar"), (code, rtl)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=altenberg]")
+    text = s.wa_text()
+    assert "Nr. 1 Döner Kebap" in text and "Abholung: heute" in text, text
+    s.p.click(".zettel-zu")
+    s.p.click("#sprache")
+    s.p.click("#sprachen-menu [data-sp=de]")
+    assert s.js("document.documentElement.dir") in ("", "ltr")
     s.schliessen()
 
 
@@ -1023,7 +1049,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 25 offen" in p.text_content(".checkliste summary")
+    assert "von 28 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")

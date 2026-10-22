@@ -3,13 +3,31 @@
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
+  /* Weitere Sprachen: Wörterbuch Englisch -> Sprache (docs/lang/<code>.json); fehlt ein Text, bleibt Englisch.
+     Zahlen im Text werden als {n} nachgeschlagen, damit „3 dishes found“ und „{n} dishes found“ zusammenpassen. */
+  var SPRACHEN=[["de", "Deutsch"], ["en", "English"], ["cs", "Čeština"], ["tr", "Türkçe"], ["ru", "Русский"], ["ar", "العربية"]],DICT={},LOC={de:'de-DE',en:'en-GB',cs:'cs-CZ',ru:'ru-RU',tr:'tr-TR',ar:'ar-u-nu-latn'};
   var SPK='saray-sprache',SP='de';
   try{SP=localStorage.getItem(SPK)||'';}catch(e){SP='';}
-  if(SP!=='de'&&SP!=='en'){
+  if(!SPRACHEN.some(function(x){return x[0]===SP;})){
     var langs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'de']);
-    SP=(/bot|crawl|spider|lighthouse/i.test(navigator.userAgent)||langs.some(function(l){return /^de/i.test(l);}))?'de':'en';
+    SP='en';
+    if(/bot|crawl|spider|lighthouse/i.test(navigator.userAgent))SP='de';
+    else for(var li0=0;li0<langs.length;li0++){var k0=String(langs[li0]).slice(0,2).toLowerCase();if(SPRACHEN.some(function(x){return x[0]===k0;})){SP=k0;break;}}
   }
-  function L(de,en){return SP==='en'?en:de;}
+  function T(en){
+    if(SP==='en'||SP==='de'||en==null)return en;var d=DICT[SP]||{},r=en;
+    if(d[en]!=null)r=d[en];
+    else{var z=[],k=String(en).replace(/\d+(?:[.,:]\d+)*/g,function(m){z.push(m);return '{n}';});
+      if(z.length&&d[k]!=null){var i=0;r=d[k].replace(/\{n\}/g,function(){return z[i++];});}}
+    return LTR_ZAHLEN(r);
+  }
+  /* Rechts-nach-links (Arabisch): Telefonnummern, Uhrzeiten und Preise als Block links-nach-rechts halten */
+  function LTR_ZAHLEN(r){
+    if(document.documentElement.dir!=='rtl'||typeof r!=='string')return r;
+    return r.split(/(<[^>]*>)/).map(function(t){return t.charAt(0)==='<'?t:t.replace(/\+?\d[\d.,:\u2013\- ]*\d(?: ?€)?|\d(?: ?€)?/g,function(m){return '\u2066'+m+'\u2069';});}).join('');
+  }
+  function L(de,en){return SP==='de'?de:T(en);}
+  function fuell(tpl,w){return tpl.replace(/\{(\w+)\}/g,function(_,k){return w[k]!=null?w[k]:'';});}
   /* Linkshänder-Modus: auf diesem Gerät gemerkt */
   var HK='saray-hand',linkshand=false;
   try{linkshand=localStorage.getItem(HK)==='links';}catch(e){}
@@ -70,7 +88,7 @@
           var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
           var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
           var uz=a.za!=null?' '+uhr(a.za).replace(' Uhr','')+'–'+uhr(a.zb):'';
-          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
+          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?(SP==='de'?' (nur'+ort+')':' '+fuell(T('({ort} only)'),{ort:ort.trim()})):'');
           ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
           li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
         });
@@ -78,12 +96,13 @@
     });
   }
   function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
-  function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP==='en')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
+  function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP!=='de')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
     var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
-    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:L('Jetzt geöffnet, bis ','Open now, until ')+uhr(h[1])+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
-    if(h&&n.min<h[0])return{offen:false,text:L('Geschlossen, öffnet heute um ','Closed, opens today at ')+uhr(h[0])};
-    for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0]):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
+    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:(SP==='de'?'Jetzt geöffnet, bis '+uhr(h[1]):fuell(T('Open now, until {zeit}'),{zeit:uhr(h[1])}))+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
+    if(h&&n.min<h[0])return{offen:false,text:SP==='de'?'Geschlossen, öffnet heute um '+uhr(h[0]):fuell(T('Closed, opens today at {zeit}'),{zeit:uhr(h[0])})};
+    for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP!=='de'?(SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0])
+        :fuell(T(i===1?'Closed, opens tomorrow at {zeit}':'Closed, opens on {tag} at {zeit}'),{zeit:uhr(zi[0]),tag:new Intl.DateTimeFormat(LOC[SP],Object.assign({timeZone:'Europe/Berlin',weekday:'long'},i<7?{}:{day:'numeric',month:'numeric'})).format(new Date(Date.now()+i*864e5))})):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
     return{offen:false,text:''};
   }
   function aktualisieren(){
@@ -125,7 +144,7 @@
     if(!document.getElementById('hand-tipp').hidden)return;
     try{bw.fertig=1;localStorage.setItem('saray-bewertung',JSON.stringify(bw));}catch(e){return;}
     var ort=bw.l==='freital'?'Freital':'Altenberg';
-    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+L('Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.','We would love a Google review for Saray Döner '+ort+'.'),
+    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+(SP==='de'?'Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.':fuell(T('We would love a Google review for Saray Döner {ort}.'),{ort:ort})),
       [[L('⭐ Bewerten','⭐ Review'),function(){zaehlen('bewertung-'+bw.l);window.open('https://search.google.com/local/writereview?placeid='+GOOGLE[bw.l],'_blank','noopener');handTippZu();}],
        [L('Nein danke','No thanks'),handTippZu]],25000);
   },1500);
@@ -310,7 +329,7 @@
     });
     return res;
   }
-  function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP==='en'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
+  function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP!=='de'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
   function sperrText(sp,heute){
     if(sp.art==='aus')return (heute===false||sp.dauer)?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
     if(sp.art==='ab')return L('erst ab ','only from ')+uhrK(sp.zeit);
@@ -353,7 +372,7 @@
     'Weißkohl':'white cabbage','Eisbergsalat':'iceberg lettuce','Paprika':'bell pepper','Zwiebel':'onion','Champignon':'mushrooms','Tomate':'tomato',
     'Gemüse':'vegetables','Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
     'Dönerfleisch':'döner meat','Hähnchen-Dönerfleisch':'chicken döner meat','Käse':'cheese','Halloumikäse':'halloumi','Fetakäse':'feta'};
-  function w(v){if(SP!=='en'||!W[v])return v;return W[v].charAt(0).toUpperCase()+W[v].slice(1);}
+  function w(v){if(SP==='de'||!W[v])return v;var x=T(W[v]);return x.charAt(0).toUpperCase()+x.slice(1);}
   function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"]');}
   try{zettel=JSON.parse(localStorage.getItem(ZK)||'[]');if(!Array.isArray(zettel))zettel=[];}catch(e){zettel=[];}
   zettel.forEach(function(x){x.u=uidZ++;if(x.o&&!Array.isArray(x.o.s))x.o.s=x.o.s?[x.o.s]:[];});
@@ -372,24 +391,26 @@
   function fehlend(x){return (BEILAGEN[x.k]||[]).filter(function(b){return zAus(b);});}
   function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o)-fehlend(x).length*BEILAGE_RABATT;}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
-  function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
+  function liste(a,en){var u=en?' '+T('and')+' ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
   function wuensche(x,en){
-    var o=x.o,t=[],tr=function(a){return en?a.map(function(v){return (W[v]||v);}):a;};
+    var o=x.o,t=[],tr=function(a){return en?a.map(function(v){return W[v]?T(W[v]):v;}):a;};
     if(x.t==='D'||x.t==='SA'){var so=SOSSEN.filter(function(n){return o.s.indexOf(n)>-1;});
-      if(en)t.push(!so.length?'no sauce':liste(tr(so),true)+' sauce');
+      if(en)t.push(!so.length?T('no sauce'):fuell(T('{list} sauce'),{list:liste(tr(so),true)}));
       else t.push(!so.length?'ohne Soße':so.length===1?so[0]+'-Soße':so.slice(0,-1).join('-, ')+'- und '+so[so.length-1]+'-Soße');}
-    if(o.ohne.length)t.push((en?'no ':'ohne ')+liste(tr(o.ohne),en));
-    var fe=fehlend(x);if(fe.length)t.push((en?'no ':'ohne ')+liste(en?fe.map(function(b){return b==='Pommes'?'fries':'rice';}):fe,en)+(en?' (not available, −':' (heute aus, −')+euro(fe.length*BEILAGE_RABATT)+')');
-    if(x.t==='S')t.push(o.wahl.length<3?(en?'choose '+(3-o.wahl.length)+' more toppings':'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?'with ':'mit ')+liste(tr(o.wahl),en));
-    if(x.t==='R')t.push(o.va?(en?'option ':'Variante ')+o.va.charAt(0):(en?'choose option':'Variante wählen'));
-    if(x.t==='B')t.push(o.va?(en?'with ':'mit ')+(en?(W[o.va]||o.va):o.va):(en?'choose topping':'Belag wählen'));
-    tr(o.ex).forEach(function(e){t.push('extra '+e);});
+    if(o.ohne.length)t.push(en?fuell(T('no {list}'),{list:liste(tr(o.ohne),en)}):'ohne '+liste(o.ohne,en));
+    var fe=fehlend(x);if(fe.length)t.push(en?fuell(T('no {list}'),{list:liste(fe.map(function(b){return T(b==='Pommes'?'fries':'rice');}),en)})+' ('+T('not available')+', −'+euro(fe.length*BEILAGE_RABATT)+')'
+      :'ohne '+liste(fe,en)+' (heute aus, −'+euro(fe.length*BEILAGE_RABATT)+')');
+    if(x.t==='S')t.push(o.wahl.length<3?(en?T('choose '+(3-o.wahl.length)+' more toppings'):'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?fuell(T('with {list}'),{list:liste(tr(o.wahl),en)}):'mit '+liste(o.wahl,en)));
+    if(x.t==='R')t.push(o.va?(en?fuell(T('option {x}'),{x:o.va.charAt(0)}):'Variante '+o.va.charAt(0)):(en?T('choose option'):'Variante wählen'));
+    if(x.t==='B')t.push(o.va?(en?fuell(T('with {list}'),{list:W[o.va]?T(W[o.va]):o.va}):'mit '+o.va):(en?T('choose topping'):'Belag wählen'));
+    tr(o.ex).forEach(function(e){t.push(en?fuell(T('extra {x}'),{x:e}):'extra '+e);});
     return t.join(', ');
   }
   /* Anzeigename/Beschreibung in der gewählten Sprache */
-  function nameA(x){if(SP!=='en')return x.n;var li=gerichtLi(x.k);return li&&li.dataset.ne||x.n;}
-  function beschrA(x){if(SP!=='en')return x.d;var li=gerichtLi(x.k);return li&&li.dataset.dn||x.d;}
+  function nameFremd(li,fallback){if(!li)return fallback;var m=/^Nr\. (\S+) /.exec(li.dataset.n||'');return (m?T('No.')+' '+m[1]+' ':'')+T(li.dataset.nen||'');}
+  function nameA(x){if(SP==='de')return x.n;return nameFremd(gerichtLi(x.k),x.n);}
+  function beschrA(x){if(SP==='de')return x.d;var li=gerichtLi(x.k);return li&&li.dataset.dn!=null?T(li.dataset.dn):x.d;}
   function zusammenfassen(){
     var neu=[],idx={};
     zettel.forEach(function(x){var k=sig(x);if(idx[k]!=null&&x.u!==offen&&neu[idx[k]].u!==offen){neu[idx[k]].q+=x.q;}else{idx[k]=neu.length;neu.push(x);}});
@@ -488,7 +509,7 @@
       var li=el('li','z-eintrag'),kopf=el('div');
       var na=nameA(x);
       kopf.appendChild(el('span','z-name',na+(x.g?' ('+x.g+')':'')));
-      var wt=x.t?wuensche(x,SP==='en'):(fehlend(x).length?beschrA(x)+(beschrA(x)?' · ':'')+wuensche(x,SP==='en'):beschrA(x));if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
+      var wt=x.t?wuensche(x,SP!=='de'):(fehlend(x).length?beschrA(x)+(beschrA(x)?' · ':'')+wuensche(x,SP!=='de'):beschrA(x));if(wt&&SP!=='de')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
       if(x.fuer)kopf.appendChild(el('span','z-fuer',L('für ','for ')+x.fuer));if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
       var spZ=sperreZettel(x.k);
       if(spZ){var a0=abholung();kopf.appendChild(el('span','z-info z-fehlt',
@@ -522,7 +543,7 @@
       var box=alt||el('div','mengen');box.textContent='';
       reihe.forEach(function(g){
         var z=el('span','stepper');if(g)z.appendChild(el('span','st-g',g));
-        var nm=(SP==='en'&&li.dataset.ne||li.dataset.n)+(g?' '+g:'');
+        var nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(g?' '+g:'');
         z.appendChild(knopf('−',{'data-st':'minus','data-k':k,'data-g':g,'aria-label':L('Eins weniger: ','One less: ')+nm}));
         z.appendChild(el('span','st-q',String(proG[g])));
         z.appendChild(knopf('+',{'data-st':'plus','data-k':k,'data-g':g,'aria-label':L('Eins mehr: ','One more: ')+nm}));
@@ -615,7 +636,7 @@
   function zeitText(m,en){var h=Math.floor(m/60),r=m%60;return h+':'+(r<10?'0':'')+r+(en?'':' Uhr');}
   /* Datum eines Tages ab heute (deutsche Zeit): ISO-Schlüssel und Anzeige */
   function tagDatum(off,opt,loc){return new Intl.DateTimeFormat(loc||'de-DE',Object.assign({timeZone:'Europe/Berlin'},opt)).format(new Date(Date.now()+off*864e5));}
-  function tagKurz(off,en){return tagDatum(off,{weekday:'short',day:'numeric',month:en?'short':'2-digit'},en?'en-GB':'de-DE');}
+  function tagKurz(off,en){return tagDatum(off,{weekday:'short',day:'numeric',month:en?'short':'2-digit'},LOC[SP]||'en-GB');}
   function tagLang(off){var t=tagDatum(off,{weekday:'long',day:'2-digit',month:'2-digit'});return /\.$/.test(t)?t:t+'.';}   /* „Freitag, 24.10.“ */
   /* mögliche Abholzeiten eines Tages (Minuten), 15-Minuten-Raster, heute frühestens in 20 Minuten */
   function slots(off){
@@ -628,7 +649,7 @@
     selZeit.textContent='';selTag.textContent='';hinweisZ.hidden=true;ZINFO={};
     if(!abh.laden){[selTag,selZeit].forEach(function(s){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';s.appendChild(o);s.disabled=true;});return;}
     selTag.disabled=selZeit.disabled=false;
-    var n=jetzt(),en=SP==='en',tage=[];
+    var n=jetzt(),en=SP!=='de',tage=[];
     for(var i=0;i<=VORBESTELL_TAGE;i++){if(slots(i).length)tage.push(i);}
     tage.forEach(function(off){
       var t=off===0?L('Heute','Today'):off===1?L('Morgen, ','Tomorrow, ')+tagKurz(1,en):tagKurz(off,en);
@@ -721,7 +742,7 @@
     var g=letzteGueltig(),suche=document.getElementById('suche-feld');
     boxL.hidden=!g.length||zettel.length>0||!!(suche&&suche.value.trim());
     if(boxL.hidden)return;
-    var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP==='en'&&li.dataset.ne||li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
+    var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
     document.getElementById('letzte-liste').textContent=Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');
   }
   /* Eintrag aus gespeicherten/geteilten Daten mit aktuellem Preis; null, wenn es das Gericht nicht mehr gibt */
@@ -884,23 +905,37 @@
   try{hinweiseZeigen();}catch(e){}
 
   /* Sprachumschalter Deutsch/Englisch */
-  var spKnopf=document.getElementById('sprache');
+  var spKnopf=document.getElementById('sprache'),spMenue=document.getElementById('sprachen-menu');
+  function textFuer(l,de,en){return l==='de'?de:(l==='en'?en:T(en));}
   function sprache(l,merken){
-    SP=l;document.documentElement.lang=l;
-    document.querySelectorAll('[data-en]').forEach(function(x){if(x._de==null)x._de=x.textContent;x.textContent=l==='en'?x.dataset.en:x._de;});
-    document.querySelectorAll('[data-en-html]').forEach(function(x){if(x._de==null)x._de=x.innerHTML;x.innerHTML=l==='en'?x.dataset.enHtml:x._de;});
-    document.querySelectorAll('[data-en-ph]').forEach(function(x){if(x._de==null)x._de=x.placeholder;x.placeholder=l==='en'?x.dataset.enPh:x._de;});
-    document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');x.setAttribute('aria-label',l==='en'?x.dataset.enAria:x._dea);});
-    document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',l==='en'?x.dataset.enTitle:x._det);});
-    spKnopf.textContent=l==='en'?'DE':'EN';spKnopf.lang=l==='en'?'de':'en';
-    spKnopf.setAttribute('aria-label',l==='en'?'Auf Deutsch umschalten':'Switch to English');
+    if(l!=='de'&&l!=='en'&&!DICT[l]){ /* Wörterbuch erst laden, dann umschalten */
+      fetch('lang/'+l+'.json').then(function(r){return r.ok?r.json():{};}).then(function(d){DICT[l]=d||{};sprache(l,merken);},function(){DICT[l]={};sprache(l,merken);});return;}
+    SP=l;document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';
+    document.querySelectorAll('[data-en]').forEach(function(x){if(x._de==null)x._de=x.textContent;x.textContent=textFuer(l,x._de,x.dataset.en);});
+    document.querySelectorAll('[data-en-html]').forEach(function(x){if(x._de==null)x._de=x.innerHTML;x.innerHTML=textFuer(l,x._de,x.dataset.enHtml);});
+    document.querySelectorAll('[data-en-ph]').forEach(function(x){if(x._de==null)x._de=x.placeholder;x.placeholder=textFuer(l,x._de,x.dataset.enPh);});
+    document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');
+      var en=x.dataset.enAria,m=/^Add (.+) to my order$/.exec(en),v=m&&l!=='de'&&l!=='en'?fuell(T('Add {x} to my order'),{x:T(m[1])}):textFuer(l,x._dea,en);x.setAttribute('aria-label',v);});
+    document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',textFuer(l,x._det,x.dataset.enTitle));});
+    spKnopf.textContent=l.toUpperCase();
+    spKnopf.setAttribute('aria-label','Sprache / Language: '+(SPRACHEN.filter(function(x){return x[0]===l;})[0]||['',''])[1]);
+    spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp===l?'true':'false');});
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
     zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{aktionenZeigen();}catch(e){}
+    try{verfZeigen();}catch(e){}
   }
-  spKnopf.addEventListener('click',function(){sprache(SP==='en'?'de':'en',true);});
-  if(SP==='en')sprache('en',false);
+  /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */
+  SPRACHEN.forEach(function(x){var b=document.createElement('button');b.type='button';b.dataset.sp=x[0];b.lang=x[0];b.textContent=x[1];
+    if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){menueZu();sprache(x[0],true);spKnopf.focus();});var li=document.createElement('li');li.appendChild(b);spMenue.appendChild(li);});
+  function menueZu(){spMenue.hidden=true;spKnopf.setAttribute('aria-expanded','false');}
+  spKnopf.addEventListener('click',function(ev){ev.stopPropagation();var auf=spMenue.hidden;spMenue.hidden=!auf;spKnopf.setAttribute('aria-expanded',String(auf));
+    if(auf){var akt=spMenue.querySelector('[aria-current="true"]')||spMenue.querySelector('button');if(akt)akt.focus();}});
+  document.addEventListener('click',function(ev){if(!spMenue.hidden&&!spMenue.contains(ev.target))menueZu();});
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!spMenue.hidden){menueZu();spKnopf.focus();}});
+  if(SP!=='de')sprache(SP,false);
+  else spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp==='de'?'true':'false');});
 
   /* Impressum/Datenschutz per Link öffnen */
   function oeffne(){var d=document.getElementById(location.hash.slice(1));if(d&&d.tagName==='DETAILS')d.open=true;}

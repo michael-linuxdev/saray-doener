@@ -1,6 +1,6 @@
 # Saray Döner – Website
 
-Neue Website für **Saray Döner** in Freital und Altenberg: Speisekarte mit Suche, Bestellzettel mit Wünschen je Gericht, Abholzeit, Öffnungsstatus live, Deutsch/Englisch.
+Neue Website für **Saray Döner** in Freital und Altenberg: Speisekarte mit Suche, Bestellzettel mit Wünschen je Gericht, Abholzeit, Öffnungsstatus live, sechs Sprachen (Deutsch, Englisch, Tschechisch, Türkisch, Russisch, Arabisch).
 
 Live (Vorschau): **https://saray.micana.de**
 
@@ -16,6 +16,7 @@ Statische Seite ohne Framework, ohne externe Anfragen und ohne Cookies. Was im B
 | `qr.py` / `aufsteller.py` | QR-Codes / Druckvorlagen für die Theke |
 | `tests/` | automatische Browser-Tests |
 | `englisch.py` | Englische Namen und Beschreibungen |
+| `sprachen/*.json`, `sprachen_daten.py` | Wörterbücher Englisch → Tschechisch/Türkisch/Russisch/Arabisch; `python3 sprachen_daten.py` zeigt, was fehlt |
 | `build.py` | Standorte, Öffnungszeiten, Hinweis-Band, Vorlage, CSS und JS; baut die Seite |
 | `maskottchen.py` | Zeichnet das Koch-Maskottchen als SVG (`maskottchen/`) |
 | `png_export.py` | PNG-Fassungen und Favicon aus den SVGs |
@@ -34,6 +35,7 @@ Nur Python 3, keine Pakete nötig. Nach jeder Änderung `python3 build.py` laufe
 ## Häufige Änderungen
 
 - **Preise oder Gerichte:** `menu.py`, bei neuen Gerichten auch `englisch.py`.
+- **Weitere Sprachen:** Jede Sprache übersetzt die englischen Texte (`sprachen/<code>.json`, Schlüssel = englischer Text, Zahlen als `{n}`). Neue Texte prüfen mit `python3 sprachen_daten.py`; fehlende Einträge erscheinen auf Englisch. Die Bestellung an den Laden bleibt immer Deutsch. Arabisch läuft von rechts nach links; Telefonnummern, Uhrzeiten und Preise bleiben dabei links-nach-rechts. Die Übersetzungen sollte vor dem Freischalten jemand mit der jeweiligen Muttersprache gegenlesen.
 - **Öffnungszeiten, Telefon:** `STANDORTE` in `build.py`.
 - **Hinweis oben (Urlaub, Feiertag, Angebot):** `HINWEISE` in `build.py`, mit `von`/`bis` als Datum. Außerhalb des Zeitraums blendet sich das Band von selbst aus.
 - **Zutaten und Allergene:** `ALLERGENE`, `ZUTATEN`, `KENNZEICHNUNG` (je Abschnitt) und `SOSSEN` in `menu.py`, abgeschrieben von der gedruckten Karte („Gültig ab 01.02.2024“). Unter jedem Abschnitt steht eine Zeile „Inhaltsstoffe … · Allergene …“, unten die aufklappbare Liste.

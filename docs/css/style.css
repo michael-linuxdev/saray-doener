@@ -58,6 +58,12 @@ p{margin:0}
 .kopf-nav a:hover{background:rgba(255,255,255,.55)}
 @media (max-width:479px){.kopf-nav a+a{display:none}}
 .kopf-nav{align-items:center}
+.sprache-wahl{position:relative;display:inline-block}
+.sprachen-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:70;list-style:none;margin:0;padding:6px;min-width:150px;background:#fff;border:2px solid var(--tinte);border-radius:14px;box-shadow:0 10px 24px -10px rgba(58,21,49,.5)}
+[dir=rtl] .sprachen-menu{right:auto;left:0}
+.sprachen-menu button{display:block;width:100%;min-height:42px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--tinte);font:700 1rem var(--text);text-align:start;cursor:pointer}
+.sprachen-menu button[aria-current=true]{background:var(--gelb)}
+.sprachen-menu button:hover{background:var(--gelb-blass)}
 .sprache{min-width:44px;min-height:40px;margin-left:4px;border:2px solid var(--tinte);border-radius:999px;background:transparent;color:var(--tinte);
   font:700 .85rem var(--text);letter-spacing:.06em;cursor:pointer}
 .sprache:hover{background:rgba(255,255,255,.55)}
@@ -126,6 +132,14 @@ p{margin:0}
 @media (max-width:959px){.bilder .koch{display:none}}
 @media (min-width:600px) and (max-width:959px){.koch-klein{width:150px;top:20px}}
 @media (min-width:960px){.koch-klein{display:none}}
+[dir=rtl] .koch-klein{right:auto;left:-4px}
+@media (max-width:599px){[dir=rtl] .lead{padding-left:92px}}
+@media (min-width:600px) and (max-width:959px){[dir=rtl] .lead{padding-left:140px}}
+[dir=rtl] address{unicode-bidi:plaintext;text-align:right}
+[dir=rtl] .preis,[dir=rtl] .z-preis,[dir=rtl] #zettel-summe,[dir=rtl] .zl-summe,[dir=rtl] a[href^="tel:"]:not(.knopf),[dir=rtl] time{unicode-bidi:isolate;direction:ltr}
+[dir=rtl] .koch{right:auto;left:-10px}
+[dir=rtl] .sticker{left:auto;right:-8px}
+@media (min-width:960px){[dir=rtl] .koch{left:-24px}[dir=rtl] .sticker{right:-28px}}
 .marke-beliebt{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;
   font:700 .7rem/1.5 var(--text);letter-spacing:.01em;white-space:nowrap}
 .beliebt{margin-bottom:40px;min-width:0;max-width:100vw}
@@ -445,10 +459,14 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .ort address a{font-weight:700}
 .zeiten{width:100%;border-collapse:collapse;margin:12px 0 10px}
 .zeiten th,.zeiten td{padding:9px 0;border-top:1px solid var(--linie);vertical-align:baseline}
-.zeiten th{text-align:left;font-weight:400}
-.zeiten td{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.zeiten th{text-align:start;font-weight:400;padding-inline-end:12px}
+.zeiten td{text-align:end;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
 html[lang=en] .zeiten tr.heute th::after{content:"today"}
-.zeiten tr.heute th::after{content:"heute";display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--gelb);
+html[lang=cs] .zeiten tr.heute th::after{content:"dnes"}
+html[lang=tr] .zeiten tr.heute th::after{content:"bugün"}
+html[lang=ru] .zeiten tr.heute th::after{content:"сегодня"}
+html[lang=ar] .zeiten tr.heute th::after{content:"اليوم"}
+.zeiten tr.heute th::after{content:"heute";display:inline-block;margin-inline-start:8px;padding:1px 8px;border-radius:999px;background:var(--gelb);
   font-weight:700;font-size:.8rem;vertical-align:1px}
 .karte-bild{margin:14px 0 4px}
 .karte-bild > a{position:relative;display:block;border-radius:12px;overflow:hidden;border:2px solid var(--tinte)}
@@ -473,7 +491,7 @@ html[lang=en] .zeiten tr.heute th::after{content:"today"}
 .fuss-ort p{margin-bottom:6px}
 .klein{font-size:.9rem;color:#D9C3D2}
 .recht{margin-top:36px;padding-top:18px;border-top:1px solid rgba(255,255,255,.18);display:grid;gap:6px}
-.recht summary{cursor:pointer;font-weight:700;color:var(--gelb);padding:6px 0;width:max-content}
+.recht summary{cursor:pointer;font-weight:700;color:var(--gelb);padding:6px 0;width:fit-content;max-width:100%}.recht{min-width:0}.recht details{min-width:0}
 .recht details[open]{background:rgba(255,255,255,.06);border-radius:12px;padding:4px 16px 16px}
 .recht details p{margin-bottom:8px;max-width:70ch}
 .recht details h3{margin:14px 0 4px;font-size:1rem;color:var(--gelb)}.recht details a{color:inherit}

@@ -12,6 +12,7 @@ import base64, html, json, math, pathlib, re, shutil, sys, urllib.parse
 from menu import GRUPPEN, VEGETARISCH, FISCH, VEG_WAEHLBAR, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN, GERICHT_ALLERGENE
 import englisch as EN
 import anpassungen as ANP
+import sprachen_daten as SP
 
 HIER = pathlib.Path(__file__).parent
 A = HIER / "assets"
@@ -214,7 +215,7 @@ def zettel_daten(nr, name, desc, preise, groessen, typ="", varianten=()):
     cent = "|".join(str(int(x.replace(",", ""))) for x in preise)
     v = "|".join(f"{k}: {t}" for k, t in varianten)
     return (f' data-k="{e(nr or name)}" data-n="{e(("Nr. " + anz(nr) + " ") if nr else "")}{e(name)}" data-d="{e(desc)}"'
-            f' data-p="{cent}" data-g="{e("|".join(groessen or []))}" data-t="{typ}" data-v="{e(v)}" data-ne="{e(ne)}" data-dn="{e(EN.text(desc))}"')
+            f' data-p="{cent}" data-g="{e("|".join(groessen or []))}" data-t="{typ}" data-v="{e(v)}" data-ne="{e(ne)}" data-nen="{e(EN.name(name))}" data-dn="{e(EN.text(desc))}"')
 
 
 def plus_knopf(name):
@@ -515,6 +516,12 @@ p{margin:0}
 .kopf-nav a:hover{background:rgba(255,255,255,.55)}
 @media (max-width:479px){.kopf-nav a+a{display:none}}
 .kopf-nav{align-items:center}
+.sprache-wahl{position:relative;display:inline-block}
+.sprachen-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:70;list-style:none;margin:0;padding:6px;min-width:150px;background:#fff;border:2px solid var(--tinte);border-radius:14px;box-shadow:0 10px 24px -10px rgba(58,21,49,.5)}
+[dir=rtl] .sprachen-menu{right:auto;left:0}
+.sprachen-menu button{display:block;width:100%;min-height:42px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--tinte);font:700 1rem var(--text);text-align:start;cursor:pointer}
+.sprachen-menu button[aria-current=true]{background:var(--gelb)}
+.sprachen-menu button:hover{background:var(--gelb-blass)}
 .sprache{min-width:44px;min-height:40px;margin-left:4px;border:2px solid var(--tinte);border-radius:999px;background:transparent;color:var(--tinte);
   font:700 .85rem var(--text);letter-spacing:.06em;cursor:pointer}
 .sprache:hover{background:rgba(255,255,255,.55)}
@@ -583,6 +590,14 @@ p{margin:0}
 @media (max-width:959px){.bilder .koch{display:none}}
 @media (min-width:600px) and (max-width:959px){.koch-klein{width:150px;top:20px}}
 @media (min-width:960px){.koch-klein{display:none}}
+[dir=rtl] .koch-klein{right:auto;left:-4px}
+@media (max-width:599px){[dir=rtl] .lead{padding-left:92px}}
+@media (min-width:600px) and (max-width:959px){[dir=rtl] .lead{padding-left:140px}}
+[dir=rtl] address{unicode-bidi:plaintext;text-align:right}
+[dir=rtl] .preis,[dir=rtl] .z-preis,[dir=rtl] #zettel-summe,[dir=rtl] .zl-summe,[dir=rtl] a[href^="tel:"]:not(.knopf),[dir=rtl] time{unicode-bidi:isolate;direction:ltr}
+[dir=rtl] .koch{right:auto;left:-10px}
+[dir=rtl] .sticker{left:auto;right:-8px}
+@media (min-width:960px){[dir=rtl] .koch{left:-24px}[dir=rtl] .sticker{right:-28px}}
 .marke-beliebt{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;
   font:700 .7rem/1.5 var(--text);letter-spacing:.01em;white-space:nowrap}
 .beliebt{margin-bottom:40px;min-width:0;max-width:100vw}
@@ -902,10 +917,14 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .ort address a{font-weight:700}
 .zeiten{width:100%;border-collapse:collapse;margin:12px 0 10px}
 .zeiten th,.zeiten td{padding:9px 0;border-top:1px solid var(--linie);vertical-align:baseline}
-.zeiten th{text-align:left;font-weight:400}
-.zeiten td{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.zeiten th{text-align:start;font-weight:400;padding-inline-end:12px}
+.zeiten td{text-align:end;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
 html[lang=en] .zeiten tr.heute th::after{content:"today"}
-.zeiten tr.heute th::after{content:"heute";display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--gelb);
+html[lang=cs] .zeiten tr.heute th::after{content:"dnes"}
+html[lang=tr] .zeiten tr.heute th::after{content:"bugün"}
+html[lang=ru] .zeiten tr.heute th::after{content:"сегодня"}
+html[lang=ar] .zeiten tr.heute th::after{content:"اليوم"}
+.zeiten tr.heute th::after{content:"heute";display:inline-block;margin-inline-start:8px;padding:1px 8px;border-radius:999px;background:var(--gelb);
   font-weight:700;font-size:.8rem;vertical-align:1px}
 .karte-bild{margin:14px 0 4px}
 .karte-bild > a{position:relative;display:block;border-radius:12px;overflow:hidden;border:2px solid var(--tinte)}
@@ -930,7 +949,7 @@ html[lang=en] .zeiten tr.heute th::after{content:"today"}
 .fuss-ort p{margin-bottom:6px}
 .klein{font-size:.9rem;color:#D9C3D2}
 .recht{margin-top:36px;padding-top:18px;border-top:1px solid rgba(255,255,255,.18);display:grid;gap:6px}
-.recht summary{cursor:pointer;font-weight:700;color:var(--gelb);padding:6px 0;width:max-content}
+.recht summary{cursor:pointer;font-weight:700;color:var(--gelb);padding:6px 0;width:fit-content;max-width:100%}.recht{min-width:0}.recht details{min-width:0}
 .recht details[open]{background:rgba(255,255,255,.06);border-radius:12px;padding:4px 16px 16px}
 .recht details p{margin-bottom:8px;max-width:70ch}
 .recht details h3{margin:14px 0 4px;font-size:1rem;color:var(--gelb)}.recht details a{color:inherit}
@@ -1021,7 +1040,7 @@ ZETTEL_JS = r'''
     });
     return res;
   }
-  function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP==='en'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
+  function uhrK(t){var m=minAus(t),h=Math.floor(m/60),r=m%60;return SP!=='de'?h+':'+(r<10?'0':'')+r:(r?h+':'+(r<10?'0':'')+r:h)+' Uhr';}
   function sperrText(sp,heute){
     if(sp.art==='aus')return (heute===false||sp.dauer)?L('nicht verfügbar','not available'):L('heute nicht verfügbar','not available today');
     if(sp.art==='ab')return L('erst ab ','only from ')+uhrK(sp.zeit);
@@ -1064,7 +1083,7 @@ ZETTEL_JS = r'''
     'Weißkohl':'white cabbage','Eisbergsalat':'iceberg lettuce','Paprika':'bell pepper','Zwiebel':'onion','Champignon':'mushrooms','Tomate':'tomato',
     'Gemüse':'vegetables','Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
     'Dönerfleisch':'döner meat','Hähnchen-Dönerfleisch':'chicken döner meat','Käse':'cheese','Halloumikäse':'halloumi','Fetakäse':'feta'};
-  function w(v){if(SP!=='en'||!W[v])return v;return W[v].charAt(0).toUpperCase()+W[v].slice(1);}
+  function w(v){if(SP==='de'||!W[v])return v;var x=T(W[v]);return x.charAt(0).toUpperCase()+x.slice(1);}
   function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"]');}
   try{zettel=JSON.parse(localStorage.getItem(ZK)||'[]');if(!Array.isArray(zettel))zettel=[];}catch(e){zettel=[];}
   zettel.forEach(function(x){x.u=uidZ++;if(x.o&&!Array.isArray(x.o.s))x.o.s=x.o.s?[x.o.s]:[];});
@@ -1083,24 +1102,26 @@ ZETTEL_JS = r'''
   function fehlend(x){return (BEILAGEN[x.k]||[]).filter(function(b){return zAus(b);});}
   function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o)-fehlend(x).length*BEILAGE_RABATT;}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
-  function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
+  function liste(a,en){var u=en?' '+T('and')+' ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
   /* Wünsche als Text; en=true nur für die Anzeige, die Nachricht an den Laden ist immer deutsch */
   function wuensche(x,en){
-    var o=x.o,t=[],tr=function(a){return en?a.map(function(v){return (W[v]||v);}):a;};
+    var o=x.o,t=[],tr=function(a){return en?a.map(function(v){return W[v]?T(W[v]):v;}):a;};
     if(x.t==='D'||x.t==='SA'){var so=SOSSEN.filter(function(n){return o.s.indexOf(n)>-1;});
-      if(en)t.push(!so.length?'no sauce':liste(tr(so),true)+' sauce');
+      if(en)t.push(!so.length?T('no sauce'):fuell(T('{list} sauce'),{list:liste(tr(so),true)}));
       else t.push(!so.length?'ohne Soße':so.length===1?so[0]+'-Soße':so.slice(0,-1).join('-, ')+'- und '+so[so.length-1]+'-Soße');}
-    if(o.ohne.length)t.push((en?'no ':'ohne ')+liste(tr(o.ohne),en));
-    var fe=fehlend(x);if(fe.length)t.push((en?'no ':'ohne ')+liste(en?fe.map(function(b){return b==='Pommes'?'fries':'rice';}):fe,en)+(en?' (not available, −':' (heute aus, −')+euro(fe.length*BEILAGE_RABATT)+')');
-    if(x.t==='S')t.push(o.wahl.length<3?(en?'choose '+(3-o.wahl.length)+' more toppings':'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?'with ':'mit ')+liste(tr(o.wahl),en));
-    if(x.t==='R')t.push(o.va?(en?'option ':'Variante ')+o.va.charAt(0):(en?'choose option':'Variante wählen'));
-    if(x.t==='B')t.push(o.va?(en?'with ':'mit ')+(en?(W[o.va]||o.va):o.va):(en?'choose topping':'Belag wählen'));
-    tr(o.ex).forEach(function(e){t.push('extra '+e);});
+    if(o.ohne.length)t.push(en?fuell(T('no {list}'),{list:liste(tr(o.ohne),en)}):'ohne '+liste(o.ohne,en));
+    var fe=fehlend(x);if(fe.length)t.push(en?fuell(T('no {list}'),{list:liste(fe.map(function(b){return T(b==='Pommes'?'fries':'rice');}),en)})+' ('+T('not available')+', −'+euro(fe.length*BEILAGE_RABATT)+')'
+      :'ohne '+liste(fe,en)+' (heute aus, −'+euro(fe.length*BEILAGE_RABATT)+')');
+    if(x.t==='S')t.push(o.wahl.length<3?(en?T('choose '+(3-o.wahl.length)+' more toppings'):'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?fuell(T('with {list}'),{list:liste(tr(o.wahl),en)}):'mit '+liste(o.wahl,en)));
+    if(x.t==='R')t.push(o.va?(en?fuell(T('option {x}'),{x:o.va.charAt(0)}):'Variante '+o.va.charAt(0)):(en?T('choose option'):'Variante wählen'));
+    if(x.t==='B')t.push(o.va?(en?fuell(T('with {list}'),{list:W[o.va]?T(W[o.va]):o.va}):'mit '+o.va):(en?T('choose topping'):'Belag wählen'));
+    tr(o.ex).forEach(function(e){t.push(en?fuell(T('extra {x}'),{x:e}):'extra '+e);});
     return t.join(', ');
   }
   /* Anzeigename/Beschreibung in der gewählten Sprache */
-  function nameA(x){if(SP!=='en')return x.n;var li=gerichtLi(x.k);return li&&li.dataset.ne||x.n;}
-  function beschrA(x){if(SP!=='en')return x.d;var li=gerichtLi(x.k);return li&&li.dataset.dn||x.d;}
+  function nameFremd(li,fallback){if(!li)return fallback;var m=/^Nr\. (\S+) /.exec(li.dataset.n||'');return (m?T('No.')+' '+m[1]+' ':'')+T(li.dataset.nen||'');}
+  function nameA(x){if(SP==='de')return x.n;return nameFremd(gerichtLi(x.k),x.n);}
+  function beschrA(x){if(SP==='de')return x.d;var li=gerichtLi(x.k);return li&&li.dataset.dn!=null?T(li.dataset.dn):x.d;}
   function zusammenfassen(){
     var neu=[],idx={};
     zettel.forEach(function(x){var k=sig(x);if(idx[k]!=null&&x.u!==offen&&neu[idx[k]].u!==offen){neu[idx[k]].q+=x.q;}else{idx[k]=neu.length;neu.push(x);}});
@@ -1199,7 +1220,7 @@ ZETTEL_JS = r'''
       var li=el('li','z-eintrag'),kopf=el('div');
       var na=nameA(x);
       kopf.appendChild(el('span','z-name',na+(x.g?' ('+x.g+')':'')));
-      var wt=x.t?wuensche(x,SP==='en'):(fehlend(x).length?beschrA(x)+(beschrA(x)?' · ':'')+wuensche(x,SP==='en'):beschrA(x));if(wt&&SP==='en')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
+      var wt=x.t?wuensche(x,SP!=='de'):(fehlend(x).length?beschrA(x)+(beschrA(x)?' · ':'')+wuensche(x,SP!=='de'):beschrA(x));if(wt&&SP!=='de')wt=wt.charAt(0).toUpperCase()+wt.slice(1);
       if(x.fuer)kopf.appendChild(el('span','z-fuer',L('für ','for ')+x.fuer));if(wt){var wi=el('span','z-info',wt);if(/wählen|choose/.test(wt))wi.classList.add('z-fehlt');kopf.appendChild(wi);}
       var spZ=sperreZettel(x.k);
       if(spZ){var a0=abholung();kopf.appendChild(el('span','z-info z-fehlt',
@@ -1233,7 +1254,7 @@ ZETTEL_JS = r'''
       var box=alt||el('div','mengen');box.textContent='';
       reihe.forEach(function(g){
         var z=el('span','stepper');if(g)z.appendChild(el('span','st-g',g));
-        var nm=(SP==='en'&&li.dataset.ne||li.dataset.n)+(g?' '+g:'');
+        var nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(g?' '+g:'');
         z.appendChild(knopf('−',{'data-st':'minus','data-k':k,'data-g':g,'aria-label':L('Eins weniger: ','One less: ')+nm}));
         z.appendChild(el('span','st-q',String(proG[g])));
         z.appendChild(knopf('+',{'data-st':'plus','data-k':k,'data-g':g,'aria-label':L('Eins mehr: ','One more: ')+nm}));
@@ -1326,7 +1347,7 @@ ZETTEL_JS = r'''
   function zeitText(m,en){var h=Math.floor(m/60),r=m%60;return h+':'+(r<10?'0':'')+r+(en?'':' Uhr');}
   /* Datum eines Tages ab heute (deutsche Zeit): ISO-Schlüssel und Anzeige */
   function tagDatum(off,opt,loc){return new Intl.DateTimeFormat(loc||'de-DE',Object.assign({timeZone:'Europe/Berlin'},opt)).format(new Date(Date.now()+off*864e5));}
-  function tagKurz(off,en){return tagDatum(off,{weekday:'short',day:'numeric',month:en?'short':'2-digit'},en?'en-GB':'de-DE');}
+  function tagKurz(off,en){return tagDatum(off,{weekday:'short',day:'numeric',month:en?'short':'2-digit'},LOC[SP]||'en-GB');}
   function tagLang(off){var t=tagDatum(off,{weekday:'long',day:'2-digit',month:'2-digit'});return /\.$/.test(t)?t:t+'.';}   /* „Freitag, 24.10.“ */
   /* mögliche Abholzeiten eines Tages (Minuten), 15-Minuten-Raster, heute frühestens in 20 Minuten */
   function slots(off){
@@ -1339,7 +1360,7 @@ ZETTEL_JS = r'''
     selZeit.textContent='';selTag.textContent='';hinweisZ.hidden=true;ZINFO={};
     if(!abh.laden){[selTag,selZeit].forEach(function(s){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';s.appendChild(o);s.disabled=true;});return;}
     selTag.disabled=selZeit.disabled=false;
-    var n=jetzt(),en=SP==='en',tage=[];
+    var n=jetzt(),en=SP!=='de',tage=[];
     for(var i=0;i<=VORBESTELL_TAGE;i++){if(slots(i).length)tage.push(i);}
     tage.forEach(function(off){
       var t=off===0?L('Heute','Today'):off===1?L('Morgen, ','Tomorrow, ')+tagKurz(1,en):tagKurz(off,en);
@@ -1432,7 +1453,7 @@ ZETTEL_JS = r'''
     var g=letzteGueltig(),suche=document.getElementById('suche-feld');
     boxL.hidden=!g.length||zettel.length>0||!!(suche&&suche.value.trim());
     if(boxL.hidden)return;
-    var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP==='en'&&li.dataset.ne||li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
+    var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
     document.getElementById('letzte-liste').textContent=Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');
   }
   /* Eintrag aus gespeicherten/geteilten Daten mit aktuellem Preis; null, wenn es das Gericht nicht mehr gibt */
@@ -1579,13 +1600,31 @@ JS = r"""
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
+  /* Weitere Sprachen: Wörterbuch Englisch -> Sprache (docs/lang/<code>.json); fehlt ein Text, bleibt Englisch.
+     Zahlen im Text werden als {n} nachgeschlagen, damit „3 dishes found“ und „{n} dishes found“ zusammenpassen. */
+  var SPRACHEN=%%SPRACHEN%%,DICT=%%DICTS%%,LOC={de:'de-DE',en:'en-GB',cs:'cs-CZ',ru:'ru-RU',tr:'tr-TR',ar:'ar-u-nu-latn'};
   var SPK='saray-sprache',SP='de';
   try{SP=localStorage.getItem(SPK)||'';}catch(e){SP='';}
-  if(SP!=='de'&&SP!=='en'){
+  if(!SPRACHEN.some(function(x){return x[0]===SP;})){
     var langs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'de']);
-    SP=(/bot|crawl|spider|lighthouse/i.test(navigator.userAgent)||langs.some(function(l){return /^de/i.test(l);}))?'de':'en';
+    SP='en';
+    if(/bot|crawl|spider|lighthouse/i.test(navigator.userAgent))SP='de';
+    else for(var li0=0;li0<langs.length;li0++){var k0=String(langs[li0]).slice(0,2).toLowerCase();if(SPRACHEN.some(function(x){return x[0]===k0;})){SP=k0;break;}}
   }
-  function L(de,en){return SP==='en'?en:de;}
+  function T(en){
+    if(SP==='en'||SP==='de'||en==null)return en;var d=DICT[SP]||{},r=en;
+    if(d[en]!=null)r=d[en];
+    else{var z=[],k=String(en).replace(/\d+(?:[.,:]\d+)*/g,function(m){z.push(m);return '{n}';});
+      if(z.length&&d[k]!=null){var i=0;r=d[k].replace(/\{n\}/g,function(){return z[i++];});}}
+    return LTR_ZAHLEN(r);
+  }
+  /* Rechts-nach-links (Arabisch): Telefonnummern, Uhrzeiten und Preise als Block links-nach-rechts halten */
+  function LTR_ZAHLEN(r){
+    if(document.documentElement.dir!=='rtl'||typeof r!=='string')return r;
+    return r.split(/(<[^>]*>)/).map(function(t){return t.charAt(0)==='<'?t:t.replace(/\+?\d[\d.,:\u2013\- ]*\d(?: ?€)?|\d(?: ?€)?/g,function(m){return '\u2066'+m+'\u2069';});}).join('');
+  }
+  function L(de,en){return SP==='de'?de:T(en);}
+  function fuell(tpl,w){return tpl.replace(/\{(\w+)\}/g,function(_,k){return w[k]!=null?w[k]:'';});}
   /* Linkshänder-Modus: auf diesem Gerät gemerkt */
   var HK='saray-hand',linkshand=false;
   try{linkshand=localStorage.getItem(HK)==='links';}catch(e){}
@@ -1646,7 +1685,7 @@ JS = r"""
           var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
           var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
           var uz=a.za!=null?' '+uhr(a.za).replace(' Uhr','')+'–'+uhr(a.zb):'';
-          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
+          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?(SP==='de'?' (nur'+ort+')':' '+fuell(T('({ort} only)'),{ort:ort.trim()})):'');
           ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
           li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
         });
@@ -1654,12 +1693,13 @@ JS = r"""
     });
   }
   function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
-  function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP==='en')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
+  function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP!=='de')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
     var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
-    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:L('Jetzt geöffnet, bis ','Open now, until ')+uhr(h[1])+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
-    if(h&&n.min<h[0])return{offen:false,text:L('Geschlossen, öffnet heute um ','Closed, opens today at ')+uhr(h[0])};
-    for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0]):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
+    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:(SP==='de'?'Jetzt geöffnet, bis '+uhr(h[1]):fuell(T('Open now, until {zeit}'),{zeit:uhr(h[1])}))+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
+    if(h&&n.min<h[0])return{offen:false,text:SP==='de'?'Geschlossen, öffnet heute um '+uhr(h[0]):fuell(T('Closed, opens today at {zeit}'),{zeit:uhr(h[0])})};
+    for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP!=='de'?(SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0])
+        :fuell(T(i===1?'Closed, opens tomorrow at {zeit}':'Closed, opens on {tag} at {zeit}'),{zeit:uhr(zi[0]),tag:new Intl.DateTimeFormat(LOC[SP],Object.assign({timeZone:'Europe/Berlin',weekday:'long'},i<7?{}:{day:'numeric',month:'numeric'})).format(new Date(Date.now()+i*864e5))})):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
     return{offen:false,text:''};
   }
   function aktualisieren(){
@@ -1701,7 +1741,7 @@ JS = r"""
     if(!document.getElementById('hand-tipp').hidden)return;
     try{bw.fertig=1;localStorage.setItem('saray-bewertung',JSON.stringify(bw));}catch(e){return;}
     var ort=bw.l==='freital'?'Freital':'Altenberg';
-    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+L('Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.','We would love a Google review for Saray Döner '+ort+'.'),
+    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+(SP==='de'?'Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.':fuell(T('We would love a Google review for Saray Döner {ort}.'),{ort:ort})),
       [[L('⭐ Bewerten','⭐ Review'),function(){zaehlen('bewertung-'+bw.l);window.open('https://search.google.com/local/writereview?placeid='+GOOGLE[bw.l],'_blank','noopener');handTippZu();}],
        [L('Nein danke','No thanks'),handTippZu]],25000);
   },1500);
@@ -1833,23 +1873,37 @@ JS = r"""
   try{hinweiseZeigen();}catch(e){}
 
   /* Sprachumschalter Deutsch/Englisch */
-  var spKnopf=document.getElementById('sprache');
+  var spKnopf=document.getElementById('sprache'),spMenue=document.getElementById('sprachen-menu');
+  function textFuer(l,de,en){return l==='de'?de:(l==='en'?en:T(en));}
   function sprache(l,merken){
-    SP=l;document.documentElement.lang=l;
-    document.querySelectorAll('[data-en]').forEach(function(x){if(x._de==null)x._de=x.textContent;x.textContent=l==='en'?x.dataset.en:x._de;});
-    document.querySelectorAll('[data-en-html]').forEach(function(x){if(x._de==null)x._de=x.innerHTML;x.innerHTML=l==='en'?x.dataset.enHtml:x._de;});
-    document.querySelectorAll('[data-en-ph]').forEach(function(x){if(x._de==null)x._de=x.placeholder;x.placeholder=l==='en'?x.dataset.enPh:x._de;});
-    document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');x.setAttribute('aria-label',l==='en'?x.dataset.enAria:x._dea);});
-    document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',l==='en'?x.dataset.enTitle:x._det);});
-    spKnopf.textContent=l==='en'?'DE':'EN';spKnopf.lang=l==='en'?'de':'en';
-    spKnopf.setAttribute('aria-label',l==='en'?'Auf Deutsch umschalten':'Switch to English');
+    if(l!=='de'&&l!=='en'&&!DICT[l]){ /* Wörterbuch erst laden, dann umschalten */
+      fetch('lang/'+l+'.json').then(function(r){return r.ok?r.json():{};}).then(function(d){DICT[l]=d||{};sprache(l,merken);},function(){DICT[l]={};sprache(l,merken);});return;}
+    SP=l;document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';
+    document.querySelectorAll('[data-en]').forEach(function(x){if(x._de==null)x._de=x.textContent;x.textContent=textFuer(l,x._de,x.dataset.en);});
+    document.querySelectorAll('[data-en-html]').forEach(function(x){if(x._de==null)x._de=x.innerHTML;x.innerHTML=textFuer(l,x._de,x.dataset.enHtml);});
+    document.querySelectorAll('[data-en-ph]').forEach(function(x){if(x._de==null)x._de=x.placeholder;x.placeholder=textFuer(l,x._de,x.dataset.enPh);});
+    document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');
+      var en=x.dataset.enAria,m=/^Add (.+) to my order$/.exec(en),v=m&&l!=='de'&&l!=='en'?fuell(T('Add {x} to my order'),{x:T(m[1])}):textFuer(l,x._dea,en);x.setAttribute('aria-label',v);});
+    document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',textFuer(l,x._det,x.dataset.enTitle));});
+    spKnopf.textContent=l.toUpperCase();
+    spKnopf.setAttribute('aria-label','Sprache / Language: '+(SPRACHEN.filter(function(x){return x[0]===l;})[0]||['',''])[1]);
+    spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp===l?'true':'false');});
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
     zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{aktionenZeigen();}catch(e){}
+    try{verfZeigen();}catch(e){}
   }
-  spKnopf.addEventListener('click',function(){sprache(SP==='en'?'de':'en',true);});
-  if(SP==='en')sprache('en',false);
+  /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */
+  SPRACHEN.forEach(function(x){var b=document.createElement('button');b.type='button';b.dataset.sp=x[0];b.lang=x[0];b.textContent=x[1];
+    if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){menueZu();sprache(x[0],true);spKnopf.focus();});var li=document.createElement('li');li.appendChild(b);spMenue.appendChild(li);});
+  function menueZu(){spMenue.hidden=true;spKnopf.setAttribute('aria-expanded','false');}
+  spKnopf.addEventListener('click',function(ev){ev.stopPropagation();var auf=spMenue.hidden;spMenue.hidden=!auf;spKnopf.setAttribute('aria-expanded',String(auf));
+    if(auf){var akt=spMenue.querySelector('[aria-current="true"]')||spMenue.querySelector('button');if(akt)akt.focus();}});
+  document.addEventListener('click',function(ev){if(!spMenue.hidden&&!spMenue.contains(ev.target))menueZu();});
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!spMenue.hidden){menueZu();spKnopf.focus();}});
+  if(SP!=='de')sprache(SP,false);
+  else spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp==='de'?'true':'false');});
 
   /* Impressum/Datenschutz per Link öffnen */
   function oeffne(){var d=document.getElementById(location.hash.slice(1));if(d&&d.tagName==='DETAILS')d.open=true;}
@@ -1895,7 +1949,8 @@ SEITE = r"""<!doctype html>
     </a>
     <nav class="kopf-nav" aria-label="Hauptmenü">
       <a href="#speisekarte" data-en="Menu">Speisekarte</a><a href="#standorte" data-en="Opening hours">Öffnungszeiten</a>
-      <button type="button" class="sprache" id="sprache" aria-label="Switch to English" lang="en">EN</button>
+      <span class="sprache-wahl"><button type="button" class="sprache" id="sprache" aria-label="Sprache / Language" aria-haspopup="true" aria-expanded="false" aria-controls="sprachen-menu">DE</button>
+      <ul class="sprachen-menu" id="sprachen-menu" hidden></ul></span>
     </nav>
   </div>
 </header>
@@ -2006,7 +2061,9 @@ SEITE = r"""<!doctype html>
     <div class="recht">
       <details id="impressum"><summary data-en="Impressum (legal notice)">Impressum</summary>
         <p>Angaben gemäß § 5 DDG</p>
-        <p>Ahmet Saglam<br>Saray Döner<br>Bahnhof 3<br>01773 Altenberg</p>
+        <p><b>Saray Döner Freital</b><br><span class="platzhalter">[Inhaber Khan – vollständiger Name, Anschrift, E-Mail, ggf. Firmenform und USt-IdNr.]</span><br>Dresdner Str. 87<br>01705 Freital<br>
+        Telefon: <a href="tel:+4935127676660">0351 27676660</a></p>
+        <p><b>Saray Döner Altenberg</b><br>Ahmet Saglam<br>Bahnhof 3<br>01773 Altenberg</p>
         <p>Telefon: <a href="tel:+493505623674">035056 23674</a><br>
         Telefax: 035056 23676<br>
         E-Mail: <a href="mailto:solino1@hotmail.de">solino1@hotmail.de</a></p>
@@ -2169,7 +2226,9 @@ def datenschutz_html():
     entwurf = '<p class="platzhalter">Entwurf – vor dem Freischalten rechtlich prüfen lassen.</p>' if VORSCHAU else ""
     return f"""{entwurf}
         <h3>Verantwortlich</h3>
-        <p>Ahmet Saglam, Saray Döner, Bahnhof 3, 01773 Altenberg, Telefon 035056 23674, E-Mail solino1@hotmail.de (siehe Impressum).</p>
+        <p>Für Saray Döner Freital: <span class="platzhalter">[Khan – Name, Anschrift, E-Mail]</span>, Dresdner Str. 87, 01705 Freital, Telefon 0351 27676660.
+        Für Saray Döner Altenberg: Ahmet Saglam, Bahnhof 3, 01773 Altenberg, Telefon 035056 23674, E-Mail solino1@hotmail.de.
+        <span class="platzhalter">[Klären: Betreiben beide die Website gemeinsam (dann gemeinsam Verantwortliche nach Art. 26 DSGVO mit Vereinbarung) oder jeder für seinen Laden?]</span></p>
         <h3>Das Wichtigste vorab</h3>
         <p>Diese Website setzt keine Cookies. Schriften, Bilder und Stadtpläne liegen auf unserem eigenen Webspace; Inhalte fremder Anbieter
         binden wir nicht ein{" – mit Ausnahme der unten beschriebenen Besucherzählung mit GoatCounter" if ZAEHLER else ""}.
@@ -2257,6 +2316,8 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
             .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE))
+            .replace("%%SPRACHEN%%", json.dumps(SP.LISTE, ensure_ascii=False))
+            .replace("%%DICTS%%", json.dumps(SP.woerterbuecher(), ensure_ascii=False) if einzeln else "{}")
             .replace("%%BEILAGEN%%", json.dumps(BEILAGEN)).replace("%%BEILAGE_RABATT%%", str(BEILAGE_RABATT))
             .replace("%%ZAEHLER%%", json.dumps("" if einzeln else ZAEHLER))
             .replace("%%SW%%", "false" if einzeln else "true"))
@@ -2333,6 +2394,9 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         assert "%%" not in inhalt, f"Platzhalter übrig in {name}"
         (aus / name).write_text(inhalt.strip() + "\n", encoding="utf-8")
     (aus / ".nojekyll").write_text("")
+    (aus / "lang").mkdir(exist_ok=True)
+    for code, d in SP.woerterbuecher().items():   # weitere Sprachen, werden erst bei Bedarf geladen
+        (aus / "lang" / f"{code}.json").write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     # Service Worker: Seite, CSS, JS, Schriften und Bilder für offline; Version aus dem Inhalt (ohne „Stand“-Zeit)
     import hashlib
     ohne_stand = re.sub(r'<small class="stand">.*?</small>', "", seite)
