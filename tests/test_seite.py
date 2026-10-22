@@ -970,6 +970,19 @@ def zutaten_aus(b, url):
 
 
 @test
+def pommes_aus(b, url):
+    s = Seite(b, url, regeln=[{"was": "z:Pommes"}])
+    assert s.js("document.getElementById('nr-23').classList.contains('nicht-da')")
+    assert s.js("document.getElementById('nr-72').classList.contains('nicht-da')")
+    assert not s.js("document.getElementById('nr-21').classList.contains('nicht-da')")
+    s.p.click("#nr-21 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-anpassen]")
+    assert s.js("document.querySelector('[data-bei=\"P\"]').disabled") and s.js("document.querySelector('[data-bei=\"SP\"]').disabled")
+    s.schliessen()
+
+
+@test
 def chef_app_zutaten(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
@@ -979,7 +992,7 @@ def chef_app_zutaten(b, url):
     assert p.get_attribute('[data-zutat="Ananas"]', "aria-pressed") == "true"
     p.click("#speichern-knopf")
     p.wait_for_selector(".status.ok >> text=Online")
-    assert gespeichert[-1]["verfuegbarkeit"] == [{"was": "z:Ananas", "datum": "2026-10-21"}], gespeichert[-1]
+    assert gespeichert[-1]["verfuegbarkeit"] == [{"was": "z:Ananas"}], gespeichert[-1]
     assert not fehler, fehler
     ctx.close()
 

@@ -1071,7 +1071,9 @@ ZETTEL_JS = r'''
         var bopt=BEI.filter(function(b){if(b===va.bei)return true;var z=variante(x.k,{bei:b});return z&&VAR[z].bei===b;});
         if(bopt.length>1){var bg=el('div','z-gruppe');bg.appendChild(el('span','z-gruppe-titel',L('Beilage','Side')));var bw=el('div','z-chips');
           bopt.forEach(function(b){var zb=b===va.bei?null:variante(x.k,{bei:b});
-            bw.appendChild(knopf(L(BEI_NAME[b][0],BEI_NAME[b][1])+(zb?preisDiff(x,zb):''),{'class':'chip','aria-pressed':String(b===va.bei),'data-bei':b,'data-u':x.u}));});
+            var spB=zb?(sperreZettel(zb)||sperre(zb,abh.laden||null,0,jetzt().min)):null;
+            var kb2=knopf(L(BEI_NAME[b][0],BEI_NAME[b][1])+(spB?' – '+sperrText(spB):zb?preisDiff(x,zb):''),{'class':'chip'+(spB?' chip-aus':''),'aria-pressed':String(b===va.bei),'data-bei':b,'data-u':x.u});
+            if(spB)kb2.disabled=true;bw.appendChild(kb2);});
           bg.appendChild(bw);box.appendChild(bg);}
       }
       var su=variante(x.k,{sup:va.sup?0:1},true);
@@ -2005,6 +2007,9 @@ def sperrgruppen():
     gruppen["halloumi"] = zutat("Halloumi", "Halloumi", lambda n, a, b: "Halloumi" in a + " " + b)
     gruppen["schnitzel-fleisch"] = zutat("Schnitzel", "Schnitzel", lambda n, a, b: "Schnitzel" in a)
     gruppen["fisch"] = zutat("Fisch", "Fish", lambda n, a, b: "Fisch" in a)
+    # Beilagen als Zutat (Chef-App „Zutaten“): Gerichte damit sind dann nicht zu haben
+    gruppen["z:Pommes"] = zutat("Pommes", "Fries", lambda n, a, b: "Pommes" in a + " " + b)
+    gruppen["z:Reis"] = zutat("Reis", "Rice", lambda n, a, b: "Reis" in b.replace("Reisen", ""))
     return gruppen
 
 
