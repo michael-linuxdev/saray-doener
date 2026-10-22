@@ -457,5 +457,7 @@
 "Unknown code.": "Tento kód neznáme.",
 "e.g. ELBTAL{n}": "např. ELBTAL{n}",
 "{x}: {p} % off": "{x}: sleva {p} %",
-" – left out": " – vynecháno"
+" – left out": " – vynecháno",
+"Online orders paused until {zeit} – please call": "Online objednávky pozastaveny do {zeit} – zavolejte",
+"Very busy right now: online orders for today are paused until {n}. Please call or pre-order for another day.": "Právě je velmi rušno: online objednávky na dnešek jsou pozastaveny do {n}. Zavolejte prosím nebo objednejte předem na jiný den."
 }

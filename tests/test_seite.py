@@ -639,11 +639,11 @@ def allergene_und_barzahlung(b, url):
     s.schliessen()
 
 
-def bauen_mit(anp, ordner):
+def bauen_mit(anp, ordner, env=None):
     datei = pathlib.Path(ordner) / "anp.json"
     datei.write_text(json.dumps(anp))
     out = subprocess.run([sys.executable, "-c", f"import build; build.bauen(ziel={str(pathlib.Path(ordner) / 'docs')!r})"],
-                         cwd=REPO, env=dict(os.environ, SARAY_ANPASSUNGEN=str(datei), SARAY_HEUTE="2026-10-21"), capture_output=True, text=True)
+                         cwd=REPO, env=dict(os.environ, SARAY_ANPASSUNGEN=str(datei), SARAY_HEUTE="2026-10-21", **(env or {})), capture_output=True, text=True)
     assert out.returncode == 0 and "WARNUNG" not in out.stdout, out.stdout + out.stderr
     handler = functools.partial(Leise, directory=str(pathlib.Path(ordner) / "docs"))
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -1073,7 +1073,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 32 offen" in p.text_content(".checkliste summary")
+    assert "von 34 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1439,7 +1439,7 @@ def chef_app_tuerkisch(b, url):
     p.click('nav.tabs [data-tab="karte"]')
     assert "Pizza Margherita" in p.text_content("#app"), "Gerichtsnamen bleiben deutsch"
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "Hediye çekleri" in p.text_content("#app") and "32 / 32 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    assert "Hediye çekleri" in p.text_content("#app") and "34 / 34 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
     p.click("#sprache")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
@@ -1454,7 +1454,8 @@ def firmen_code(b, url):
     h = hashlib.sha256(b"saray|ELBTAL10").hexdigest()
     with tempfile.TemporaryDirectory() as tmp:
         srv, u = bauen_mit({"codes": [{"h": h, "name": "Elbtal GmbH", "prozent": 10, "zeit_ab": "11:00", "zeit_bis": "14:00", "bis": "2027-10-21"}],
-                            "aktionen": [{"name": "Dürüm 6 €", "von": "2026-10-20", "bis": "2026-10-25", "preise": {"50": ["6,00"]}}]}, tmp)
+                            "aktionen": [{"name": "Dürüm 6 €", "von": "2026-10-20", "bis": "2026-10-25", "preise": {"50": ["6,00"]}}]}, tmp,
+                           env={"SARAY_FIRMEN_CODES": "1"})
         s = Seite(b, u, zeit=datetime.datetime.fromisoformat("2026-10-21T12:00:00+02:00"))
         s.p.click("#nr-1 .plus")
         s.p.click("#nr-50 .plus")
@@ -1498,6 +1499,8 @@ def bald_feierabend(b, url):
 def chef_app_codes_und_viel_los(b, url):
     import hashlib
     gespeichert = []
+    tmp0 = tempfile.TemporaryDirectory()
+    srv0, url = bauen_mit({}, tmp0.name, env={"SARAY_FIRMEN_CODES": "1"})
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
     p.click("#viel-los")
     assert "wieder aus" in p.text_content("#viel-los")
@@ -1516,6 +1519,8 @@ def chef_app_codes_und_viel_los(b, url):
     assert d["hinweise"][0]["von"] == "2026-10-21" and "viel los" in d["hinweise"][0]["text"], d["hinweise"]
     assert not fehler, fehler
     ctx.close()
+    srv0.shutdown()
+    tmp0.cleanup()
     with tempfile.TemporaryDirectory() as tmp:
         srv, u = bauen_mit(d, tmp)
         srv.shutdown()
@@ -1546,6 +1551,46 @@ def kueche_bedarf_und_jahr(b, url):
     assert zahlen == ["2", "28,00 €", "4", "14,00 €"], zahlen
     inhalt = k.text_content("#jahr-inhalt")
     assert "Türkisch" in inhalt and "Döner Kebap" in inhalt and "18 Uhr" in inhalt, inhalt
+    ctx.close()
+
+
+
+@test
+def firmen_codes_standardmaessig_aus(b, url):
+    s = Seite(b, url)
+    assert s.js("!document.getElementById('code-box')"), "Firmen-Code-Feld sichtbar, obwohl abgeschaltet"
+    s.schliessen()
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
+    p.click('nav.tabs [data-tab="mehr"]')
+    assert p.locator("h3", has_text="Firmen-Codes").count() == 0 and p.locator("#c-anlegen").count() == 0
+    ctx.close()
+
+
+@test
+def bestell_pause(b, url):
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"pause": {"freital": {"bis": "2026-10-21T18:15"}}}, tmp)
+        s = Seite(b, u)
+        assert s.js("document.querySelector('[data-status=freital] .status-text').textContent") == "Online-Bestellungen pausiert bis 18:15 Uhr – anrufen geht"
+        s.p.click("#nr-1 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click("[data-laden=freital]")
+        assert s.p.is_hidden("#zettel-whatsapp") and "pausiert" in s.p.text_content("#pause-hinweis")
+        s.p.select_option("#abhol-tag", "2026-10-22")
+        assert s.p.is_visible("#zettel-whatsapp") and s.p.is_hidden("#pause-hinweis")
+        s.p.click("[data-laden=altenberg]")
+        s.p.select_option("#abhol-tag", "2026-10-21")
+        assert s.p.is_visible("#zettel-whatsapp")
+        s.schliessen()
+        srv.shutdown()
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.click("[data-pause='freital-30']")
+    assert "pausiert bis 18:15 Uhr" in p.text_content("#app")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    assert gespeichert[-1]["pause"] == {"freital": {"bis": "2026-10-21T18:15"}}, gespeichert[-1]
+    assert not fehler, fehler
     ctx.close()
 
 

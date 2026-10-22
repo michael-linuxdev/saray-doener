@@ -437,5 +437,16 @@
 ". Bitte jetzt notieren – er wird nicht gespeichert.": ". Lütfen şimdi not edin – kaydedilmez.",
 "Code für ": "Kod: ",
 "Eine Website oder zwei?": "Tek site mi, iki site mi?",
-"Eine gemeinsame Seite für Freital und Altenberg (so wie jetzt) oder je Laden eine eigene Seite mit eigener Adresse, eigenem Impressum und eigener Chef-App?": "Freital ve Altenberg için ortak tek bir site mi (şimdiki gibi), yoksa her şube için kendi adresi, künyesi ve şef uygulaması olan ayrı bir site mi?"
+"Eine gemeinsame Seite für Freital und Altenberg (so wie jetzt) oder je Laden eine eigene Seite mit eigener Adresse, eigenem Impressum und eigener Chef-App?": "Freital ve Altenberg için ortak tek bir site mi (şimdiki gibi), yoksa her şube için kendi adresi, künyesi ve şef uygulaması olan ayrı bir site mi?",
+"Ideen für später": "Sonraki fikirler",
+"Stammkarte digital": "Dijital sadakat kartı",
+"Nach 10 Bestellungen über die Seite ein Getränk gratis – ohne Konto, gezählt auf dem Handy des Gastes; die Küchenansicht zeigt „10. Bestellung – Getränk gratis“. Machen wir das?": "Siteden 10 siparişten sonra bir içecek bedava – hesap olmadan, misafirin telefonunda sayılır; mutfak görünümü „10. sipariş – içecek bedava“ gösterir. Yapalım mı?",
+"Firmen-Rabattcodes": "Firma indirim kodları",
+"Vorerst abgeschaltet. Nur mit Kontrolle an der Theke sinnvoll (Bestellung auf Firmennamen oder Firmenausweis).": "Şimdilik kapalı. Sadece tezgâhta kontrolle anlamlı (firma adına sipariş veya firma kimliği).",
+"⏸ Bestell-Pause": "⏸ Sipariş molası",
+"Stoppt Online-Bestellungen für heute, wenn der Laden voll ist. Anrufen und Vorbestellen für andere Tage geht weiter. Wirkt nach dem Speichern in ca. 2–3 Minuten.": "Dükkân doluyken bugünkü online siparişleri durdurur. Telefonla sipariş ve başka günler için ön sipariş devam eder. Kaydettikten yakl. 2–3 dakika sonra etkili olur.",
+" · pausiert bis ": " · mola: ",
+"Pause beenden": "Molayı bitir",
+"Pause {n} Min.": "{n} dk. mola",
+"Preisschilder Getränke (8 je A4)": "İçecek fiyat etiketleri (A4'te 8 adet)"
 }

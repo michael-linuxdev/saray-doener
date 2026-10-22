@@ -494,5 +494,7 @@
 "Unknown code.": "لا نعرف هذا الرمز.",
 "e.g. ELBTAL{n}": "مثلًا ELBTAL{n}",
 "{x}: {p} % off": "{x}: خصم {p}٪",
-" – left out": " – بدون"
+" – left out": " – بدون",
+"Online orders paused until {zeit} – please call": "الطلبات عبر الإنترنت متوقفة حتى {zeit} – يرجى الاتصال",
+"Very busy right now: online orders for today are paused until {n}. Please call or pre-order for another day.": "مزدحم جدًا الآن: الطلبات عبر الإنترنت لليوم متوقفة حتى {n}. يرجى الاتصال أو الطلب المسبق ليوم آخر."
 }

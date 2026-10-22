@@ -460,5 +460,7 @@
 "Unknown code.": "Bu kodu tanımıyoruz.",
 "e.g. ELBTAL{n}": "örn. ELBTAL{n}",
 "{x}: {p} % off": "{x}: %{p} indirim",
-" – left out": " – çıkarıldı"
+" – left out": " – çıkarıldı",
+"Online orders paused until {zeit} – please call": "Online siparişler {zeit}'a kadar durduruldu – lütfen arayın",
+"Very busy right now: online orders for today are paused until {n}. Please call or pre-order for another day.": "Şu an çok yoğun: bugünkü online siparişler {n}'a kadar durduruldu. Lütfen arayın veya başka bir gün için ön sipariş verin."
 }

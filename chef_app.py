@@ -236,6 +236,8 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
   if(o.verfuegbarkeit)o.verfuegbarkeit=o.verfuegbarkeit.filter(function(r){return !r.datum||r.datum>=t;});
   if(o.hinweise)o.hinweise=o.hinweise.filter(function(h){return h.bis>=t;});
   if(o.codes)o.codes=o.codes.filter(function(c){return !c.bis||c.bis>=t;});
+  if(o.pause){var hm=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
+    Object.keys(o.pause).forEach(function(l){var p=o.pause[l];if(!p||p.bis<t+'T'+hm)delete o.pause[l];});}
   if(o.aktionen)o.aktionen=o.aktionen.filter(function(a){return a.bis>=t;});
   if(o.feiertage_ok)o.feiertage_ok=o.feiertage_ok.filter(function(d){return d>=t;});
   if(o.sonderzeiten)Object.keys(o.sonderzeiten).forEach(function(d){if(d<t||!Object.keys(o.sonderzeiten[d]).length)delete o.sonderzeiten[d];});
@@ -247,7 +249,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 }
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
-  ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
+  ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste','pause'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
   if((a.winter||'')!==(b.winter||''))n++;
   ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok','gutscheine','codes'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
@@ -317,6 +319,16 @@ function wartezeitKarte(){
       return el('button',{'aria-pressed':String(akt===m),text:m?'+'+m+' Min.':'Normal',onclick:function(){
         ANP.wartezeit=ANP.wartezeit||{};if(m)ANP.wartezeit[l.id]={datum:t,min:m};else delete ANP.wartezeit[l.id];zeichnen();}});})));
   });
+  /* Bestell-Pause: Online-Bestellungen für heute kurz stoppen (Anrufen geht weiter) */
+  var jetztHM=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date()),jm=(+jetztHM.slice(0,2))*60+(+jetztHM.slice(3));
+  k.appendChild(el('h3',{style:'margin-top:16px',text:'⏸ Bestell-Pause'}));
+  k.appendChild(el('p',{class:'hinweis',text:'Stoppt Online-Bestellungen für heute, wenn der Laden voll ist. Anrufen und Vorbestellen für andere Tage geht weiter. Wirkt nach dem Speichern in ca. 2–3 Minuten.'}));
+  STD.laeden.forEach(function(l){var p=(ANP.pause||{})[l.id],aktiv=p&&p.bis.slice(0,10)===t&&p.bis.slice(11)>jetztHM;
+    k.appendChild(el('p',{style:'margin:10px 0 4px;font-weight:700',text:l.name+(aktiv?' · pausiert bis '+p.bis.slice(11)+' Uhr':'')}));
+    var kn=[30,60].map(function(m){return el('button',{class:'knopf klein','data-pause':l.id+'-'+m,text:'Pause '+m+' Min.',onclick:function(){
+      var z=Math.min(jm+m,23*60+59);ANP.pause=ANP.pause||{};ANP.pause[l.id]={bis:t+'T'+('0'+Math.floor(z/60)).slice(-2)+':'+('0'+z%60).slice(-2)};zeichnen();}});});
+    if(aktiv)kn.push(el('button',{class:'knopf klein rot',text:'Pause beenden',onclick:function(){delete ANP.pause[l.id];zeichnen();}}));
+    k.appendChild(el('div',{class:'reihe'},kn));});
   /* Ein Tipp für volle Tage (Neuschnee in Altenberg, Ferien, Fußball): Hinweis oben + Wartezeit */
   var VIEL='Heute ist viel los – bitte vorbestellen, dann ist Ihr Essen pünktlich fertig.';
   var an=(ANP.hinweise||[]).some(function(h){return h.text===VIEL&&h.von===t;});
@@ -833,7 +845,7 @@ function mehrTab(){
   zahlenKarte();
   googleKarte();
   gutscheinKarte();
-  codeKarte();
+  if(STD.firmen_codes)codeKarte();
   ladenSeitenKarte();
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
@@ -856,7 +868,7 @@ function mehrTab(){
   /* Drucken */
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
     el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}),
-      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)']],
+      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)'],['../druck/preisschilder.pdf','Preisschilder Getränke (8 je A4)']],
       [].concat.apply([],(JSON.parse(ALT).aktionen||[]).filter(function(a){return a.bis>=heute();}).map(function(a){return [['../druck/'+slug(a.name,a.von)+'.pdf','Plakat: '+a.name+' (A4)'],
         ['../druck/'+slug(a.name,a.von)+'.png','Bild zum Posten: '+a.name]];})))
       .map(function(d){return el('a',{class:'knopf',href:d[0],target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:d[1]});}))]));
@@ -996,6 +1008,10 @@ CHECKLISTE = [
         ["google", "Google-Unternehmensprofil", "Verwaltungszugriff, Link zur Seite, Zeiten angleichen, Barzahlung eintragen", 0],
         ["fotos", "Fotos der Gerichte", "Dürfen wir Fotos machen? Wann passt es?", 0],
     ]],
+    ["Ideen für später", [
+        ["stammkarte", "Stammkarte digital", "Nach 10 Bestellungen über die Seite ein Getränk gratis – ohne Konto, gezählt auf dem Handy des Gastes; die Küchenansicht zeigt „10. Bestellung – Getränk gratis“. Machen wir das?", 0],
+        ["firmen-codes", "Firmen-Rabattcodes", "Vorerst abgeschaltet. Nur mit Kontrolle an der Theke sinnvoll (Bestellung auf Firmennamen oder Firmenausweis).", 0],
+    ]],
     ["Laufende Kosten", [
         ["domain-kosten", "Domain", "Wer zahlt die Domain, auf wen läuft sie?", 0],
         ["github-pro", "GitHub Pro", "Rund 4 US-$ im Monat. Nötig, damit Seite und Chef-Daten in einem privaten Repository liegen können. Wer zahlt?", 0],
@@ -1003,7 +1019,7 @@ CHECKLISTE = [
 ]
 
 
-def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="", fotos=()):
+def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="", fotos=(), firmen_codes=False):
     """Schreibt docs/chef/: index.html, standard.json, manifest.webmanifest."""
     import anpassungen as ANP
     from menu import GRUNDSTAND
@@ -1020,6 +1036,7 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="",
         "zaehler": zaehler,
         "seite": f"https://{cname}/",
         "fotos": sorted(fotos),
+        "firmen_codes": bool(firmen_codes),
         "laeden": [{"id": s["id"], "name": s["name"], "strasse": s["strasse"], "plz": s["plz"], "ort": s["ort"], "tel": s["tel"],
                     "bar": bool(s.get("bar")), "extra": s.get("extra", ""),
                     "zeiten": {str(t): [zeit(v[0]), zeit(v[1])] for t, v in s["zeiten_standard"].items()}} for s in standorte],

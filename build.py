@@ -90,7 +90,11 @@ import datetime as _dt0, zoneinfo as _zi0
 HEUTE_ISO = os.environ.get("SARAY_HEUTE") or _dt0.datetime.now(_zi0.ZoneInfo("Europe/Berlin")).date().isoformat()  # Tests setzen das Datum fest
 SONDER = ANP.sonderzeiten(ANPASSUNGEN.get("sonderzeiten"), WARNUNGEN.append, HEUTE_ISO)
 WARTE = ANP.wartezeit(ANPASSUNGEN.get("wartezeit"), WARNUNGEN.append)
-CODES = ANP.codes(ANPASSUNGEN.get("codes"), WARNUNGEN.append, HEUTE_ISO)
+PAUSE = ANP.pause(ANPASSUNGEN.get("pause"), WARNUNGEN.append)
+CODE_BOX = '      <details class="code-box" id="code-box" hidden><summary data-en="Company code?">Firmen-Code?</summary>\n        <form id="code-form" class="code-form"><input id="code-feld" type="text" autocomplete="off" autocapitalize="characters" aria-label="Firmen-Code" data-en-aria="Company code" placeholder="z. B. ELBTAL10" data-en-ph="e.g. ELBTAL10">\n        <button type="submit" class="knopf knopf-linie" data-en="Apply">Einlösen</button></form>\n        <p class="code-info" id="code-info" role="status" hidden></p><button type="button" class="link-knopf" id="code-weg" hidden data-en="Remove code">Code entfernen</button></details>'
+# Firmen-Rabattcodes: vorerst abgeschaltet (Missbrauch lässt sich ohne Server nicht verhindern). Einschalten: True
+FIRMEN_CODES = os.environ.get("SARAY_FIRMEN_CODES") == "1"
+CODES = ANP.codes(ANPASSUNGEN.get("codes"), WARNUNGEN.append, HEUTE_ISO) if FIRMEN_CODES else []
 WINTER = {"modus": ANP.winter(ANPASSUNGEN.get("winter"), WARNUNGEN.append), "von": ANP.WINTER_STANDARD[0], "bis": ANP.WINTER_STANDARD[1]}
 
 for s in STANDORTE:
@@ -1470,6 +1474,9 @@ ZETTEL_JS = r'''
     verfHinweis.hidden=!kf;document.getElementById('zettel-kopieren').disabled=!!kf;
     verfHinweis.textContent=kf===1?L('Ein Gericht ist zur gewählten Zeit nicht zu haben. Bitte oben ändern.','One dish is not available at the chosen time. Please change it above.')
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
+    var pzz=abh.laden&&pause(abh.laden),heuteZ=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off===0,ph=document.getElementById('pause-hinweis');
+    if(ph){ph.hidden=!(pzz&&heuteZ);if(pzz&&heuteZ)ph.textContent=L('Gerade sehr viel los: Online-Bestellungen für heute sind bis '+uhr(pzz)+' pausiert. Bitte anrufen oder für einen anderen Tag vorbestellen.','Very busy right now: online orders for today are paused until '+zeitText(pzz,true)+'. Please call or pre-order for another day.');}
+    if(pzz&&heuteZ)nr=null;
     if(kf||sammel)nr=null;
     waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!!kf||!Object.keys(WA).length;
     if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText(true));
@@ -1802,10 +1809,15 @@ JS = r"""
       });
     });
   }
+  /* Bestell-Pause aus der Chef-App: bis zur Uhrzeit keine Online-Bestellungen für heute (Vorbestellen für andere Tage geht) */
+  var PAUSE=%%PAUSE%%;
+  function pause(ort){var p=PAUSE[ort],n=jetzt();if(!p||p.bis.slice(0,10)!==isoTag(0))return null;var m=minAus(p.bis.slice(11));return n.min<m?m:null;}
   function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP!=='de')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
     var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
+    var pz=pause(ort);
+    if(h&&n.min>=h[0]&&n.min<h[1]&&pz)return{offen:true,bald:true,text:SP==='de'?'Online-Bestellungen pausiert bis '+uhr(pz)+' – anrufen geht':fuell(T('Online orders paused until {zeit} – please call'),{zeit:uhr(pz)})};
     if(h&&n.min>=h[0]&&n.min<h[1]-30)return{offen:true,text:(SP==='de'?'Jetzt geöffnet, bis '+uhr(h[1]):fuell(T('Open now, until {zeit}'),{zeit:uhr(h[1])}))+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
     if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,bald:true,text:SP==='de'?'Bald Feierabend – geöffnet bis '+uhr(h[1]):fuell(T('Closing soon – open until {zeit}'),{zeit:uhr(h[1])})};
     if(h&&n.min<h[0])return{offen:false,text:SP==='de'?'Geschlossen, öffnet heute um '+uhr(h[0]):fuell(T('Closed, opens today at {zeit}'),{zeit:uhr(h[0])})};
@@ -2209,10 +2221,7 @@ SEITE = r"""<!doctype html>
     <div class="zettel-voll">
       <ul class="zettel-liste" id="zettel-liste"></ul>
       <p class="zettel-summe-zeile"><span data-en="Total">Summe</span><b id="zettel-summe"></b></p>
-      <details class="code-box" id="code-box" hidden><summary data-en="Company code?">Firmen-Code?</summary>
-        <form id="code-form" class="code-form"><input id="code-feld" type="text" autocomplete="off" autocapitalize="characters" aria-label="Firmen-Code" data-en-aria="Company code" placeholder="z. B. ELBTAL10" data-en-ph="e.g. ELBTAL10">
-        <button type="submit" class="knopf knopf-linie" data-en="Apply">Einlösen</button></form>
-        <p class="code-info" id="code-info" role="status" hidden></p><button type="button" class="link-knopf" id="code-weg" hidden data-en="Remove code">Code entfernen</button></details>
+%%CODE_BOX%%
       <fieldset class="abholung">
         <legend data-en="Pickup">Abholung</legend>
         <div class="z-chips" role="group" aria-label="Laden" data-en-aria="Shop">%%LADEN_CHIPS%%</div>
@@ -2232,6 +2241,7 @@ SEITE = r"""<!doctype html>
         <a class="knopf knopf-whatsapp" id="zettel-whatsapp" href="#" target="_blank" rel="noopener">%%WA_ICON%%<span data-en="Order via WhatsApp">Per WhatsApp bestellen</span></a>
         <p class="wa-gesendet" id="wa-gesendet" role="status" hidden></p>
         <p class="abhol-hinweis verf-hinweis" id="verf-hinweis" hidden></p>
+        <p class="abhol-hinweis" id="pause-hinweis" hidden></p>
         <p class="abhol-hinweis" id="wa-hinweis" hidden data-en="Choose the shop above to order via WhatsApp.">Bitte oben den Laden wählen, dann können Sie per WhatsApp bestellen.</p>
         %%ZETTEL_ANRUF%%
         <button type="button" class="knopf knopf-linie" id="zettel-kopieren"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7.5h14V12"/></svg><span data-en="Share order">Bestellung teilen</span></button>
@@ -2465,7 +2475,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             .replace("%%ADR%%", json.dumps({st["id"]: f'Saray Döner, {st["strasse"]}, {st["plz"]} {st["ort"]}' for st in STANDORTE}, ensure_ascii=False))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
-            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%WINTER%%", json.dumps(WINTER)).replace("%%CODES%%", json.dumps(CODES, ensure_ascii=False))
+            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%WINTER%%", json.dumps(WINTER)).replace("%%CODES%%", json.dumps(CODES, ensure_ascii=False)).replace("%%PAUSE%%", json.dumps(PAUSE))
             .replace("%%SPRACHEN%%", json.dumps(SP.LISTE, ensure_ascii=False))
             .replace("%%DICTS%%", json.dumps(SP.woerterbuecher(), ensure_ascii=False) if einzeln else "{}")
             .replace("%%BEILAGEN%%", json.dumps(BEILAGEN)).replace("%%BEILAGE_RABATT%%", str(BEILAGE_RABATT))
@@ -2489,6 +2499,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%GRUPPEN_TEL%%": "".join(f'<a class="knopf knopf-linie" href="tel:{st["tel_href"]}">{TEL_ICON}{e(st["name"])}: {e(st["tel"])}</a>' for st in STANDORTE),
         "%%GRUPPEN_BAR%%": ('<p class="bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
         "%%ZETTEL_BAR%%": ('<p class="zettel-bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
+        "%%CODE_BOX%%": CODE_BOX if FIRMEN_CODES else "",
         "%%ALLERGENE%%": allergene_html(),
         "%%DATENSCHUTZ%%": datenschutz_html(),
         "%%FUSS_ORTE%%": FUSS_ORTE,
@@ -2568,7 +2579,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         (aus / "CNAME").write_text(CNAME + "\n")
     (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\nDisallow: /kueche/\nDisallow: /tv/\n"))
     import chef_app
-    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS)
+    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS, FIRMEN_CODES)
     # Bildschirm im Laden (tv/) und Küchenansicht (kueche/)
     import laden_seiten
     tv_gruppen = [{"id": g["id"], "titel": g["titel"], "abschnitte": [{

@@ -17,7 +17,7 @@ EXTRA = ["({ort} only)", "We would love a Google review for Saray Döner {ort}."
          "Busy right now: earliest pickup in about {n} minutes.", "{n} dishes are not available at the chosen time. Please change them above.",
          "choose {n} more toppings", "Closed, opens tomorrow at {zeit}", "Closed, opens on {tag} at {zeit}", "Closed, opens today at {zeit}",
          "Open now, until {zeit}", "{list} sauce", "no {list}", "with {list}", "option {x}", "extra {x}", "and", "not available", "fries", "rice",
-         "no sauce", "choose option", "choose topping", "No.", "Train {n} → pickup {n}", "Closing soon – open until {zeit}", "Closing soon: last pickup today at {n}.", "Code {x} does not apply to this pickup.", "{x}: {p} % off"]
+         "no sauce", "choose option", "choose topping", "No.", "Train {n} → pickup {n}", "Closing soon – open until {zeit}", "Closing soon: last pickup today at {n}.", "Code {x} does not apply to this pickup.", "{x}: {p} % off", "Online orders paused until {zeit} – please call", "Very busy right now: online orders for today are paused until {n}. Please call or pre-order for another day."]
 
 
 def woerterbuecher():

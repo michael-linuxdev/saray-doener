@@ -354,3 +354,17 @@ def codes(liste, warnen, heute):
             x["za"], x["zb"] = _min(za), _min(zb)
         ok.append(x)
     return ok
+
+
+PAUSE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$")
+
+
+def pause(d, warnen):
+    """Bestell-Pause je Laden: {"freital": {"bis": "2026-10-22T19:30"}} – bis dahin keine Online-Bestellungen für heute."""
+    ok = {}
+    for laden, p in d.items() if isinstance(d, dict) else []:
+        if laden in LAEDEN and isinstance(p, dict) and isinstance(p.get("bis"), str) and PAUSE_RE.match(p["bis"]):
+            ok[laden] = {"bis": p["bis"]}
+        else:
+            warnen(f"Bestell-Pause {laden}: {p!r} ungültig")
+    return ok

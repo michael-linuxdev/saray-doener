@@ -97,10 +97,15 @@
       });
     });
   }
+  /* Bestell-Pause aus der Chef-App: bis zur Uhrzeit keine Online-Bestellungen für heute (Vorbestellen für andere Tage geht) */
+  var PAUSE={};
+  function pause(ort){var p=PAUSE[ort],n=jetzt();if(!p||p.bis.slice(0,10)!==isoTag(0))return null;var m=minAus(p.bis.slice(11));return n.min<m?m:null;}
   function warte(ort){var w=WARTE[ort];return w&&w.datum===isoTag(0)?w.min:0;}
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP!=='de')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
     var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
+    var pz=pause(ort);
+    if(h&&n.min>=h[0]&&n.min<h[1]&&pz)return{offen:true,bald:true,text:SP==='de'?'Online-Bestellungen pausiert bis '+uhr(pz)+' – anrufen geht':fuell(T('Online orders paused until {zeit} – please call'),{zeit:uhr(pz)})};
     if(h&&n.min>=h[0]&&n.min<h[1]-30)return{offen:true,text:(SP==='de'?'Jetzt geöffnet, bis '+uhr(h[1]):fuell(T('Open now, until {zeit}'),{zeit:uhr(h[1])}))+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
     if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,bald:true,text:SP==='de'?'Bald Feierabend – geöffnet bis '+uhr(h[1]):fuell(T('Closing soon – open until {zeit}'),{zeit:uhr(h[1])})};
     if(h&&n.min<h[0])return{offen:false,text:SP==='de'?'Geschlossen, öffnet heute um '+uhr(h[0]):fuell(T('Closed, opens today at {zeit}'),{zeit:uhr(h[0])})};
@@ -737,6 +742,9 @@
     verfHinweis.hidden=!kf;document.getElementById('zettel-kopieren').disabled=!!kf;
     verfHinweis.textContent=kf===1?L('Ein Gericht ist zur gewählten Zeit nicht zu haben. Bitte oben ändern.','One dish is not available at the chosen time. Please change it above.')
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
+    var pzz=abh.laden&&pause(abh.laden),heuteZ=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off===0,ph=document.getElementById('pause-hinweis');
+    if(ph){ph.hidden=!(pzz&&heuteZ);if(pzz&&heuteZ)ph.textContent=L('Gerade sehr viel los: Online-Bestellungen für heute sind bis '+uhr(pzz)+' pausiert. Bitte anrufen oder für einen anderen Tag vorbestellen.','Very busy right now: online orders for today are paused until '+zeitText(pzz,true)+'. Please call or pre-order for another day.');}
+    if(pzz&&heuteZ)nr=null;
     if(kf||sammel)nr=null;
     waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!!kf||!Object.keys(WA).length;
     if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText(true));

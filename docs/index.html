@@ -31,7 +31,7 @@
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Restaurant", "@id": "https://xn--saraydner-57a.de/#ort-freital", "name": "Saray Döner Freital", "url": "https://xn--saraydner-57a.de/", "telephone": "+49 351 27676660", "servesCuisine": ["Döner", "Pizza", "Türkisch"], "priceRange": "€", "paymentAccepted": "Cash", "currenciesAccepted": "EUR", "hasMenu": "https://xn--saraydner-57a.de/#speisekarte", "address": {"@type": "PostalAddress", "streetAddress": "Dresdner Str. 87", "postalCode": "01705", "addressLocality": "Freital", "addressCountry": "DE"}, "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "10:00", "closes": "22:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Saturday", "Sunday"], "opens": "11:00", "closes": "22:00"}]}, {"@type": "Restaurant", "@id": "https://xn--saraydner-57a.de/#ort-altenberg", "name": "Saray Döner Altenberg", "url": "https://xn--saraydner-57a.de/", "telephone": "+49 35056 23674", "servesCuisine": ["Döner", "Pizza", "Türkisch"], "priceRange": "€", "paymentAccepted": "Cash", "currenciesAccepted": "EUR", "hasMenu": "https://xn--saraydner-57a.de/#speisekarte", "address": {"@type": "PostalAddress", "streetAddress": "Dresdner Str. 23", "postalCode": "01773", "addressLocality": "Altenberg", "addressCountry": "DE"}, "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], "opens": "10:00", "closes": "21:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Sunday"], "opens": "11:00", "closes": "21:00"}]}]}</script>
 </head>
 <body class="vorschau">
-<div class="vorschau-band" role="note"><strong data-en="DRAFT">ENTWURF</strong> <span data-en="Not yet the official website of Saray Döner. Orders go to a test number.">Noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span> <small class="stand">Stand 22.10. 23:28</small></div>
+<div class="vorschau-band" role="note"><strong data-en="DRAFT">ENTWURF</strong> <span data-en="Not yet the official website of Saray Döner. Orders go to a test number.">Noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span> <small class="stand">Stand 22.10. 23:37</small></div>
 <a class="skip" href="#speisekarte" data-en="Skip to menu">Zur Speisekarte springen</a>
 
 <header class="kopf-band" id="oben">
@@ -557,10 +557,7 @@
     <div class="zettel-voll">
       <ul class="zettel-liste" id="zettel-liste"></ul>
       <p class="zettel-summe-zeile"><span data-en="Total">Summe</span><b id="zettel-summe"></b></p>
-      <details class="code-box" id="code-box" hidden><summary data-en="Company code?">Firmen-Code?</summary>
-        <form id="code-form" class="code-form"><input id="code-feld" type="text" autocomplete="off" autocapitalize="characters" aria-label="Firmen-Code" data-en-aria="Company code" placeholder="z. B. ELBTAL10" data-en-ph="e.g. ELBTAL10">
-        <button type="submit" class="knopf knopf-linie" data-en="Apply">Einlösen</button></form>
-        <p class="code-info" id="code-info" role="status" hidden></p><button type="button" class="link-knopf" id="code-weg" hidden data-en="Remove code">Code entfernen</button></details>
+
       <fieldset class="abholung">
         <legend data-en="Pickup">Abholung</legend>
         <div class="z-chips" role="group" aria-label="Laden" data-en-aria="Shop"><button type="button" class="chip" data-laden="freital" aria-pressed="false">Freital</button><button type="button" class="chip" data-laden="altenberg" aria-pressed="false">Altenberg</button></div>
@@ -580,6 +577,7 @@
         <a class="knopf knopf-whatsapp" id="zettel-whatsapp" href="#" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3 2.5 6 6 6.5l1.2-1.4-2-1-.9.8c-1-.4-1.9-1.3-2.3-2.3l.8-.9-1-2L9.4 8.4"/></svg><span data-en="Order via WhatsApp">Per WhatsApp bestellen</span></a>
         <p class="wa-gesendet" id="wa-gesendet" role="status" hidden></p>
         <p class="abhol-hinweis verf-hinweis" id="verf-hinweis" hidden></p>
+        <p class="abhol-hinweis" id="pause-hinweis" hidden></p>
         <p class="abhol-hinweis" id="wa-hinweis" hidden data-en="Choose the shop above to order via WhatsApp.">Bitte oben den Laden wählen, dann können Sie per WhatsApp bestellen.</p>
         <a class="knopf knopf-dunkel" data-anruf="freital" href="tel:+4935127676660"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span data-en="Call Freital: 0351 27676660">Freital anrufen: 0351 27676660</span></a><a class="knopf knopf-dunkel" data-anruf="altenberg" href="tel:+493505623674"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span data-en="Call Altenberg: 035056 23674">Altenberg anrufen: 035056 23674</span></a>
         <button type="button" class="knopf knopf-linie" id="zettel-kopieren"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7.5h14V12"/></svg><span data-en="Share order">Bestellung teilen</span></button>
@@ -589,6 +587,6 @@
     </div>
   </section>
 </div>
-<script src="js/main.js?v=42fbe478"></script>
+<script src="js/main.js?v=84b9fb2e"></script>
 </body>
 </html>

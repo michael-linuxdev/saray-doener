@@ -494,5 +494,7 @@
 "e.g. ELBTAL{n}": "напр. ELBTAL{n}",
 "{x}: {p} % off": "{x}: скидка {p} %",
 "OK": "OK",
-" – left out": " – убрано"
+" – left out": " – убрано",
+"Online orders paused until {zeit} – please call": "Онлайн-заказы приостановлены до {zeit} – позвоните",
+"Very busy right now: online orders for today are paused until {n}. Please call or pre-order for another day.": "Сейчас очень много заказов: онлайн-заказы на сегодня приостановлены до {n}. Позвоните или сделайте предзаказ на другой день."
 }

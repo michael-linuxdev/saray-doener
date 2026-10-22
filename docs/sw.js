@@ -1,5 +1,5 @@
 /* Saray Döner – offline-Speicher. Seite und status.json: erst Netz, sonst Speicher. Rest: erst Speicher. */
-var V='saray-3ecd5a4f63',VOR=["./", "css/style.css?v=74d6c633", "js/main.js?v=42fbe478", "fonts/Roboto-Slab-Bold.sub.woff", "fonts/Roboto-Slab-Regular.sub.woff", "fonts/lato-bold.sub.woff", "fonts/lato-normal.sub.woff", "img/saray-koch-kopf.svg", "img/saray-koch.svg"];
+var V='saray-1e2a6ef30f',VOR=["./", "css/style.css?v=74d6c633", "js/main.js?v=84b9fb2e", "fonts/Roboto-Slab-Bold.sub.woff", "fonts/Roboto-Slab-Regular.sub.woff", "fonts/lato-bold.sub.woff", "fonts/lato-normal.sub.woff", "img/saray-koch-kopf.svg", "img/saray-koch.svg"];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(function(c){return c.addAll(VOR);}).then(function(){return self.skipWaiting();}));});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==V&&k.indexOf('saray-')===0;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
 self.addEventListener('fetch',function(e){

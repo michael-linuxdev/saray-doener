@@ -4,7 +4,8 @@
     python3 druck.py [ziel]   ->  <ziel>/flyer.pdf, <ziel>/aufsteller-<laden>.pdf   (Standard: docs/druck)
 
 Aktions-Plakate: je laufender/kommender Sonderaktion ein A4-Plakat (aktion-<von>-<name>.pdf) und ein Bild 1080 × 1080 (….png).
-Allergenmappe (allergenmappe.pdf) für die Theke, Aufkleber-Bogen (aufkleber.pdf, 24 × 70 × 37 mm) für Tüten.
+Allergenmappe (allergenmappe.pdf) für die Theke, Aufkleber-Bogen (aufkleber.pdf, 24 × 70 × 37 mm) für Tüten,
+Preisschilder (preisschilder.pdf, 8 × 105 × 74 mm je A4) für alle Getränke.
 Flyer: A4 quer, beidseitig, Wickelfalz (3 Spalten je Seite). Außen: Innenklappe | Rückseite | Titel.
 Der GitHub-Workflow erzeugt die PDFs nach jedem Bauen; die Chef-App verlinkt sie unter „Mehr → Drucken“.
 Braucht Playwright mit Chromium.
@@ -269,6 +270,48 @@ Bei Fragen sprechen Sie uns bitte an.</p>
 </body></html>"""
 
 
+def preisschilder_html():
+    """Preisschilder für Theke und Kühlschrank: alle Getränke, 8 Schilder je A4 (105 × 74 mm), mit Schnittlinien.
+    Preise und Kennzeichnung immer aktuell (inkl. Änderungen aus der Chef-App)."""
+    kopf = uri("maskottchen", "saray-koch-kopf.svg")
+    schilder = []
+    for gr in build.GRUPPEN:
+        if gr["id"] != "getraenke":
+            continue
+        for ab in gr["abschnitte"]:
+            kz = KENNZEICHNUNG.get(ab["titel"])
+            pfand = ab.get("info", "") if "Pfand" in ab.get("info", "") else ""
+            for g in ab["gerichte"]:
+                preis = g[3][0]
+                euro, cent = preis.split(",")
+                kenn = ""
+                if kz:
+                    teile = []
+                    if kz[0]:
+                        teile.append("Inhaltsstoffe " + kz[0].replace(",", ", "))
+                    if kz[1]:
+                        teile.append("Allergene " + kz[1].replace(",", ", "))
+                    kenn = " · ".join(teile)
+                schilder.append(f'<div class="s"><div class="k"><img src="{kopf}" alt=""><span>{e(ab["titel"])}</span></div>'
+                                f'<b class="n">{e(g[1])}</b><span class="d">{e(g[2])}</span>'
+                                f'<span class="p">{euro}<sup>{cent}</sup> €</span>'
+                                f'<span class="f">{e(pfand)}{" · " if pfand and kenn else ""}{e(kenn)}</span></div>')
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A4;margin:0}}*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{width:210mm;display:grid;grid-template-columns:repeat(2,105mm);grid-auto-rows:74.25mm;font-family:Text;color:#3A1531;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.s{{position:relative;display:flex;flex-direction:column;padding:6mm 7mm 5mm;border:.2mm dashed #b9a9b4;background:#FFD21F;break-inside:avoid;overflow:hidden}}
+.s:nth-child(8n+1){{break-before:page}}
+.k{{display:flex;align-items:center;gap:2mm;font:700 3.2mm Text;text-transform:uppercase;letter-spacing:.06em}}.k img{{width:8mm;height:8mm}}
+.n{{font:700 8mm/1.08 Slab;margin-top:3mm}}.d{{font-size:4mm;margin-top:1mm}}
+.p{{margin-top:auto;font:700 17mm/1 Slab;color:#C8381E}}.p sup{{font-size:.5em;vertical-align:.75em;margin-left:.5mm}}
+.f{{font-size:2.8mm;margin-top:1.5mm;min-height:3mm}}
+</style></head><body>{"".join(schilder)}</body></html>"""
+
+
 def aufkleber_html():
     """A4-Bogen mit 24 Etiketten 70 × 37 mm (z. B. Zweckform 3474) für Tüten: QR-Code zur Speisekarte."""
     qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
@@ -364,7 +407,7 @@ async def main(ziel):
             await pg.screenshot(path=str(HIER / "druck" / "gruppen-vorschau.png"))
         await pg.close()
         tmp.unlink()
-        for name, inhalt in (("allergenmappe", allergenmappe_html()), ("aufkleber", aufkleber_html())):
+        for name, inhalt in (("allergenmappe", allergenmappe_html()), ("aufkleber", aufkleber_html()), ("preisschilder", preisschilder_html())):
             tmp = HIER / f"_{name}.html"
             tmp.write_text(inhalt, encoding="utf-8")
             pg = await b.new_page(viewport={"width": 794, "height": 1123})
