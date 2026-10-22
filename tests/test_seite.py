@@ -1423,6 +1423,108 @@ def chef_app_tuerkisch(b, url):
     ctx.close()
 
 
+
+@test
+def firmen_code(b, url):
+    import hashlib
+    h = hashlib.sha256(b"saray|ELBTAL10").hexdigest()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"codes": [{"h": h, "name": "Elbtal GmbH", "prozent": 10, "zeit_ab": "11:00", "zeit_bis": "14:00", "bis": "2027-10-21"}],
+                            "aktionen": [{"name": "Dürüm 6 €", "von": "2026-10-20", "bis": "2026-10-25", "preise": {"50": ["6,00"]}}]}, tmp)
+        s = Seite(b, u, zeit=datetime.datetime.fromisoformat("2026-10-21T12:00:00+02:00"))
+        s.p.click("#nr-1 .plus")
+        s.p.click("#nr-50 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click("[data-laden=freital]")
+        s.p.click("#code-box summary")
+        s.p.fill("#code-feld", "falsch1")
+        s.p.press("#code-feld", "Enter")
+        s.p.wait_for_selector("#code-info:not([hidden])")
+        assert "kennen wir nicht" in s.p.text_content("#code-info")
+        s.p.fill("#code-feld", "elbtal 10")
+        s.p.press("#code-feld", "Enter")
+        s.p.wait_for_function("document.getElementById('code-info').textContent.indexOf('Elbtal')>-1")
+        assert s.p.text_content("#code-info").startswith("Elbtal GmbH: 10 % Rabatt (−0,70 €)"), s.p.text_content("#code-info")
+        assert s.p.text_content("#zettel-summe") == "12,30 €"
+        text = s.wa_text()
+        assert "Firmen-Code: ELBTAL10 (Elbtal GmbH) – 10 % Rabatt: −0,70 €" in text and "Summe: 12,30 €" in text, text
+        s.p.select_option("#abhol-zeit", "heute, 15:00 Uhr")
+        assert "gilt nicht" in s.p.text_content("#code-info")
+        text = s.wa_text()
+        assert "Firmen-Code" not in text and "Summe: 13,00 €" in text, text
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
+def bald_feierabend(b, url):
+    s = Seite(b, url, zeit=datetime.datetime.fromisoformat("2026-10-21T21:35:00+02:00"))
+    assert s.js("document.querySelector('[data-status=freital]').getAttribute('data-offen')") == "bald"
+    assert s.js("document.querySelector('[data-status=freital] .status-text').textContent") == "Bald Feierabend – geöffnet bis 22 Uhr"
+    s.schliessen()
+    s = Seite(b, url, zeit=datetime.datetime.fromisoformat("2026-10-21T21:00:00+02:00"))
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    assert "Bald Feierabend: letzte Abholung heute um 21:45 Uhr." in s.p.text_content("#abhol-hinweis")
+    s.schliessen()
+
+
+@test
+def chef_app_codes_und_viel_los(b, url):
+    import hashlib
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.click("#viel-los")
+    assert "wieder aus" in p.text_content("#viel-los")
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.fill("#c-firma", "Elbtal GmbH")
+    assert p.input_value("#c-code") == "ELBTALGM10"
+    p.click("#c-anlegen")
+    p.click(".blatt >> text=Notiert")
+    assert "Elbtal GmbH · 10 % · EL…10 · 11:00–14:00 Uhr" in p.text_content("#app")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert d["codes"] == [{"h": hashlib.sha256(b"saray|ELBTALGM10").hexdigest(), "name": "Elbtal GmbH", "prozent": 10, "hinweis": "EL…10",
+                           "bis": "2027-10-21", "zeit_ab": "11:00", "zeit_bis": "14:00"}], d["codes"]
+    assert d["wartezeit"] == {"freital": {"datum": "2026-10-21", "min": 15}, "altenberg": {"datum": "2026-10-21", "min": 15}}, d["wartezeit"]
+    assert d["hinweise"][0]["von"] == "2026-10-21" and "viel los" in d["hinweise"][0]["text"], d["hinweise"]
+    assert not fehler, fehler
+    ctx.close()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit(d, tmp)
+        srv.shutdown()
+
+
+@test
+def kueche_bedarf_und_jahr(b, url):
+    import base64
+    def link(o):
+        return url + "kueche/#b=" + base64.urlsafe_b64encode(json.dumps(o).encode()).decode().rstrip("=")
+    ctx = b.new_context(viewport={"width": 1180, "height": 900}, locale="de-DE", timezone_id="Europe/Berlin")
+    k = ctx.new_page()
+    k.clock.set_fixed_time(ZEIT)
+    a = {"v": 1, "nr": "A11", "l": "freital", "z": "heute, 18:00 Uhr", "t": "2026-10-21T18:00", "m": "Ali", "s": 2100, "sp": "tr", "a": 1792600000000,
+         "p": [[2, "Nr. 1 Döner Kebap", "", "", "", 1400], [1, "Nr. 50 Dürüm", "", "", "", 700]]}
+    c = dict(a, nr="C22", t="2026-10-21T20:00", s=700, sp="de", a=1792600000001, p=[[1, "Nr. 1 Döner Kebap", "", "", "", 700]])
+    k.goto(link(a))
+    k.goto(link(c))
+    k.wait_for_selector("#bedarf:not([hidden])")
+    k.evaluate("document.getElementById('bedarf').open=true")
+    zeilen = k.evaluate("[...document.querySelectorAll('#bedarf-liste tr')].map(r=>r.textContent)")
+    assert zeilen == ["2×Nr. 1 Döner Kebap", "1×Nr. 50 Dürüm"], zeilen   # nächste Stunde: nur A11
+    k.click("#bedarf-wahl >> text=Alle offenen")
+    zeilen = k.evaluate("[...document.querySelectorAll('#bedarf-liste tr')].map(r=>r.textContent)")
+    assert zeilen[0] == "3×Nr. 1 Döner Kebap", zeilen
+    k.evaluate("document.getElementById('jahr').open=true")
+    zahlen = k.evaluate("[...document.querySelectorAll('#jahr .zahlen b')].map(x=>x.textContent)")
+    assert zahlen == ["2", "28,00 €", "4", "14,00 €"], zahlen
+    inhalt = k.text_content("#jahr-inhalt")
+    assert "Türkisch" in inhalt and "Döner Kebap" in inhalt and "18 Uhr" in inhalt, inhalt
+    ctx.close()
+
+
 @test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""

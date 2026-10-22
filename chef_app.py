@@ -235,6 +235,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
   var t=heute();
   if(o.verfuegbarkeit)o.verfuegbarkeit=o.verfuegbarkeit.filter(function(r){return !r.datum||r.datum>=t;});
   if(o.hinweise)o.hinweise=o.hinweise.filter(function(h){return h.bis>=t;});
+  if(o.codes)o.codes=o.codes.filter(function(c){return !c.bis||c.bis>=t;});
   if(o.aktionen)o.aktionen=o.aktionen.filter(function(a){return a.bis>=t;});
   if(o.feiertage_ok)o.feiertage_ok=o.feiertage_ok.filter(function(d){return d>=t;});
   if(o.sonderzeiten)Object.keys(o.sonderzeiten).forEach(function(d){if(d<t||!Object.keys(o.sonderzeiten[d]).length)delete o.sonderzeiten[d];});
@@ -248,7 +249,7 @@ function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
   ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
   if((a.winter||'')!==(b.winter||''))n++;
-  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok','gutscheine'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
+  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok','gutscheine','codes'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
 function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
   document.getElementById('speichern-text').textContent=(n===1?'1 Änderung':n+' Änderungen')+' – noch nicht gespeichert';}
@@ -316,6 +317,15 @@ function wartezeitKarte(){
       return el('button',{'aria-pressed':String(akt===m),text:m?'+'+m+' Min.':'Normal',onclick:function(){
         ANP.wartezeit=ANP.wartezeit||{};if(m)ANP.wartezeit[l.id]={datum:t,min:m};else delete ANP.wartezeit[l.id];zeichnen();}});})));
   });
+  /* Ein Tipp für volle Tage (Neuschnee in Altenberg, Ferien, Fußball): Hinweis oben + Wartezeit */
+  var VIEL='Heute ist viel los – bitte vorbestellen, dann ist Ihr Essen pünktlich fertig.';
+  var an=(ANP.hinweise||[]).some(function(h){return h.text===VIEL&&h.von===t;});
+  k.appendChild(el('div',{class:'reihe',style:'margin-top:14px'},[el('button',{class:'knopf'+(an?'':' gelb'),id:'viel-los',text:an?'„Viel los“ wieder aus':'🔥 Heute viel los (Hinweis + 15 Min.)',onclick:function(){
+    if(an){ANP.hinweise=(ANP.hinweise||[]).filter(function(h){return !(h.text===VIEL&&h.von===t);});
+      STD.laeden.forEach(function(l){var w=(ANP.wartezeit||{})[l.id];if(w&&w.datum===t&&w.min===15)delete ANP.wartezeit[l.id];});}
+    else{ANP.hinweise=(ANP.hinweise||[]).concat([{text:VIEL,en:'Busy today – please pre-order so your food is ready on time.',von:t,bis:t}]);
+      ANP.wartezeit=ANP.wartezeit||{};STD.laeden.forEach(function(l){if(LADEN==='alle'||LADEN===l.id){var w=ANP.wartezeit[l.id];if(!w||w.datum!==t||w.min<15)ANP.wartezeit[l.id]={datum:t,min:15};}});}
+    zeichnen();}})]));
   return k;
 }
 function heuteTab(){
@@ -783,6 +793,39 @@ function gutscheinKarte(){
   k.appendChild(erg);
   app.appendChild(k);
 }
+/* ---------- Firmen-Codes: Rabatt für Betriebe; im Repo nur der Prüfwert, der Code wird beim Anlegen einmal angezeigt ---------- */
+function codeHash(c){return crypto.subtle.digest('SHA-256',new TextEncoder().encode('saray|'+c)).then(function(b){
+  return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});}
+function codeKarte(){
+  var k=el('div',{class:'karte'},[el('h3',{text:'🏢 Firmen-Codes'}),
+    el('p',{class:'hinweis',text:'Rabatt für Betriebe in der Nähe, z. B. 10 % beim Mittagessen. Der Gast gibt den Code beim Bestellen ein; der Rabatt gilt nicht auf Aktionspreise und steht in der WhatsApp-Nachricht. Den Code nach dem Anlegen notieren – er wird nicht gespeichert.'})]);
+  (ANP.codes||[]).forEach(function(c,i){
+    var t=c.name+' · '+c.prozent+' %'+(c.hinweis?' · '+c.hinweis:'')+(c.zeit_ab?' · '+c.zeit_ab+'–'+c.zeit_bis+' Uhr':'')+(c.laden?' · nur '+(c.laden==='freital'?'Freital':'Altenberg'):'')+(c.bis?' · bis '+gsDatum(c.bis):'');
+    k.appendChild(el('div',{class:'tag'},[el('span',{style:'flex:1;font-weight:700',text:t}),el('button',{class:'knopf klein rot',text:'Löschen',onclick:function(){
+      frage('Code für „'+c.name+'“ löschen?','Löschen').then(function(j){if(j){ANP.codes.splice(i,1);zeichnen();}});}})]));});
+  var firma=el('input',{type:'text',id:'c-firma',maxlength:'60',placeholder:'Firma, z. B. Elbtal GmbH'}),code=el('input',{type:'text',id:'c-code',maxlength:'16',placeholder:'Code, z. B. ELBTAL10',autocapitalize:'characters'});
+  var prozent=10,mittag=true,laden='',pb=el('div',{class:'wahl'}),mb=el('div',{class:'wahl'}),lb=el('div',{class:'wahl'}),fehler=el('p',{class:'fehler',hidden:true}),neuCode=el('div');
+  firma.addEventListener('input',function(){if(!code.dataset.selbst)code.value=(firma.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,8)||'')+(firma.value?prozent:'');});
+  code.addEventListener('input',function(){code.dataset.selbst='1';});
+  function z(){pb.textContent='';mb.textContent='';lb.textContent='';
+    [5,10,15,20].forEach(function(p){pb.appendChild(el('button',{'aria-pressed':String(prozent===p),'data-c-prozent':p,text:p+' %',onclick:function(){prozent=p;if(!code.dataset.selbst&&firma.value)code.value=firma.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,8)+p;z();}}));});
+    [[true,'Nur mittags 11–14 Uhr'],[false,'Ganztags']].forEach(function(o){mb.appendChild(el('button',{'aria-pressed':String(mittag===o[0]),text:o[1],onclick:function(){mittag=o[0];z();}}));});
+    [['','Beide Läden'],['freital','Freital'],['altenberg','Altenberg']].forEach(function(o){lb.appendChild(el('button',{'aria-pressed':String(laden===o[0]),text:o[1],onclick:function(){laden=o[0];z();}}));});}
+  z();
+  [el('label',{for:'c-firma',text:'Neuer Code: Firma'}),firma,el('label',{for:'c-code',text:'Code (Buchstaben und Ziffern)'}),code,el('label',{text:'Rabatt'}),pb,el('label',{text:'Wann?'}),mb,el('label',{text:'Wo?'}),lb,fehler,
+   el('div',{class:'reihe',style:'margin-top:12px'},[el('button',{class:'knopf voll',id:'c-anlegen',text:'Code anlegen',onclick:function(){
+     var c=code.value.toUpperCase().replace(/[^A-Z0-9]/g,''),n=firma.value.trim();fehler.hidden=true;
+     if(!n){fehler.textContent='Bitte die Firma eintragen.';fehler.hidden=false;return;}
+     if(c.length<4){fehler.textContent='Der Code braucht mindestens 4 Buchstaben oder Ziffern.';fehler.hidden=false;return;}
+     codeHash(c).then(function(h){if((ANP.codes||[]).some(function(x){return x.h===h;})){fehler.textContent='Diesen Code gibt es schon.';fehler.hidden=false;return;}
+       var x={h:h,name:n,prozent:prozent,hinweis:c.slice(0,2)+'…'+c.slice(-2),bis:(+heute().slice(0,4)+1)+heute().slice(4)};
+       if(mittag){x.zeit_ab='11:00';x.zeit_bis='14:00';}if(laden)x.laden=laden;
+       ANP.codes=(ANP.codes||[]).concat([x]);zeichnen();
+       status('Code '+c+' angelegt – notieren, der Firma geben, dann speichern.','ok',8000);
+       frage('Code für '+n+': '+c+'  ('+prozent+' %'+(mittag?', 11–14 Uhr':'')+'). Bitte jetzt notieren – er wird nicht gespeichert.','Notiert');});}})])]
+   .forEach(function(n){k.appendChild(n);});
+  app.appendChild(k);
+}
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
   checklisteKarte();
@@ -790,6 +833,7 @@ function mehrTab(){
   zahlenKarte();
   googleKarte();
   gutscheinKarte();
+  codeKarte();
   ladenSeitenKarte();
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
@@ -824,10 +868,10 @@ function mehrTab(){
   app.appendChild(el('div',{class:'karte gefahr'},[
     el('p',{class:'hinweis',style:'margin:0 0 6px',text:'Nur benutzen, wenn Sie sicher sind.'}),
     el('h3',{text:'Standard wiederherstellen'}),
-    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“ und die Gutscheine bleiben erhalten.'}),
+    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“, Gutscheine und Firmen-Codes bleiben erhalten.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot voll',text:'Alles auf Standard zurücksetzen',onclick:function(){
       frage('Wirklich alle Änderungen löschen und den Standard wiederherstellen?','Ja, zurücksetzen').then(function(j){if(!j)return;
-        var cl=ANP.checkliste,gs=ANP.gutscheine;ANP={};if(cl)ANP.checkliste=cl;if(gs)ANP.gutscheine=gs;speichern('Chef-App: Standard wiederhergestellt');});}})]),
+        var cl=ANP.checkliste,gs=ANP.gutscheine,cd=ANP.codes;ANP={};if(cl)ANP.checkliste=cl;if(gs)ANP.gutscheine=gs;if(cd)ANP.codes=cd;speichern('Chef-App: Standard wiederhergestellt');});}})]),
     el('h3',{style:'margin-top:18px',text:'Zugang auf diesem Gerät'}),
     el('p',{class:'hinweis',text:'Der Zugang ist nur auf diesem Gerät gespeichert. Nach dem Abmelden braucht es einen neuen Zugangslink von Michael.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot',text:'Auf diesem Gerät abmelden',onclick:function(){frage('Zugang auf diesem Gerät löschen?','Abmelden').then(function(j){if(j){try{localStorage.removeItem(TK);}catch(e){}location.reload();}});}})])]));

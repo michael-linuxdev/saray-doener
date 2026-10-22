@@ -325,3 +325,32 @@ def winter(wert, warnen):
         return wert or "auto"
     warnen(f"Wintersaison {wert!r} ungültig – automatisch")
     return "auto"
+
+
+CODE_H_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def codes(liste, warnen, heute):
+    """Firmen-Rabattcodes: [{"h": sha256("saray|CODE"), "name", "prozent", "laden"?, "zeit_ab"/"zeit_bis"?, "bis"?, "hinweis"?}].
+    Der Code selbst steht nirgends – nur sein Prüfwert. Abgelaufene fallen weg."""
+    ok = []
+    for c in liste if isinstance(liste, list) else []:
+        if not (isinstance(c, dict) and isinstance(c.get("h"), str) and CODE_H_RE.match(c["h"]) and _text_ok(c.get("name"), 60, leer=False)
+                and isinstance(c.get("prozent"), int) and 1 <= c["prozent"] <= 50):
+            warnen(f"Firmen-Code {c!r} ungültig")
+            continue
+        if c.get("bis") and not (isinstance(c["bis"], str) and DATUM_RE.match(c["bis"])):
+            warnen(f"Firmen-Code {c['name']!r}: Datum ungültig")
+            continue
+        if c.get("bis") and c["bis"] < heute:
+            continue
+        x = {"h": c["h"], "name": c["name"].strip(), "prozent": c["prozent"]}
+        if c.get("bis"):
+            x["bis"] = c["bis"]
+        if c.get("laden") in LAEDEN:
+            x["laden"] = c["laden"]
+        za, zb = c.get("zeit_ab"), c.get("zeit_bis")
+        if isinstance(za, str) and isinstance(zb, str) and ZEIT_RE.match(za) and ZEIT_RE.match(zb) and _min(za) < _min(zb):
+            x["za"], x["zb"] = _min(za), _min(zb)
+        ok.append(x)
+    return ok

@@ -480,5 +480,18 @@
 "🚆 Taking the train? Pickup matched to your departure:": "🚆 Едете поездом? Время получения под отправление:",
 "Train {n} → pickup {n}": "Поезд {n} → получение {n}",
 "Gift vouchers": "Подарочные сертификаты",
-"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "на день рождения, Рождество или в знак благодарности – у прилавка в обоих кафе."
+"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "на день рождения, Рождество или в знак благодарности – у прилавка в обоих кафе.",
+"Apply": "Применить",
+"Closing soon – open until {zeit}": "Скоро закрываемся – открыто до {zeit}",
+"Closing soon: last pickup today at {n}.": "Скоро закрываемся: последнее получение сегодня в {n}.",
+"Code cannot be checked here.": "Код здесь проверить нельзя.",
+"Code expired.": "Срок действия кода истёк.",
+"Code {x} does not apply to this pickup.": "Код {x} не действует для этого получения.",
+"Company code": "Код компании",
+"Company code?": "Код компании?",
+"Remove code": "Удалить код",
+"Unknown code.": "Такой код нам неизвестен.",
+"e.g. ELBTAL{n}": "напр. ELBTAL{n}",
+"{x}: {p} % off": "{x}: скидка {p} %",
+"OK": "OK"
 }

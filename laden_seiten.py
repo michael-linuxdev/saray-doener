@@ -245,7 +245,7 @@ body{padding:0 0 40px}
 .pos li.ok{opacity:.4;text-decoration:line-through}
 .pos li .hk{margin-left:auto;width:30px;height:30px;flex:none;border:3px solid var(--tinte);border-radius:8px;display:grid;place-items:center;font-weight:700}
 .pos li.ok .hk::after{content:"✓"}
-.summe{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem}
+.summe{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem}.summe.rabatt{font-size:.95rem;color:var(--gruen)}
 .knoepfe{display:flex;gap:8px}
 .knopf{flex:1;min-height:48px;border-radius:12px;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font-weight:700;cursor:pointer}
 .knopf.voll{background:var(--tinte);color:var(--gelb)}
@@ -256,6 +256,12 @@ details.erledigt{margin:8px 16px}
 .zahlen{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.zahlen div{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:10px 14px;min-width:130px}
 .zahlen b{display:block;font:700 1.6rem "Saray Slab",serif}.zahlen span{font-size:.9rem;color:var(--tinte-weich)}
 .klein{font-size:.85rem;color:var(--tinte-weich)}
+.balken{display:grid;grid-template-columns:4.5em 1fr 4em;gap:6px 10px;align-items:center;max-width:560px;margin:10px 0}
+.balken i{display:block;height:16px;border-radius:8px;background:var(--tinte);min-width:2px}
+.balken span:nth-child(3n){text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.bedarf table{border-collapse:collapse;margin:8px 0;background:#fff;border-radius:12px;overflow:hidden;min-width:280px}
+.bedarf td{padding:8px 12px;border-bottom:1px solid var(--linie);font-size:1.1rem}.bedarf td.z{text-align:right;font:700 1.3rem "Saray Slab",serif}
+body.jahr-druck>*:not(#jahr){display:none!important}
 .knoepfe.zwei{margin-top:-2px}
 .knopf.ok{border-color:var(--gruen);color:var(--gruen)}
 .gesendet{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--tinte);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:9;max-width:90vw}
@@ -268,7 +274,11 @@ details.erledigt .bon{opacity:.6}
   .liste{display:block;padding:0}
   .bon.druck{border:0;box-shadow:none;width:72mm;padding:0;font-size:12pt;break-after:page}
   .pos li.ok{opacity:1;text-decoration:none}.pos li .hk{display:none}
-  @page{size:80mm auto;margin:4mm}
+  body.jahr-druck .bon.druck{display:none}
+  body.jahr-druck #jahr{display:block!important;margin:0}body.jahr-druck #jahr summary,body.jahr-druck .knoepfe,body.jahr-druck #jahr-wahl{display:none}
+  .bon.druck{page:bon}
+  @page bon{size:80mm auto;margin:4mm}
+  @page{size:A4;margin:15mm}
 }
 </style>
 </head>
@@ -276,11 +286,17 @@ details.erledigt .bon{opacity:.6}
 <header class="kopf"><h1>Küche · Saray Döner</h1><div class="chips" id="filter"></div></header>
 <p class="leer" id="leer" hidden>Noch keine offenen Bestellungen. Sie erscheinen hier, wenn Sie in der WhatsApp-Nachricht eines Gastes auf den Link
 „Für die Küche“ tippen. Die Bestellungen bleiben auf diesem Gerät gespeichert, sortiert nach Abholzeit. Antippen hakt ein Gericht ab.</p>
+<details class="erledigt bedarf" id="bedarf" hidden><summary id="bedarf-titel">Was brauchen wir?</summary>
+<div class="chips hell" id="bedarf-wahl"></div><table id="bedarf-liste"></table></details>
 <div class="liste" id="offen"></div>
 <details class="erledigt" id="erledigt-box" hidden><summary id="erledigt-titel">Erledigt</summary><div class="liste" id="erledigt"></div></details>
 <details class="erledigt abschluss" id="abschluss"><summary>Tagesabschluss</summary>
 <div class="chips hell" id="abschluss-tag"></div><div id="abschluss-inhalt"></div>
 <p class="klein">Nur Bestellungen, die auf diesem Gerät geöffnet wurden (die letzten 7 Tage). Ersetzt keine Kasse und kein Kassenbuch.</p></details>
+<details class="erledigt abschluss" id="jahr"><summary>Jahresrückblick</summary>
+<div class="chips hell" id="jahr-wahl"></div><div id="jahr-inhalt"></div>
+<p class="klein">Zählt jede Bestellung, die auf diesem Gerät geöffnet wurde (ohne Testbestellungen), ab dem ersten Öffnen. Bleibt gut ein Jahr auf dem Gerät.</p>
+<div class="knoepfe" style="max-width:320px"><button class="knopf" type="button" id="jahr-drucken">Rückblick drucken</button></div></details>
 <p class="gesendet" id="gesendet" role="status" hidden></p>
 <script>
 (function(){
@@ -295,10 +311,18 @@ function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').r
   if(!o||typeof o.nr!=='string'||!Array.isArray(o.p))return null;
   o.p=o.p.filter(Array.isArray).slice(0,60).map(function(x){return {q:Math.max(1,Math.min(99,+x[0]||1)),n:String(x[1]||'').slice(0,120),w:String(x[2]||'').slice(0,300),f:String(x[3]||'').slice(0,40),x:String(x[4]||'').slice(0,200),c:+x[5]||0,ok:false};});
   return {id:o.nr+'-'+(+o.a||0),nr:o.nr.slice(0,8),l:LAEDEN[o.l]?o.l:'',z:String(o.z||'').slice(0,60),t:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(o.t||'')?o.t:'',
-    m:String(o.m||'').slice(0,40),s:+o.s||0,p:o.p,sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
+    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
 /* Link aus WhatsApp: Bestellung übernehmen (doppelt geöffnet = einmal gespeichert) */
 var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
-if(m){var o=lesen(m[1]);if(o&&!liste.some(function(x){return x.id===o.id;}))liste.push(o);speichern();history.replaceState(null,'',location.pathname+location.search);}
+/* Jahresstatistik: pro Tag Bestellungen, Summe, Gerichte, Uhrzeiten, Sprachen, Laden (ohne Tests) */
+var JK='saray-kueche-jahr',JAHR={};try{JAHR=JSON.parse(localStorage.getItem(JK)||'{}')||{};}catch(e){JAHR={};}
+function jahrZaehlen(x){if(x.test)return;var d=x.t?x.t.slice(0,10):new Date(x.a).toISOString().slice(0,10),j=JAHR[d]=JAHR[d]||{n:0,s:0,g:{},h:{},sp:{},l:{}};
+  j.n++;j.s+=x.s;x.p.forEach(function(p){var n=p.n.replace(/\s*\(.*\)$/,'');j.g[n]=(j.g[n]||0)+p.q;});
+  if(x.t){var h=x.t.slice(11,13);j.h[h]=(j.h[h]||0)+1;}j.sp[x.sp]=(j.sp[x.sp]||0)+1;if(x.l)j.l[x.l]=(j.l[x.l]||0)+1;
+  var grenze=new Date(Date.now()-400*864e5).toISOString().slice(0,10);Object.keys(JAHR).forEach(function(k){if(k<grenze)delete JAHR[k];});
+  try{localStorage.setItem(JK,JSON.stringify(JAHR));}catch(e){}}
+function aufnehmen(o){if(o&&!liste.some(function(x){return x.id===o.id;})){liste.push(o);jahrZaehlen(o);}}
+if(m){aufnehmen(lesen(m[1]));speichern();history.replaceState(null,'',location.pathname+location.search);}
 /* alte Bestellungen (älter als 3 Tage) aufräumen */
 liste=liste.filter(function(x){return x&&Array.isArray(x.p)&&Date.now()-x.a<7*864e5;});speichern();
 /* Antworten an den Gast in seiner Sprache (Sprache der Website beim Bestellen) */
@@ -338,6 +362,7 @@ function bon(x){
     function um(){p.ok=!p.ok;x.neu=0;speichern();zeichnen();}
     li.addEventListener('click',um);li.addEventListener('keydown',function(ev){if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();um();}});ul.appendChild(li);});
   b.appendChild(ul);
+  if(x.r){var rz=el('div','summe rabatt');rz.appendChild(el('span',null,'Firmen-Rabatt'+(x.rc?' ('+x.rc+')':'')));rz.appendChild(el('span',null,'−'+euro(x.r)));b.appendChild(rz);}
   var s=el('div','summe');s.appendChild(el('span',null,'Summe (bar)'));s.appendChild(el('span',null,euro(x.s)));b.appendChild(s);
   var kn=el('div','knoepfe'),dr=el('button','knopf','Bon drucken'),fe=el('button','knopf voll',x.fertig?'Zurückholen':'Fertig ✓');dr.type=fe.type='button';
   dr.addEventListener('click',function(){document.querySelectorAll('.bon.druck').forEach(function(y){y.classList.remove('druck');});b.classList.add('druck');window.print();});
@@ -358,7 +383,48 @@ function zeichnen(){
   var e=document.getElementById('erledigt');e.textContent='';fertig.forEach(function(x){e.appendChild(bon(x));});
   document.getElementById('erledigt-box').hidden=!fertig.length;document.getElementById('erledigt-titel').textContent='Erledigt ('+fertig.length+')';
   document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';
-  abschluss(sicht);}
+  abschluss(sicht);bedarf(offen);jahrZeigen();}
+var bedarfWahl='60';
+function bedarf(offen){
+  var box=document.getElementById('bedarf');box.hidden=!offen.length;if(!offen.length)return;
+  var w=document.getElementById('bedarf-wahl');w.textContent='';
+  [['60','Nächste Stunde'],['alle','Alle offenen']].forEach(function(o){var b=el('button','chip',o[1]);b.type='button';b.setAttribute('aria-pressed',String(bedarfWahl===o[0]));
+    b.addEventListener('click',function(){bedarfWahl=o[0];zeichnen();});w.appendChild(b);});
+  var zahl={};offen.filter(function(x){return bedarfWahl==='alle'||rest(x)<=60;}).forEach(function(x){x.p.forEach(function(p){if(!p.ok)zahl[p.n]=(zahl[p.n]||0)+p.q;});});
+  var t=document.getElementById('bedarf-liste');t.textContent='';
+  var ks=Object.keys(zahl).sort(function(a,b){return zahl[b]-zahl[a]||a.localeCompare(b);});
+  ks.forEach(function(n){var tr=el('tr');tr.appendChild(el('td','z',zahl[n]+'×'));tr.appendChild(el('td',null,n));t.appendChild(tr);});
+  if(!ks.length){var tr=el('tr');tr.appendChild(el('td',null,'Nichts mehr offen.'));t.appendChild(tr);}
+  document.getElementById('bedarf-titel').textContent='Was brauchen wir? ('+ks.reduce(function(s,n){return s+zahl[n];},0)+' Gerichte)';}
+var jahrWahl=String(new Date().getFullYear());
+function balken(box,paare,format){var max=Math.max.apply(null,paare.map(function(p){return p[1];}).concat([1])),g=el('div','balken');
+  paare.forEach(function(p){g.appendChild(el('span',null,p[0]));var i=el('i');i.style.width=(100*p[1]/max)+'%';var s2=el('span');s2.appendChild(i);g.appendChild(s2);g.appendChild(el('span',null,format?format(p[1]):String(p[1])));});box.appendChild(g);}
+function jahrZeigen(){
+  var jahre=[];Object.keys(JAHR).forEach(function(d){var y=d.slice(0,4);if(jahre.indexOf(y)<0)jahre.push(y);});
+  if(jahre.indexOf(jahrWahl)<0)jahre.push(jahrWahl);jahre.sort().reverse();
+  var w=document.getElementById('jahr-wahl');w.textContent='';jahre.forEach(function(y){var b=el('button','chip',y);b.type='button';b.setAttribute('aria-pressed',String(y===jahrWahl));
+    b.addEventListener('click',function(){jahrWahl=y;zeichnen();});w.appendChild(b);});
+  var inh=document.getElementById('jahr-inhalt');inh.textContent='';
+  var tage=Object.keys(JAHR).filter(function(d){return d.slice(0,4)===jahrWahl;}),n=0,sum=0,g={},h={},sp={},l={},mon={},wt={};
+  tage.forEach(function(d){var j=JAHR[d];n+=j.n;sum+=j.s;mon[d.slice(5,7)]=(mon[d.slice(5,7)]||0)+j.n;var w2=new Date(d+'T12:00:00').getDay();wt[w2]=(wt[w2]||0)+j.n;
+    [[g,j.g],[h,j.h],[sp,j.sp],[l,j.l]].forEach(function(q){Object.keys(q[1]).forEach(function(k){q[0][k]=(q[0][k]||0)+q[1][k];});});});
+  inh.appendChild(el('h3',null,'Saray Döner '+jahrWahl));
+  if(!n){inh.appendChild(el('p','klein','Für '+jahrWahl+' noch keine Bestellungen auf diesem Gerät.'));return;}
+  var gerichte=Object.keys(g).reduce(function(s,k){return s+g[k];},0),zahlen=el('div','zahlen');
+  [[n,'Bestellungen'],[euro(sum),'Summe (bar)'],[gerichte,'Gerichte'],[euro(Math.round(sum/n)),'pro Bestellung']].forEach(function(z){var d=el('div');d.appendChild(el('b',null,String(z[0])));d.appendChild(el('span',null,z[1]));zahlen.appendChild(d);});
+  inh.appendChild(zahlen);
+  var MON=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],WT=['So','Mo','Di','Mi','Do','Fr','Sa'];
+  inh.appendChild(el('h4',null,'Bestellungen je Monat'));balken(inh,MON.map(function(m2,i){return [m2,mon[('0'+(i+1)).slice(-2)]||0];}));
+  inh.appendChild(el('h4',null,'Am meisten bestellt'));balken(inh,Object.keys(g).sort(function(a,b){return g[b]-g[a];}).slice(0,10).map(function(k){return [k.replace(/^Nr\. \S+ /,''),g[k]];}),function(v){return v+'×';});
+  inh.querySelectorAll('.balken')[1].style.gridTemplateColumns='minmax(8em,14em) 1fr 4em';
+  inh.appendChild(el('h4',null,'Wochentage'));balken(inh,[1,2,3,4,5,6,0].map(function(d){return [WT[d],wt[d]||0];}));
+  var hs=Object.keys(h).sort();if(hs.length){inh.appendChild(el('h4',null,'Abholzeiten'));balken(inh,hs.map(function(k){return [(+k)+' Uhr',h[k]];}));}
+  var SPN={de:'Deutsch',en:'Englisch',tr:'Türkisch',cs:'Tschechisch',ru:'Russisch',ar:'Arabisch'};
+  inh.appendChild(el('h4',null,'Sprache der Gäste'));balken(inh,Object.keys(sp).sort(function(a,b){return sp[b]-sp[a];}).map(function(k){return [SPN[k]||k,sp[k]];}));
+  if(!filter&&Object.keys(l).length>1){inh.appendChild(el('h4',null,'Läden'));balken(inh,Object.keys(l).map(function(k){return [LAEDEN[k]||k,l[k]];}));}
+}
+document.getElementById('jahr-drucken').addEventListener('click',function(){document.body.classList.add('jahr-druck');
+  function weg(){document.body.classList.remove('jahr-druck');window.removeEventListener('afterprint',weg);}window.addEventListener('afterprint',weg);window.print();});
 var abTag='';
 function tagVon(x){return x.t?x.t.slice(0,10):new Date(x.a).toISOString().slice(0,10);}
 function abschluss(sicht){
@@ -387,7 +453,7 @@ function abschluss(sicht){
 }
 window.addEventListener('storage',function(ev){if(ev.key===K){try{liste=JSON.parse(ev.newValue||'[]');}catch(e){}zeichnen();}});
 window.addEventListener('hashchange',function(){var m2=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m2)return;var o2=lesen(m2[1]);
-  if(o2&&!liste.some(function(x){return x.id===o2.id;}))liste.push(o2);speichern();history.replaceState(null,'',location.pathname+location.search);zeichnen();});
+  aufnehmen(o2);speichern();history.replaceState(null,'',location.pathname+location.search);zeichnen();});
 setInterval(zeichnen,30000);
 setTimeout(function(){var neu=liste.some(function(x){return x.neu;});liste.forEach(function(x){x.neu=0;});if(neu)speichern();},4000);
 filterZeigen();zeichnen();

@@ -447,5 +447,17 @@
 "🚆 Taking the train? Pickup matched to your departure:": "🚆 Trenle mi gidiyorsunuz? Kalkışa uygun teslim saati:",
 "Train {n} → pickup {n}": "Tren {n} → teslim {n}",
 "Gift vouchers": "Hediye çekleri",
-"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "doğum günü, Noel ya da teşekkür için – iki şubede de tezgâhta."
+"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "doğum günü, Noel ya da teşekkür için – iki şubede de tezgâhta.",
+"Apply": "Uygula",
+"Closing soon – open until {zeit}": "Yakında kapanıyor – {zeit}'a kadar açık",
+"Closing soon: last pickup today at {n}.": "Yakında kapanıyor: bugün son teslim {n}.",
+"Code cannot be checked here.": "Kod burada kontrol edilemiyor.",
+"Code expired.": "Kodun süresi doldu.",
+"Code {x} does not apply to this pickup.": "{x} kodu bu teslim için geçerli değil.",
+"Company code": "Firma kodu",
+"Company code?": "Firma kodu?",
+"Remove code": "Kodu kaldır",
+"Unknown code.": "Bu kodu tanımıyoruz.",
+"e.g. ELBTAL{n}": "örn. ELBTAL{n}",
+"{x}: {p} % off": "{x}: %{p} indirim"
 }

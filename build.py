@@ -90,6 +90,7 @@ import datetime as _dt0, zoneinfo as _zi0
 HEUTE_ISO = os.environ.get("SARAY_HEUTE") or _dt0.datetime.now(_zi0.ZoneInfo("Europe/Berlin")).date().isoformat()  # Tests setzen das Datum fest
 SONDER = ANP.sonderzeiten(ANPASSUNGEN.get("sonderzeiten"), WARNUNGEN.append, HEUTE_ISO)
 WARTE = ANP.wartezeit(ANPASSUNGEN.get("wartezeit"), WARNUNGEN.append)
+CODES = ANP.codes(ANPASSUNGEN.get("codes"), WARNUNGEN.append, HEUTE_ISO)
 WINTER = {"modus": ANP.winter(ANPASSUNGEN.get("winter"), WARNUNGEN.append), "von": ANP.WINTER_STANDARD[0], "bis": ANP.WINTER_STANDARD[1]}
 
 for s in STANDORTE:
@@ -578,6 +579,7 @@ p{margin:0}
 .punkt{width:10px;height:10px;border-radius:50%;flex:none;background:var(--tinte-weich)}
 .status[data-offen="ja"] .punkt{background:var(--gruen);box-shadow:0 0 0 3px rgba(30,123,60,.22)}
 .status[data-offen="nein"] .punkt{background:var(--paprika)}
+.status[data-offen="bald"] .punkt{background:#E8A317;box-shadow:0 0 0 3px rgba(232,163,23,.25)}
 
 /* Foto mit Koch */
 .bilder{position:relative;max-width:540px;margin:4px 0 30px}
@@ -903,6 +905,8 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .knopf-whatsapp:hover{background:#17652F}
 .abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}
 .winter{margin-top:16px;padding:14px 16px;border:2px solid var(--tinte);border-radius:18px;background:#EAF4FB;color:var(--tinte)}.winter p{margin:0 0 10px}.winter-titel{font:700 1.2rem var(--slab)}.winter-knoepfe{display:flex;flex-wrap:wrap;gap:8px}.winter-knoepfe .knopf{flex:1 1 200px}
+.code-box{margin:-4px 0 12px;font-size:.95rem}.code-box summary{cursor:pointer;color:var(--tinte-weich);font-weight:700;min-height:36px;display:flex;align-items:center}.code-form{display:flex;gap:8px;margin:6px 0}.code-form input{flex:1;min-width:0;min-height:44px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit}.code-info{margin:4px 0;font-weight:700;color:var(--gruen,#2E7D32)}.link-knopf{background:none;border:0;padding:4px 0;color:var(--tinte-weich);text-decoration:underline;font:inherit;cursor:pointer}
+[data-offen=bald] .status-text{color:var(--paprika)}
 .zug-wahl{margin:12px 0 2px}.zug-titel{margin:0 0 6px;font-weight:700;font-size:.92rem}.zug-chips{display:flex;flex-wrap:wrap;gap:6px}.zug-chips .chip{font-size:.9rem}.zug-quelle{font-size:.78rem;color:var(--tinte-weich);margin:6px 0 0}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
 .wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
@@ -1152,7 +1156,16 @@ ZETTEL_JS = r'''
   var zl=document.getElementById('zettel-leiste'),huelle=document.getElementById('zettel'),zliste=document.getElementById('zettel-liste'),
       zsumme=document.getElementById('zettel-summe'),zmeld=document.getElementById('zettel-meldung'),meldTimer=null,zuletzt=null;
   function anzahl(){return zettel.reduce(function(a,x){return a+x.q;},0);}
-  function summe(){return zettel.reduce(function(a,x){return a+x.q*stueck(x);},0);}
+  function brutto(){return zettel.reduce(function(a,x){return a+x.q*stueck(x);},0);}
+  /* Firmen-Code: Rabatt in Prozent auf alles ohne Aktionspreis; gilt je nach Code nur in einem Laden, zu bestimmten Uhrzeiten, bis zu einem Datum */
+  var CODES=%%CODES%%;
+  function codeAktiv(){var c=abh.code;if(!c)return null;var d=CODES.filter(function(x){return x.h===c.h;})[0];if(!d)return null;
+    var zi=ZINFO[abh.zeit],tag=abh.tag||isoTag(0);
+    if(d.bis&&tag>d.bis)return null;if(d.laden&&abh.laden&&d.laden!==abh.laden)return null;
+    if(d.za!=null&&zi&&(zi.min<d.za||zi.min>=d.zb))return null;return d;}
+  function rabatt(){var d=codeAktiv();if(!d)return 0;
+    return Math.round(zettel.reduce(function(a,x){return a+(aktionZ(x)?0:x.q*stueck(x));},0)*d.prozent/100);}
+  function summe(){return brutto()-rabatt();}
   function melden(t){zmeld.textContent=t;zmeld.hidden=false;clearTimeout(meldTimer);meldTimer=setTimeout(function(){zmeld.hidden=true;},2400);}
   function el(tag,cls,text){var x=document.createElement(tag);if(cls)x.className=cls;if(text!=null)x.textContent=text;return x;}
   function knopf(text,attrs){var b=el('button',null,text);b.type='button';for(var a in attrs)b.setAttribute(a,attrs[a]);return b;}
@@ -1262,7 +1275,7 @@ ZETTEL_JS = r'''
       no.placeholder=L('Weitere Wünsche','Other requests');no.setAttribute('aria-label',L('Weitere Wünsche zu ','Other requests for ')+na);li.appendChild(no);
       zliste.appendChild(li);
     });
-    zsumme.textContent=euro(summe());
+    zsumme.textContent=euro(summe());codeZeigen();
     huelle.querySelector('.zettel-leer').hidden=n>0;huelle.querySelector('.zettel-voll').hidden=n===0;
     abgleichen();letzteZeigen();if(typeof sammelZeigen==='function'&&sTeil)sammelZeigen();
   }
@@ -1430,6 +1443,9 @@ ZETTEL_JS = r'''
     /* Wert = Text für die Nachricht an den Laden (immer deutsch) */
     var vor=off===0?'heute':off===1?'morgen, '+tagLang(1):tagLang(off);
     var wz=warte(abh.laden),h0=tagZeit(abh.laden,0);
+    var hz=tagZeit(abh.laden,0);
+    var sl0=slots(0);
+    if(off===0&&hz&&sl0.length&&n.min>=hz[1]-60){var lz=sl0[sl0.length-1];hinweisZ.textContent=L('Bald Feierabend: letzte Abholung heute um '+zeitText(lz)+'.','Closing soon: last pickup today at '+zeitText(lz,true)+'.');hinweisZ.hidden=false;}
     if(off===0&&wz){hinweisZ.textContent=L('Gerade viel los: Abholung frühestens in ca. '+(wz+20)+' Minuten.','Busy right now: earliest pickup in about '+(wz+20)+' minutes.');hinweisZ.hidden=false;}
     if(off===0&&h0&&n.min>=h0[0]){
       optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20+wz};}
@@ -1529,13 +1545,28 @@ ZETTEL_JS = r'''
     zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
+  var codeBox=document.getElementById('code-box'),codeFeld=document.getElementById('code-feld'),codeInfo=document.getElementById('code-info');
+  function codeZeigen(){if(!codeBox)return;var d=codeAktiv(),rb=rabatt();codeBox.hidden=!CODES.length;
+    if(abh.code){var ganz=CODES.filter(function(x){return x.h===abh.code.h;})[0];
+      var en=SP!=='de';
+      codeInfo.textContent=d?(en?fuell(T('{x}: {p} % off'),{x:d.name,p:d.prozent}):d.name+': '+d.prozent+' % Rabatt')+(rb?' (−'+euro(rb)+')':'')+(d.za!=null?' · '+zeitText(d.za,true)+'–'+zeitText(d.zb,en):'')
+        :ganz?(en?fuell(T('Code {x} does not apply to this pickup.'),{x:abh.code.c}):'Code '+abh.code.c+' gilt nicht für diese Abholung.')+(ganz.za!=null?' ('+zeitText(ganz.za,true)+'–'+zeitText(ganz.zb,en)+')':''):L('Code abgelaufen.','Code expired.');
+      codeInfo.hidden=false;document.getElementById('code-weg').hidden=false;}else{codeInfo.hidden=true;document.getElementById('code-weg').hidden=true;}}
+  function codeHash(c){return crypto.subtle.digest('SHA-256',new TextEncoder().encode('saray|'+c)).then(function(b){return [].map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});}
+  if(codeBox){
+    document.getElementById('code-form').addEventListener('submit',function(ev){ev.preventDefault();var c=codeFeld.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(!c)return;
+      if(!window.crypto||!crypto.subtle){codeInfo.textContent=L('Code hier nicht prüfbar.','Code cannot be checked here.');codeInfo.hidden=false;return;}
+      codeHash(c).then(function(h){var d=CODES.filter(function(x){return x.h===h;})[0];
+        if(!d){codeInfo.textContent=L('Diesen Code kennen wir nicht.','Unknown code.');codeInfo.hidden=false;return;}
+        abh.code={h:h,c:c};codeFeld.value='';abhSpeichern();zeichnen();waAktualisieren();});});
+    document.getElementById('code-weg').addEventListener('click',function(){delete abh.code;abhSpeichern();zeichnen();waAktualisieren();});}
   /* Küchenansicht: Bestellung als Link (Daten stehen im Link selbst, kein Server) */
   function b64url(t){return btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
   function kuecheLink(){
     if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
-    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),zug:abh.zug||'',sp:SP,
+    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,
       test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];})};
     return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
@@ -1549,6 +1580,7 @@ ZETTEL_JS = r'''
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
     zettel.forEach(function(x){z.push(zeileText(x));});
+    var rb=rabatt(),cd=codeAktiv();if(rb&&cd)z.push('Firmen-Code: '+abh.code.c+' ('+cd.name+') – '+cd.prozent+' % Rabatt: −'+euro(rb));
     z.push('Summe: '+euro(summe()));
     var kl=mitKueche?kuecheLink():'';if(kl){z.push('');z.push('Für die Küche: '+kl);}
     return test.concat(z).join('\n');
@@ -1769,7 +1801,8 @@ JS = r"""
   function uhr(m){var h=Math.floor(m/60),r=m%60;if(SP!=='de')return h+':'+(r<10?'0':'')+r;return r?h+':'+(r<10?'0':'')+r+' Uhr':h+' Uhr';}
   function lage(ort){
     var n=jetzt(),h=tagZeit(ort,0),w=warte(ort);
-    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,text:(SP==='de'?'Jetzt geöffnet, bis '+uhr(h[1]):fuell(T('Open now, until {zeit}'),{zeit:uhr(h[1])}))+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
+    if(h&&n.min>=h[0]&&n.min<h[1]-30)return{offen:true,text:(SP==='de'?'Jetzt geöffnet, bis '+uhr(h[1]):fuell(T('Open now, until {zeit}'),{zeit:uhr(h[1])}))+(w?L(' · Wartezeit ca. '+w+' Min.',' · waiting time approx. '+w+' min'):'')};
+    if(h&&n.min>=h[0]&&n.min<h[1])return{offen:true,bald:true,text:SP==='de'?'Bald Feierabend – geöffnet bis '+uhr(h[1]):fuell(T('Closing soon – open until {zeit}'),{zeit:uhr(h[1])})};
     if(h&&n.min<h[0])return{offen:false,text:SP==='de'?'Geschlossen, öffnet heute um '+uhr(h[0]):fuell(T('Closed, opens today at {zeit}'),{zeit:uhr(h[0])})};
     for(var i=1;i<=14;i++){var t=(n.tag+i)%7,zi=tagZeit(ort,i);if(zi)return{offen:false,text:SP!=='de'?(SP==='en'?'Closed, opens '+(i===1?'tomorrow':i<7?'on '+TAGE_E[t]:'on '+TAGE_E[t]+' '+isoTag(i).slice(8)+'/'+isoTag(i).slice(5,7))+' at '+uhr(zi[0])
         :fuell(T(i===1?'Closed, opens tomorrow at {zeit}':'Closed, opens on {tag} at {zeit}'),{zeit:uhr(zi[0]),tag:new Intl.DateTimeFormat(LOC[SP],Object.assign({timeZone:'Europe/Berlin',weekday:'long'},i<7?{}:{day:'numeric',month:'numeric'})).format(new Date(Date.now()+i*864e5))})):'Geschlossen, öffnet '+(i===1?'morgen':i<7?'am '+TAGE[t]:'am '+TAGE[t]+', '+isoTag(i).slice(8)+'.'+isoTag(i).slice(5,7)+'.')+' um '+uhr(zi[0])};}
@@ -1777,7 +1810,7 @@ JS = r"""
   }
   function aktualisieren(){
     document.querySelectorAll('[data-status]').forEach(function(el){
-      var s=lage(el.getAttribute('data-status'));el.setAttribute('data-offen',s.offen?'ja':'nein');
+      var s=lage(el.getAttribute('data-status'));el.setAttribute('data-offen',s.offen?(s.bald?'bald':'ja'):'nein');
       el.querySelector('.status-text').textContent=s.text;
     });
     var tag=jetzt().tag,hi=isoTag(0);
@@ -2171,6 +2204,10 @@ SEITE = r"""<!doctype html>
     <div class="zettel-voll">
       <ul class="zettel-liste" id="zettel-liste"></ul>
       <p class="zettel-summe-zeile"><span data-en="Total">Summe</span><b id="zettel-summe"></b></p>
+      <details class="code-box" id="code-box" hidden><summary data-en="Company code?">Firmen-Code?</summary>
+        <form id="code-form" class="code-form"><input id="code-feld" type="text" autocomplete="off" autocapitalize="characters" aria-label="Firmen-Code" data-en-aria="Company code" placeholder="z. B. ELBTAL10" data-en-ph="e.g. ELBTAL10">
+        <button type="submit" class="knopf knopf-linie" data-en="Apply">Einlösen</button></form>
+        <p class="code-info" id="code-info" role="status" hidden></p><button type="button" class="link-knopf" id="code-weg" hidden data-en="Remove code">Code entfernen</button></details>
       <fieldset class="abholung">
         <legend data-en="Pickup">Abholung</legend>
         <div class="z-chips" role="group" aria-label="Laden" data-en-aria="Shop">%%LADEN_CHIPS%%</div>
@@ -2423,7 +2460,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             .replace("%%ADR%%", json.dumps({st["id"]: f'Saray Döner, {st["strasse"]}, {st["plz"]} {st["ort"]}' for st in STANDORTE}, ensure_ascii=False))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
-            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%WINTER%%", json.dumps(WINTER))
+            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%WINTER%%", json.dumps(WINTER)).replace("%%CODES%%", json.dumps(CODES, ensure_ascii=False))
             .replace("%%SPRACHEN%%", json.dumps(SP.LISTE, ensure_ascii=False))
             .replace("%%DICTS%%", json.dumps(SP.woerterbuecher(), ensure_ascii=False) if einzeln else "{}")
             .replace("%%BEILAGEN%%", json.dumps(BEILAGEN)).replace("%%BEILAGE_RABATT%%", str(BEILAGE_RABATT))

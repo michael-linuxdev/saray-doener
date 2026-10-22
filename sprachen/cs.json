@@ -444,5 +444,17 @@
 "🚆 Taking the train? Pickup matched to your departure:": "🚆 Jedete vlakem? Vyzvednutí podle odjezdu:",
 "Train {n} → pickup {n}": "Vlak {n} → vyzvednutí {n}",
 "Gift vouchers": "Dárkové poukazy",
-"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "k narozeninám, na Vánoce nebo jako poděkování – u pultu v obou provozovnách."
+"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "k narozeninám, na Vánoce nebo jako poděkování – u pultu v obou provozovnách.",
+"Apply": "Uplatnit",
+"Closing soon – open until {zeit}": "Brzy zavíráme – otevřeno do {zeit}",
+"Closing soon: last pickup today at {n}.": "Brzy zavíráme: poslední vyzvednutí dnes v {n}.",
+"Code cannot be checked here.": "Kód zde nelze ověřit.",
+"Code expired.": "Platnost kódu vypršela.",
+"Code {x} does not apply to this pickup.": "Kód {x} pro toto vyzvednutí neplatí.",
+"Company code": "Firemní kód",
+"Company code?": "Firemní kód?",
+"Remove code": "Odebrat kód",
+"Unknown code.": "Tento kód neznáme.",
+"e.g. ELBTAL{n}": "např. ELBTAL{n}",
+"{x}: {p} % off": "{x}: sleva {p} %"
 }

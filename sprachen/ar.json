@@ -481,5 +481,17 @@
 "🚆 Taking the train? Pickup matched to your departure:": "🚆 مسافر بالقطار؟ استلام يناسب موعد المغادرة:",
 "Train {n} → pickup {n}": "القطار {n} ← الاستلام {n}",
 "Gift vouchers": "قسائم هدايا",
-"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "لأعياد الميلاد أو عيد الميلاد المجيد أو كشكر – متوفرة عند الكاونتر في الفرعين."
+"for birthdays, Christmas or as a thank-you – available at the counter in both shops.": "لأعياد الميلاد أو عيد الميلاد المجيد أو كشكر – متوفرة عند الكاونتر في الفرعين.",
+"Apply": "تطبيق",
+"Closing soon – open until {zeit}": "نغلق قريبًا – مفتوح حتى {zeit}",
+"Closing soon: last pickup today at {n}.": "نغلق قريبًا: آخر استلام اليوم الساعة {n}.",
+"Code cannot be checked here.": "لا يمكن التحقق من الرمز هنا.",
+"Code expired.": "انتهت صلاحية الرمز.",
+"Code {x} does not apply to this pickup.": "الرمز {x} لا ينطبق على هذا الاستلام.",
+"Company code": "رمز الشركة",
+"Company code?": "رمز الشركة؟",
+"Remove code": "إزالة الرمز",
+"Unknown code.": "لا نعرف هذا الرمز.",
+"e.g. ELBTAL{n}": "مثلًا ELBTAL{n}",
+"{x}: {p} % off": "{x}: خصم {p}٪"
 }

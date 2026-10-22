@@ -101,6 +101,7 @@ p{margin:0}
 .punkt{width:10px;height:10px;border-radius:50%;flex:none;background:var(--tinte-weich)}
 .status[data-offen="ja"] .punkt{background:var(--gruen);box-shadow:0 0 0 3px rgba(30,123,60,.22)}
 .status[data-offen="nein"] .punkt{background:var(--paprika)}
+.status[data-offen="bald"] .punkt{background:#E8A317;box-shadow:0 0 0 3px rgba(232,163,23,.25)}
 
 /* Foto mit Koch */
 .bilder{position:relative;max-width:540px;margin:4px 0 30px}
@@ -426,6 +427,8 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .knopf-whatsapp:hover{background:#17652F}
 .abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}
 .winter{margin-top:16px;padding:14px 16px;border:2px solid var(--tinte);border-radius:18px;background:#EAF4FB;color:var(--tinte)}.winter p{margin:0 0 10px}.winter-titel{font:700 1.2rem var(--slab)}.winter-knoepfe{display:flex;flex-wrap:wrap;gap:8px}.winter-knoepfe .knopf{flex:1 1 200px}
+.code-box{margin:-4px 0 12px;font-size:.95rem}.code-box summary{cursor:pointer;color:var(--tinte-weich);font-weight:700;min-height:36px;display:flex;align-items:center}.code-form{display:flex;gap:8px;margin:6px 0}.code-form input{flex:1;min-width:0;min-height:44px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit}.code-info{margin:4px 0;font-weight:700;color:var(--gruen,#2E7D32)}.link-knopf{background:none;border:0;padding:4px 0;color:var(--tinte-weich);text-decoration:underline;font:inherit;cursor:pointer}
+[data-offen=bald] .status-text{color:var(--paprika)}
 .zug-wahl{margin:12px 0 2px}.zug-titel{margin:0 0 6px;font-weight:700;font-size:.92rem}.zug-chips{display:flex;flex-wrap:wrap;gap:6px}.zug-chips .chip{font-size:.9rem}.zug-quelle{font-size:.78rem;color:var(--tinte-weich);margin:6px 0 0}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
 .wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
