@@ -683,6 +683,8 @@ CHECKLISTE = [
         ["feiertage", "Feiertage", "Freital 11–22 Uhr, Altenberg? Reformationstag 31.10., Buß- und Bettag 18.11.", 0],
         ["preise", "Preise der Karte", "Gilt die Karte vom 01.02.2024 noch? In beiden Läden gleich?", 0],
         ["datenschutz", "Datenschutzerklärung", "Entwurf steht – wer prüft sie?", 0],
+        ["logo", "Echtes Logo", "Original-Logo von Saray Döner als Datei (am besten SVG oder PDF, sonst großes PNG) – auch für Flyer und Aufsteller", 1],
+        ["maskottchen", "Original-Maskottchen", "Den echten Saray-Koch als Datei; ersetzt die nachgezeichnete Figur auf Seite, App-Symbol und Druck", 1],
     ]],
     ["Chef-App und Abläufe", [
         ["chef-wer", "Wer bedient die Chef-App, auf welchen Handys?", "Pro Person ein eigener Zugang.", 0],
