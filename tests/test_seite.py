@@ -814,6 +814,9 @@ def chef_app_zahlen(b, url):
 
     def gc(route):
         gefragt.append(route.request.url)
+        if len(gefragt) == 2:   # einmal gebremst, ohne CORS-Kopf -> im Browser nur „Load failed“
+            route.fulfill(status=429, body="rate limited")
+            return
         assert route.request.headers.get("authorization") == "Bearer GCKEY"
         start = urllib.parse.parse_qs(urllib.parse.urlparse(route.request.url).query)["start"][0]
         f = {"2026-10-20T22:00:00Z": 1, "2026-10-14T22:00:00Z": 5, "2026-09-21T22:00:00Z": 20, "2026-10-01T00:00:00Z": 30}[start]
@@ -825,7 +828,7 @@ def chef_app_zahlen(b, url):
     p.click('nav.tabs [data-tab="mehr"]')
     p.fill("#gc-schl", " GCKEY ")
     p.click(".karte:has(#gc-schl) >> text=Speichern")
-    p.wait_for_selector("table.zahlen")
+    p.wait_for_selector("table.zahlen", timeout=30000)
     zeilen = p.evaluate("[...document.querySelectorAll('table.zahlen tr')].map(r=>r.innerText.replace(/\\s+/g,' ').trim())")
     assert "Besucher 30 150 600 900" in zeilen and "WhatsApp Freital 4 20 80 120" in zeilen, zeilen
     assert zeilen[0].split() == ["Heute", "7", "Tage", "30", "Tage", "Gesamt"], zeilen[0]

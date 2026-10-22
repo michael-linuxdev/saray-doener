@@ -519,10 +519,15 @@ function zahlenKarte(){
   var spalten=[['Heute',stunde(0)],['7 Tage',stunde(6)],['30 Tage',stunde(29)],['Gesamt','2026-10-01T00:00:00Z']];
   /* nacheinander abfragen (GoatCounter begrenzt die Anfragen pro Sekunde), bei 429 kurz warten; Ergebnis 5 Minuten merken */
   function warten(ms){return new Promise(function(ok){setTimeout(ok,ms);});}
-  function holenGeduldig(start,versuch){return holen(start).catch(function(e){var m=String(e.message||e),t=/try again in ([\d.]+)ms/.exec(m);
-    if(/^429/.test(m)&&(versuch||0)<4)return warten((t?Math.ceil(+t[1]):1000)+300).then(function(){return holenGeduldig(start,(versuch||0)+1);});throw e;});}
+  /* GoatCounter bremst schon bei wenigen Anfragen pro Sekunde – auch die Vorab-Anfrage des Browsers. Wird die gebremst,
+     meldet Safari nur „Load failed“. Darum: Abstand zwischen den Abfragen und bei 429 oder Netzfehler etwas warten und wiederholen. */
+  function holenGeduldig(start,versuch){versuch=versuch||0;return holen(start).catch(function(e){var m=String(e.message||e),t=/try again in ([\d.]+)ms/.exec(m);
+    var nochmal=/^429/.test(m)||e instanceof TypeError||/fetch|load|network/i.test(m);
+    if(nochmal&&versuch<5)return warten((t?Math.ceil(+t[1]):1500*(versuch+1))+400).then(function(){return holenGeduldig(start,versuch+1);});throw e;});}
   var cache=zahlenKarte.cache&&Date.now()-zahlenKarte.cache.t<5*60e3&&zahlenKarte.cache.schl===schl?Promise.resolve(zahlenKarte.cache.x):
-    spalten.reduce(function(kette,sp){return kette.then(function(liste){return holenGeduldig(sp[1]).then(function(d){return liste.concat([d]);});});},Promise.resolve([]))
+    spalten.reduce(function(kette,sp,i){return kette.then(function(liste){
+      box.textContent='';box.appendChild(el('p',{class:'hinweis',text:'Lädt … ('+(i+1)+' von '+spalten.length+')'}));
+      return (i?warten(1200):Promise.resolve()).then(function(){return holenGeduldig(sp[1]);}).then(function(d){return liste.concat([d]);});});},Promise.resolve([]))
       .then(function(x){zahlenKarte.cache={t:Date.now(),x:x,schl:schl};return x;});
   cache.then(function(x){var w=x.map(werte);box.textContent='';
     var z=[['Besucher',['besuche']],['WhatsApp Freital',['whatsapp-freital']],['WhatsApp Altenberg',['whatsapp-altenberg']],
