@@ -3,6 +3,7 @@
 
     python3 druck.py [ziel]   ->  <ziel>/flyer.pdf, <ziel>/aufsteller-<laden>.pdf   (Standard: docs/druck)
 
+Aktions-Plakate: je laufender/kommender Sonderaktion ein A4-Plakat (aktion-<von>-<name>.pdf).
 Flyer: A4 quer, beidseitig, Wickelfalz (3 Spalten je Seite). Außen: Innenklappe | Rückseite | Titel.
 Der GitHub-Workflow erzeugt die PDFs nach jedem Bauen; die Chef-App verlinkt sie unter „Mehr → Drucken“.
 Braucht Playwright mit Chromium.
@@ -147,6 +148,79 @@ document.fonts.ready.then(function(){{
 </body></html>"""
 
 
+def slug(name, von):
+    """Dateiname eines Aktions-Plakats – gleiche Regel wie in der Chef-App."""
+    t = name.lower()
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")):
+        t = t.replace(a, b)
+    t = "".join(c if c.isascii() and c.isalnum() else "-" for c in t)
+    t = "-".join(x for x in t.split("-") if x)[:40].strip("-")
+    return f"aktion-{von}-{t or 'x'}"
+
+
+TAGE_LANG = ["sonntags", "montags", "dienstags", "mittwochs", "donnerstags", "freitags", "samstags"]
+
+
+def plakat_html(a):
+    """A4 hoch: Aktions-Plakat fürs Schaufenster."""
+    gerichte = {(g[0] or g[1]): (g, ab) for gr in build.GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"]}
+    zeilen = []
+    for k, neu in a["preise"].items():
+        if k not in gerichte:
+            continue
+        g, ab = gerichte[k]
+        gr = ab.get("groessen") or []
+        alt = " / ".join(g[3])
+        neu_t = " / ".join(neu)
+        zusatz = f'<small>{" / ".join(gr)}</small>' if gr else ""
+        zeilen.append(f'<li><span class="nm">{e(g[1])}{zusatz}</span><span class="alt">{alt} €</span><span class="neu">{neu_t} €</span></li>')
+    def d(iso):
+        return f"{iso[8:]}.{iso[5:7]}."
+    wann = f"{d(a['von'])} – {d(a['bis'])}{a['bis'][:4]}" if a["von"] != a["bis"] else f"am {d(a['bis'])}{a['bis'][:4]}"
+    woche = [1, 2, 3, 4, 5, 6, 0]
+    ts = sorted(a.get("tage", []), key=woche.index)
+    folge = len(ts) >= 3 and [woche.index(t) for t in ts] == list(range(woche.index(ts[0]), woche.index(ts[0]) + len(ts)))
+    tage = f"{TAGE_LANG[ts[0]]} bis {TAGE_LANG[ts[-1]]}" if folge else ", ".join(TAGE_LANG[t] for t in ts)
+    uhr = f"{build.ANP.uhr(build.ANP._min(a['zeit_ab']))}–{build.ANP.uhr(build.ANP._min(a['zeit_bis']))} Uhr" if a.get("zeit_ab") else ""
+    wo = next((f"nur in {s['name']}" for s in build.STANDORTE if s["id"] == a.get("laden")),
+              " und ".join(s["name"] for s in build.STANDORTE))
+    qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
+    muster = '<div class="muster">MUSTER – Seite noch nicht freigeschaltet</div>' if build.VORSCHAU else ""
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A4;margin:0}}
+*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{width:210mm;height:297mm;font-family:Text;color:#3A1531;background:#FFD21F;display:flex;flex-direction:column;align-items:center;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;position:relative;overflow:hidden}}
+main{{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;overflow:hidden}}
+.kopf{{display:flex;align-items:center;gap:5mm;margin-top:14mm}}
+.kopf img{{width:24mm}}.kopf b{{font:700 12mm/1 Slab}}
+.stoerer{{margin-top:9mm;background:#C8371A;color:#fff;font:700 26mm/1 Slab;padding:5mm 14mm 7mm;border-radius:6mm;transform:rotate(-3deg);letter-spacing:1mm}}
+h1{{font:700 14mm/1.1 Slab;text-align:center;margin:11mm 14mm 0}}
+ul{{list-style:none;margin:10mm 0 0;padding:0;width:170mm}}
+li{{display:flex;align-items:baseline;gap:5mm;background:#fff;border:1mm solid #3A1531;border-radius:4mm;padding:4mm 6mm;margin-bottom:4mm}}
+.nm{{flex:1;font:700 8.5mm/1.15 Slab}}.nm small{{display:block;font:400 4.5mm Text}}
+.alt{{font-size:6mm;text-decoration:line-through;opacity:.55;white-space:nowrap}}
+.neu{{font:700 13mm/1 Slab;color:#C8371A;white-space:nowrap}}
+.wann{{margin-top:6mm;padding:0 16mm;font:700 8mm/1.25 Text;text-align:center}}
+.wann span{{display:block;font-size:6.5mm;font-weight:400}}
+.fuss{{flex:none;margin:6mm 0 12mm;display:flex;align-items:center;gap:6mm;background:#fff;border-radius:4mm;padding:5mm 7mm;width:170mm}}
+.fuss svg{{width:34mm;height:34mm;flex:none}}.fuss b{{font:700 7mm/1.2 Slab;display:block}}.fuss p{{margin:1mm 0 0;font-size:4.6mm;line-height:1.35}}
+.muster{{position:absolute;left:0;right:0;top:0;background:#3A1531;color:#fff;text-align:center;font:700 3.6mm Text;padding:1.6mm;letter-spacing:.3mm}}
+</style></head><body>{muster}
+<main><div class="kopf"><img src="{uri("maskottchen", "saray-koch-kopf.svg")}" alt=""><b>Saray Döner</b></div>
+<div class="stoerer">AKTION</div>
+<h1>{e(a["name"]).replace(" €", "&nbsp;€")}</h1>
+<ul>{"".join(zeilen)}</ul>
+<div class="wann">{wann}<span>{" · ".join(x for x in (tage, uhr, wo) if x)}</span></div></main>
+<div class="fuss">{qr}<div><b>Jetzt vorbestellen</b><p>Code scannen, Gerichte wählen und per WhatsApp schicken – ohne Warten an der Theke.<br>{e(build.CNAME)}</p></div></div>
+<script>/* bei vielen Gerichten verkleinern, bis alles auf die Seite passt */
+var m=document.querySelector('main'),z=1;while(m.scrollHeight>m.clientHeight+1&&z>.5){{z-=.03;m.style.zoom=z;}}</script>
+</body></html>"""
+
+
 async def main(ziel):
     ziel.mkdir(parents=True, exist_ok=True)
     async with async_playwright() as p:
@@ -172,9 +246,21 @@ async def main(ziel):
             await pg.pdf(path=str(ziel / f"aufsteller-{st['id']}.pdf"), format="A5", print_background=True)
             await pg.close()
             tmp.unlink()
+        for a in build.AKTIONEN:
+            tmp = HIER / "_plakat.html"
+            tmp.write_text(plakat_html(a), encoding="utf-8")
+            pg = await b.new_page(viewport={"width": 794, "height": 1123})
+            await pg.goto(tmp.as_uri())
+            await pg.wait_for_timeout(400)
+            await pg.pdf(path=str(ziel / f"{slug(a['name'], a['von'])}.pdf"), format="A4", print_background=True)
+            if "--vorschau" in sys.argv:
+                await pg.screenshot(path=str(HIER / "druck" / "plakat-vorschau.png"))
+            await pg.close()
+            tmp.unlink()
         await b.close()
     print("Druck:", ", ".join(f.name for f in sorted(ziel.glob("*.pdf"))))
 
 
 if __name__ == "__main__":
-    asyncio.run(main(pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else HIER / "docs" / "druck"))
+    pfade = [x for x in sys.argv[1:] if not x.startswith("--")]
+    asyncio.run(main(pathlib.Path(pfade[0]) if pfade else HIER / "docs" / "druck"))

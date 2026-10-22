@@ -340,3 +340,15 @@ KENNZEICHNUNG = {
     "Chicken Nuggets": ("4,8", "a,b,c,f,g"),
 }
 SOSSEN = ("Knoblauch, Kräuter, Chili", "8", "b,c,e")
+
+# Vegetarisch (ohne Fleisch und Fisch): Nummern bzw. Namen ohne Nummer. Getränke zählen immer dazu,
+# neue Gerichte aus der Chef-App, wenn „vegetarisch“ im Namen steht.
+VEGETARISCH = {
+    "3", "4", "5", "11", "12", "24", "52", "53", "57", "58",
+    "80", "81", "84", "93", "98", "104",
+    "130", "132", "137", "140", "141", "142", "143",
+    "150", "158", "160", "72", "73",
+    "Peperoni, Oliven oder Ananas", "Pommes, Salat, Halloumikäse, Käse oder Reis",
+    "Paprika, Zwiebel, Champignon, Tomate, Peperoni, Ananas, Oliven, Brokkoli oder Mais", "Käse, Halloumikäse oder Fetakäse",
+    "Fladenbrot mit Soße oder ganz", "Fladenbrot mit Soße und Käse",
+}

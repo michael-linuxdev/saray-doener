@@ -137,7 +137,12 @@ p{margin:0}
 .tipp a{display:flex;flex-direction:column;gap:4px;flex:1;padding:14px 16px;border-radius:14px;text-decoration:none}
 @media (hover:hover){.tipp:hover{background:var(--gelb-blass)}.tipp-gross:hover{background:#FFDB4D}}
 .tipp-gross{flex-basis:100%}
-.tipps-empfehlung{overflow:visible;margin-bottom:22px}
+.tipps-empfehlung{overflow:visible;margin-bottom:22px;flex-wrap:wrap}
+.tipp-gross.ohne-koch a{padding-right:20px;min-height:0}
+.tipps-empfehlung .ohne-koch{flex-basis:calc(50% - 6px);min-width:0}
+.tipps-empfehlung .ohne-koch a{padding:14px 14px 16px}
+.tipps-empfehlung .ohne-koch .tipp-name{font-size:1.2rem}
+.tipps-empfehlung .ohne-koch .tipp-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tipp-gross a{position:relative;padding:18px 120px 18px 20px;min-height:150px}
 .tipp-koch{position:absolute;right:10px;bottom:6px;width:104px}
 @media (min-width:700px){.tipp-gross a{padding-right:190px}.tipp-koch{width:150px;right:24px;bottom:4px}}
@@ -152,8 +157,8 @@ p{margin:0}
 .tipp-preis .preis{font-size:1.35rem}
 .gericht.ist-beliebt{scroll-margin-top:90px}
 @media (min-width:1100px){.tipps{width:auto;margin:0;padding:4px 0 12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
-  .tipps-empfehlung{grid-template-columns:minmax(0,1fr)}
-  .tipp-gross{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
+  .tipps-empfehlung{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tipp-gross{grid-column:1/-1}.tipp-gross.ohne-koch{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
 @media (max-width:559px){
   .gericht{padding-block:5px}
   .info{font-size:.88rem;line-height:1.35;margin-top:1px}
@@ -172,6 +177,11 @@ p{margin:0}
 .suche-feld .ico{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--tinte-weich);pointer-events:none}
 .suche input{width:100%;min-height:50px;border:2px solid var(--tinte);border-radius:999px;padding:0 18px 0 46px;
   font:400 1.02rem var(--text);color:var(--tinte);background:#fff;-webkit-appearance:none;appearance:none}
+.veg-schalter{display:inline-flex;align-items:center;gap:6px;margin-top:10px;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--tinte);
+  background:#fff;color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
+.veg-schalter svg{width:18px;height:18px}
+.veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}
+svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .suche input::placeholder{color:#8d7486}
 .suche input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:20px;height:20px;cursor:pointer;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233A1531' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat}
 .suche input:focus-visible{outline:3px solid var(--tinte);outline-offset:2px;box-shadow:0 0 0 7px var(--gelb)}
@@ -446,6 +456,7 @@ html[lang=en] .zeiten tr.heute th::after{content:"today"}
 .recht summary{cursor:pointer;font-weight:700;color:var(--gelb);padding:6px 0;width:max-content}
 .recht details[open]{background:rgba(255,255,255,.06);border-radius:12px;padding:4px 16px 16px}
 .recht details p{margin-bottom:8px;max-width:70ch}
+.recht details h3{margin:14px 0 4px;font-size:1rem;color:var(--gelb)}.recht details a{color:inherit}
 .platzhalter{background:var(--gelb);color:var(--tinte);padding:0 4px;border-radius:3px}
 
 /* ---------- Anrufleiste (nur Handy) ---------- */

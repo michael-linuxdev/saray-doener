@@ -9,7 +9,7 @@ Standorte/Zeiten: STANDORTE unten · Hinweis-Band: HINWEISE unten.
 WhatsApp-Nummern stehen nicht im Repo: optional in lokal.json (siehe README).
 """
 import base64, html, json, math, pathlib, re, shutil, sys, urllib.parse
-from menu import GRUPPEN, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN
+from menu import GRUPPEN, VEGETARISCH, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN
 import englisch as EN
 import anpassungen as ANP
 
@@ -26,6 +26,7 @@ STANDORTE = [
         "id": "freital", "name": "Freital", "strasse": "Dresdner Str. 87", "plz": "01705", "ort": "Freital",
         "tel": "0351 27676660", "tel_href": "+4935127676660", "tel_ld": "+49 351 27676660",
         "bar": True,  # nur Barzahlung
+        "google": "ChIJi62UlB_FCUcRyZITkeCfe8Q",  # Google-Place-ID (Bewertungslink)
         "whatsapp": "491601836249",  # Testnummer (Michael); Laden-Handy Freital wäre 4915737807403; leer: Knopf ausgeblendet
         "zeilen": [("Montag bis Freitag", "10–22 Uhr", [1, 2, 3, 4, 5]), ("Samstag und Sonntag", "11–22 Uhr", [6, 0])],
         "zeilen_en": ["Monday to Friday", "Saturday and Sunday"], "extra_en": "Outdoor seating in good weather.",
@@ -37,6 +38,7 @@ STANDORTE = [
         "id": "altenberg", "name": "Altenberg", "strasse": "Dresdner Str. 23", "plz": "01773", "ort": "Altenberg",
         "tel": "035056 23674", "tel_href": "+493505623674", "tel_ld": "+49 35056 23674",
         "bar": True,
+        "google": "ChIJ7XWZiUmTCUcRxe2o2WmxkxQ",
         "whatsapp": "491601836249",  # Testnummer (Michael)
         "zeilen": [("Montag bis Samstag", "10–21 Uhr", [1, 2, 3, 4, 5, 6]), ("Sonntag", "11–21 Uhr", [0])],
         "zeilen_en": ["Monday to Saturday", "Sunday"], "extra_en": "Right by the station.",
@@ -137,8 +139,8 @@ ICONS = {
     "kinder": f'<path d="M20 5 L24.5 14.5 L35 15.6 L27.2 22.6 L29.5 33 L20 27.7 L10.5 33 L12.8 22.6 L5 15.6 L15.5 14.5 Z" fill="#FFD21F" {_F}/><path d="M16.5 20.5 v1 M23.5 20.5 v1 M16.5 24.5 C18 26.5 22 26.5 23.5 24.5" {_K}/>',
     "getraenke": f'<path d="M11 13 H29 L26.5 35 H13.5 Z" fill="#C8371A" {_F}/><path d="M12 19 H28" stroke="#fff" stroke-width="2.6"/><path d="M20 13 L24 4 L29 4" {_K}/>',
 }
-EMPFEHLUNG = "26"
-BELIEBT = ["7", "51", "37", "100", "96", "99", "124", "17", "20"]
+EMPFEHLUNG = ["26", "91", "125"]   # „Wir empfehlen“: Saray-Teller (groß), Pizza Saray, Pizzabrötchen
+BELIEBT = ["1", "50", "23", "100", "105", "124"]   # Reihenfolge wie vom Inhaber gewünscht; 23 = Döner-Teller mit Salat und Pommes
 GERICHT = {g[0]: (g, gr, ab) for gr in GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0]}
 
 
@@ -167,16 +169,21 @@ def plus_knopf(name):
     return f'<button type="button" class="plus" aria-label="{e(name)} zur Bestellung hinzufügen" data-en-aria="Add {e(EN.name(name))} to my order">+</button>'
 
 
+VEG_ICON = (' <svg class="veg" viewBox="0 0 24 24" role="img" aria-label="vegetarisch" data-en-aria="vegetarian"><title>vegetarisch</title>'
+            '<path d="M5 19C5 10 11 5 20 4c0 9-5 15-14 15z" fill="#2E7D32"/><path d="M5 19c3-5 6-8 10-10" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
+
+
 def gericht_html(g, gruppe, abschnitt, groessen):
     nr, name, desc, preise = g[:4]
     varianten = g[4] if len(g) > 4 else []
     suchtext = " ".join([nr, name, desc, abschnitt, gruppe] + [v for _, v in varianten]
                         + [EN.name(name), EN.text(desc), EN.titel(abschnitt), EN.titel(gruppe)] + [EN.text(v) for _, v in varianten])
     beliebt = nr in BELIEBT
-    empfohlen = nr == EMPFEHLUNG
-    teile = [f'<li class="gericht{" ist-beliebt" if beliebt or empfohlen else ""}"{f' id="nr-{nr}"' if nr else ""} data-s="{e(suchtext)}{" beliebt" if beliebt else ""}{" empfehlung" if empfohlen else ""}"{zettel_daten(nr, name, desc, preise, groessen, gericht_typ(nr, gruppe, abschnitt), varianten)}>']
+    empfohlen = nr in EMPFEHLUNG
+    veg = (nr or name) in VEGETARISCH or gruppe == "Getränke" or "vegetarisch" in name.lower()
+    teile = [f'<li class="gericht{" ist-beliebt" if beliebt or empfohlen else ""}"{f' id="nr-{nr}"' if nr else ""} data-s="{e(suchtext)}{" beliebt" if beliebt else ""}{" empfehlung" if empfohlen else ""}{" vegetarisch vegetarian" if veg else ""}"{" data-veg" if veg else ""}{zettel_daten(nr, name, desc, preise, groessen, gericht_typ(nr, gruppe, abschnitt), varianten)}>']
     teile.append(f'<span class="nr">{chr(60) + "span class=" + chr(34) + "sr-only" + chr(34) + ">Nr. </span>" + e(nr) if nr else ""}</span>')
-    teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
+    teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{VEG_ICON if veg and gruppe != "Getränke" else ""}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
     if groessen:
         for i, p in enumerate(preise):
             teile.append(preis(p, f"preis p{i + 1}", groessen[i]))
@@ -252,23 +259,24 @@ def gruppe_html(gr):
 KARTE = "\n".join(gruppe_html(g) for g in GRUPPEN)
 
 
-def beliebt_karte(nr, gross=False):
+def beliebt_karte(nr, gross=False, koch=True):
     g, gr, ab = GERICHT[nr]
     name, desc, preise = g[1], g[2], g[3]
     zusatz = f" ({ab['groessen'][0]})" if ab.get("groessen") else ""
-    return (f'<li class="tipp{" tipp-gross" if gross else ""}"{zettel_daten(nr, name, desc, preise, ab.get("groessen"), gericht_typ(nr, gr["titel"], ab["titel"]), g[4] if len(g) > 4 else ())}><a href="#nr-{nr}">'
+    return (f'<li class="tipp{" tipp-gross" if gross else ""}{" ohne-koch" if gross and not koch else ""}"{zettel_daten(nr, name, desc, preise, ab.get("groessen"), gericht_typ(nr, gr["titel"], ab["titel"]), g[4] if len(g) > 4 else ())}><a href="#nr-{nr}">'
             f'<span class="tipp-nr"><span data-en="No.">Nr.</span> {nr}</span><b class="tipp-name" data-en="{e(EN.name(name))}">{e(name)}</b>'
             f'<span class="tipp-info" data-en="{e(EN.text(desc))}">{e(desc)}</span>'
             f'<span class="tipp-preis">{t("ab ", "from ") if zusatz else ""}{preis(preise[0])}</span>'
-            + (f'<img class="tipp-koch" src="{maskottchen("saray-koch.svg", "image/svg+xml")}" width="430" height="470" alt="">' if gross else "")
+            + (f'<img class="tipp-koch" src="{maskottchen("saray-koch.svg", "image/svg+xml")}" width="430" height="470" alt="">' if gross and koch else "")
             + '</a>' + plus_knopf(name) + '</li>')
 
 
 # gelöschte Gerichte fallen aus Empfehlung und „Beliebt“ heraus
 BELIEBT = [n for n in BELIEBT if n in GERICHT]
 BELIEBT_HTML = ('<section class="beliebt" aria-label="Empfehlungen">'
-                + ('<h3 class="beliebt-titel" data-en="Our recommendation">Wir empfehlen</h3><ul class="tipps tipps-empfehlung">' + beliebt_karte(EMPFEHLUNG, True) + '</ul>'
-                   if EMPFEHLUNG in GERICHT else "") +
+                + ('<h3 class="beliebt-titel" data-en="Our recommendation">Wir empfehlen</h3><ul class="tipps tipps-empfehlung">'
+                   + "".join(beliebt_karte(n, True, i == 0) for i, n in enumerate(n for n in EMPFEHLUNG if n in GERICHT)) + '</ul>'
+                   if any(n in GERICHT for n in EMPFEHLUNG) else "") +
                 '<h3 class="beliebt-titel" data-en="Popular with our guests">Beliebt bei unseren Gästen</h3>'
                 '<ul class="tipps">' + "".join(beliebt_karte(n) for n in BELIEBT) + '</ul></section>')
 NAV = "".join(f'<li><a href="#{g["id"]}" data-en="{e(EN.titel(g["titel"]))}">{e(g["titel"])}</a></li>' for g in GRUPPEN)
@@ -521,7 +529,12 @@ p{margin:0}
 .tipp a{display:flex;flex-direction:column;gap:4px;flex:1;padding:14px 16px;border-radius:14px;text-decoration:none}
 @media (hover:hover){.tipp:hover{background:var(--gelb-blass)}.tipp-gross:hover{background:#FFDB4D}}
 .tipp-gross{flex-basis:100%}
-.tipps-empfehlung{overflow:visible;margin-bottom:22px}
+.tipps-empfehlung{overflow:visible;margin-bottom:22px;flex-wrap:wrap}
+.tipp-gross.ohne-koch a{padding-right:20px;min-height:0}
+.tipps-empfehlung .ohne-koch{flex-basis:calc(50% - 6px);min-width:0}
+.tipps-empfehlung .ohne-koch a{padding:14px 14px 16px}
+.tipps-empfehlung .ohne-koch .tipp-name{font-size:1.2rem}
+.tipps-empfehlung .ohne-koch .tipp-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tipp-gross a{position:relative;padding:18px 120px 18px 20px;min-height:150px}
 .tipp-koch{position:absolute;right:10px;bottom:6px;width:104px}
 @media (min-width:700px){.tipp-gross a{padding-right:190px}.tipp-koch{width:150px;right:24px;bottom:4px}}
@@ -536,8 +549,8 @@ p{margin:0}
 .tipp-preis .preis{font-size:1.35rem}
 .gericht.ist-beliebt{scroll-margin-top:90px}
 @media (min-width:1100px){.tipps{width:auto;margin:0;padding:4px 0 12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
-  .tipps-empfehlung{grid-template-columns:minmax(0,1fr)}
-  .tipp-gross{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
+  .tipps-empfehlung{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tipp-gross{grid-column:1/-1}.tipp-gross.ohne-koch{grid-column:auto}.gericht.ist-beliebt{scroll-margin-top:24px}}
 @media (max-width:559px){
   .gericht{padding-block:5px}
   .info{font-size:.88rem;line-height:1.35;margin-top:1px}
@@ -556,6 +569,11 @@ p{margin:0}
 .suche-feld .ico{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--tinte-weich);pointer-events:none}
 .suche input{width:100%;min-height:50px;border:2px solid var(--tinte);border-radius:999px;padding:0 18px 0 46px;
   font:400 1.02rem var(--text);color:var(--tinte);background:#fff;-webkit-appearance:none;appearance:none}
+.veg-schalter{display:inline-flex;align-items:center;gap:6px;margin-top:10px;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--tinte);
+  background:#fff;color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
+.veg-schalter svg{width:18px;height:18px}
+.veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}
+svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .suche input::placeholder{color:#8d7486}
 .suche input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:20px;height:20px;cursor:pointer;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233A1531' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat}
 .suche input:focus-visible{outline:3px solid var(--tinte);outline-offset:2px;box-shadow:0 0 0 7px var(--gelb)}
@@ -830,6 +848,7 @@ html[lang=en] .zeiten tr.heute th::after{content:"today"}
 .recht summary{cursor:pointer;font-weight:700;color:var(--gelb);padding:6px 0;width:max-content}
 .recht details[open]{background:rgba(255,255,255,.06);border-radius:12px;padding:4px 16px 16px}
 .recht details p{margin-bottom:8px;max-width:70ch}
+.recht details h3{margin:14px 0 4px;font-size:1rem;color:var(--gelb)}.recht details a{color:inherit}
 .platzhalter{background:var(--gelb);color:var(--tinte);padding:0 4px;border-radius:3px}
 
 /* ---------- Anrufleiste (nur Handy) ---------- */
@@ -947,7 +966,8 @@ ZETTEL_JS = r'''
   function grund(t){return {s:(t==='D'||t==='SA')?['Kräuter']:[],ohne:[],ex:[],wahl:[],va:''};}
   function exPreis(o){return (o.ex||[]).reduce(function(a,e){return a+(GEMUESE.indexOf(e)>-1?150:200);},0);}
   function aktionZ(x){var li=gerichtLi(x.k);if(!li)return null;var gs=li.dataset.g?li.dataset.g.split('|'):[''];
-    return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),abh.tag||isoTag(0),abh.laden||null);}
+    var tag=abh.tag||isoTag(0),zi=ZINFO[abh.zeit],min=zi?zi.min:(tag===isoTag(0)?jetzt().min:null);
+    return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),tag,abh.laden||null,min);}
   function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o);}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
@@ -1217,6 +1237,7 @@ ZETTEL_JS = r'''
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
   var TEL=%%TEL%%,waGesendet=document.getElementById('wa-gesendet');
   waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
+    try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now()}));}catch(e){}
     if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';
     waGesendet.appendChild(document.createTextNode(L('Gesendet? Der Laden bestätigt Ihre Bestellung per WhatsApp. Ohne Antwort bitte anrufen: ','Sent? The shop confirms your order via WhatsApp. No reply? Please call: ')));
     var a=el('a',null,tl[0]);a.href='tel:'+tl[1];waGesendet.appendChild(a);waGesendet.hidden=false;});
@@ -1443,10 +1464,11 @@ JS = r"""
   function isoTag(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5));}
   function tagZeit(ort,off){var s=SONDER[ort]||{},d=isoTag(off);if(d in s)return s[d];return ZEITEN[ort][(jetzt().tag+off)%7]||null;}
   /* Sonderaktion für Gericht k (Größe i) an Datum iso und Laden (null = noch nicht gewählt) */
-  function aktion(k,i,iso,laden){
+  function aktion(k,i,iso,laden,min){
     var wt=new Date(iso+'T12:00:00Z').getUTCDay();
     for(var j=0;j<AKTIONEN.length;j++){var a=AKTIONEN[j],p=a.p[k];
       if(!p||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.laden&&a.laden!==laden))continue;
+      if(a.za!=null&&(min==null||min<a.za||min>=a.zb))continue;
       return {c:p[Math.min(i||0,p.length-1)],a:a};}
     return null;
   }
@@ -1460,13 +1482,14 @@ JS = r"""
       if(iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0))return;
       Object.keys(a.p).forEach(function(k){
         var st=document.querySelector('.sticker');
-        if(k==='1'&&st&&!a.laden){var c=a.p[k][0],sp=st.querySelector('.sticker-preis');st.querySelector('small').textContent=L('Aktion','Offer');
+        if(k==='1'&&st&&!a.laden&&a.za==null){var c=a.p[k][0],sp=st.querySelector('.sticker-preis');st.querySelector('small').textContent=L('Aktion','Offer');
           if(sp)sp.innerHTML=Math.floor(c/100)+'<span class="ct">'+('0'+c%100).slice(-2)+'</span>';st.classList.add('sticker-aktion');}
         document.querySelectorAll('li[data-k="'+(window.CSS&&CSS.escape?CSS.escape(k):k)+'"]').forEach(function(li){
           var ziel=li.querySelector('.name, .tipp-name');if(!ziel)return;
           var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
           var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
-          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
+          var uz=a.za!=null?' '+uhr(a.za).replace(' Uhr','')+'–'+uhr(a.zb):'';
+          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
           ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
           li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
         });
@@ -1504,14 +1527,27 @@ JS = r"""
   }
   zaehlen(location.pathname);
   document.addEventListener('click',function(ev){
-    var a=ev.target.closest('a,button');if(!a)return;var laden=a.dataset.anruf||'';
-    if(a.id==='zettel-whatsapp')zaehlen('whatsapp-bestellung');
-    else if(/^tel:/.test(a.getAttribute('href')||''))zaehlen('anrufen'+(laden?'-'+laden:''));
+    var a=ev.target.closest('a,button');if(!a)return;var laden=a.dataset.anruf||'',href=a.getAttribute('href')||'';
+    if(!laden&&/^tel:/.test(href))try{Object.keys(TEL).forEach(function(l){if('tel:'+TEL[l][1]===href)laden=l;});}catch(e){}
+    if(a.id==='zettel-whatsapp')zaehlen('whatsapp-'+((typeof abh==='object'&&abh&&abh.laden)||'bestellung'));
+    else if(/^tel:/.test(href))zaehlen('anrufen'+(laden?'-'+laden:''));
     else if(a.id==='zettel-kopieren')zaehlen('bestellung-teilen');
     else if(a.id==='sammel-einladen')zaehlen('gemeinsam-bestellen');
   },true);
   /* Offline: Speisekarte bleibt verfügbar (Service Worker, nur auf der echten Seite) */
   if(%%SW%%&&'serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+  /* „Hat's geschmeckt?“ – einmal, beim nächsten Besuch nach einer WhatsApp-Bestellung (2 Std. bis 14 Tage später) */
+  var GOOGLE=%%GOOGLE%%;
+  setTimeout(function(){
+    var bw=null;try{bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');}catch(e){return;}
+    if(!bw||bw.fertig||!GOOGLE[bw.l])return;var alt=Date.now()-bw.t;if(alt<2*36e5||alt>14*864e5)return;
+    if(!document.getElementById('hand-tipp').hidden)return;
+    try{bw.fertig=1;localStorage.setItem('saray-bewertung',JSON.stringify(bw));}catch(e){return;}
+    var ort=bw.l==='freital'?'Freital':'Altenberg';
+    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+L('Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.','We would love a Google review for Saray Döner '+ort+'.'),
+      [[L('⭐ Bewerten','⭐ Review'),function(){zaehlen('bewertung-'+bw.l);window.open('https://search.google.com/local/writereview?placeid='+GOOGLE[bw.l],'_blank','noopener');handTippZu();}],
+       [L('Nein danke','No thanks'),handTippZu]],25000);
+  },1500);
   /* „Inhaltsstoffe … · Allergene …“ öffnet die Liste unten */
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-allergene]'))return;var d=document.getElementById('allergene');if(d)d.open=true;});
   if(location.hash==='#allergene'){var dA=document.getElementById('allergene');if(dA)dA.open=true;}
@@ -1585,12 +1621,14 @@ JS = r"""
     return s.toLowerCase().replace(/ä|ae/g,'a').replace(/ö|oe/g,'o').replace(/ü|ue/g,'u').replace(/ß/g,'ss')
       .normalize('NFD').replace(/[̀-ͯ]/g,'');
   }
+  var vegK=document.getElementById('veg-schalter');
+  if(vegK)vegK.addEventListener('click',function(){vegK.setAttribute('aria-pressed',String(vegK.getAttribute('aria-pressed')!=='true'));suchen();});
   var feld=document.getElementById('suche-feld'),gerichte=[].slice.call(document.querySelectorAll('.gericht'));
   var treffer=document.querySelector('.treffer'),nichts=document.querySelector('.nichts'),wort=nichts&&nichts.querySelector('q');
   gerichte.forEach(function(g){g._s=norm(g.getAttribute('data-s'));});
   function suchen(){
-    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0;
-    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;});g.hidden=!ok;if(ok)n++;});
+    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0,veg=vegK&&vegK.getAttribute('aria-pressed')==='true';
+    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;})&&(!veg||g.hasAttribute('data-veg'));g.hidden=!ok;if(ok)n++;});
     document.querySelectorAll('.liste').forEach(function(l){
       var v=l.querySelectorAll('.gericht:not([hidden])').length;l.style.setProperty('--zeilen',Math.max(1,Math.ceil(v/2)));
       l.closest('.abschnitt').hidden=v===0;
@@ -1598,10 +1636,10 @@ JS = r"""
     document.querySelectorAll('.gruppe').forEach(function(g){
       var leer=!g.querySelector('.gericht:not([hidden])');g.hidden=leer;if(links[g.id])links[g.id].classList.toggle('leer',leer);
     });
-    treffer.hidden=!teile.length||n===0;
+    treffer.hidden=!(teile.length||veg)||n===0;
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
-    var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0;
+    var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0||veg;
     if(typeof letzteZeigen==='function')letzteZeigen();
     fest=null;verfolgen();
   }
@@ -1642,7 +1680,7 @@ JS = r"""
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
-    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();
+    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{aktionenZeigen();}catch(e){}
   }
   spKnopf.addEventListener('click',function(){sprache(SP==='en'?'de':'en',true);});
   if(SP==='en')sprache('en',false);
@@ -1731,6 +1769,7 @@ SEITE = r"""<!doctype html>
         <div class="suche" role="search">
           <label for="suche-feld" data-en="Search dishes">Gericht suchen</label>
           <div class="suche-feld">%%SUCH_ICON%%<input id="suche-feld" type="search" placeholder="Name oder Nummer" data-en-ph="Name or number" autocomplete="off" enterkeyhint="search"></div>
+          <button type="button" class="veg-schalter" id="veg-schalter" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 11 5 20 4c0 9-5 15-14 15z" fill="#2E7D32"/></svg><span data-en="Vegetarian only">Nur vegetarisch</span></button>
         </div>
         <div class="kat-marke" aria-hidden="true"></div>
         <nav class="kategorien" aria-label="Kategorien der Speisekarte"><ul>%%NAV%%</ul></nav>
@@ -1784,10 +1823,7 @@ SEITE = r"""<!doctype html>
         E-Mail: <a href="mailto:solino1@hotmail.de">solino1@hotmail.de</a></p>
       </details>
       <details id="datenschutz"><summary data-en="Datenschutz (privacy policy)">Datenschutz</summary>
-        <p><span class="platzhalter">[Datenschutzerklärung hier einfügen]</span></p>
-        <p>Hinweis für die Erstellung: Diese Website setzt keine Cookies, nutzt kein Tracking und lädt nichts von fremden Servern.
-        Schriften und Bilder liegen auf dem eigenen Server. Zu beschreiben sind vor allem der Webhoster (GitHub Pages) und dessen Server-Logfiles,
-        die Bestellung per WhatsApp (Weitergabe an WhatsApp/Meta, nur wenn der Gast den Knopf nutzt), das Speichern der Bestellung im Browser (localStorage, kein Cookie)%%ZAEHL_HINWEIS%%.</p>
+%%DATENSCHUTZ%%
       </details>
     </div>
   </div>
@@ -1857,12 +1893,17 @@ for _a in AKTIONEN:
     _bis = f'{_a["bis"][8:]}.{_a["bis"][5:7]}.'
     _tage = (" " + ", ".join(_WT[t] for t in _a["tage"])) if _a.get("tage") else ""
     _tage_en = (" on " + ", ".join(_WT_EN[t] for t in _a["tage"])) if _a.get("tage") else ""
+    if _a.get("zeit_ab"):
+        _uz = f" {ANP.uhr(ANP._min(_a['zeit_ab']))}–{ANP.uhr(ANP._min(_a['zeit_bis']))} Uhr"
+        _tage += _uz
+        _tage_en += f" {_a['zeit_ab']}–{_a['zeit_bis']}"
     _laden = next((f" – nur in {s['name']}" for s in STANDORTE if s["id"] == _a.get("laden")), "")
     _laden_en = next((f" – {s['name']} only" for s in STANDORTE if s["id"] == _a.get("laden")), "")
     HINWEISE.append({"text": f"Aktion: {_a['name']}{_tage} – bis {_bis}{_laden}",
                      "en": f"Special offer: {_a['name']}{_tage_en} – until {_bis}{_laden_en}",
                      "von": _a["von"], "bis": _a["bis"], "aktion": True})
 JS_AKTIONEN = json.dumps([{"n": a["name"], "von": a["von"], "bis": a["bis"], "tage": a.get("tage"), "laden": a.get("laden"),
+                           "za": ANP._min(a["zeit_ab"]) if a.get("zeit_ab") else None, "zb": ANP._min(a["zeit_bis"]) if a.get("zeit_bis") else None,
                            "p": {k: [int(x.replace(",", "")) for x in v] for k, v in a["preise"].items()}} for a in AKTIONEN], ensure_ascii=False)
 
 
@@ -1900,6 +1941,53 @@ def sperrgruppen():
 
 
 SPERRGRUPPEN = sperrgruppen()
+
+
+def datenschutz_html():
+    """Entwurf der Datenschutzerklärung – beschreibt, was die Seite tatsächlich tut. Vor dem Livegang prüfen lassen."""
+    zaehlen = (
+        '<h3>Reichweitenmessung mit GoatCounter</h3>'
+        '<p>Um zu sehen, wie die Website genutzt wird, zählen wir Seitenaufrufe und Klicks auf „Per WhatsApp bestellen“, „Anrufen“, '
+        '„Bestellung teilen“, „Gemeinsam bestellen“ und „Bewerten“ mit GoatCounter (Anbieter: Martin Tournoij, goatcounter.com). '
+        'Dabei werden keine Cookies gesetzt und keine Daten auf Ihrem Gerät gespeichert. Übermittelt werden die aufgerufene Seite bzw. der Klick, '
+        'die verweisende Seite, die Bildschirmbreite sowie technisch bedingt Ihre IP-Adresse und Browserkennung; GoatCounter speichert die '
+        'IP-Adresse nicht, sondern bildet daraus nur kurzzeitig eine nicht rückverfolgbare Kennung, um Mehrfachzählungen zu vermeiden. '
+        'Ist in Ihrem Browser „Do Not Track“ eingeschaltet, zählen wir nicht. Rechtsgrundlage ist unser berechtigtes Interesse an einer '
+        'datensparsamen Auswertung (Art. 6 Abs. 1 lit. f DSGVO) bzw. § 25 Abs. 2 Nr. 2 TDDDG.</p>') if ZAEHLER else ""
+    entwurf = '<p class="platzhalter">Entwurf – vor dem Freischalten rechtlich prüfen lassen.</p>' if VORSCHAU else ""
+    return f"""{entwurf}
+        <h3>Verantwortlich</h3>
+        <p>Ahmet Saglam, Saray Döner, Bahnhof 3, 01773 Altenberg, Telefon 035056 23674, E-Mail solino1@hotmail.de (siehe Impressum).</p>
+        <h3>Das Wichtigste vorab</h3>
+        <p>Diese Website setzt keine Cookies und bindet keine Inhalte fremder Anbieter ein. Schriften, Bilder und Stadtpläne liegen auf
+        unserem eigenen Webspace. Sie müssen keine Daten angeben, um die Speisekarte anzusehen.</p>
+        <h3>Hosting und Server-Logfiles</h3>
+        <p>Die Website wird bei GitHub Pages betrieben (GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA).
+        Beim Aufruf verarbeitet GitHub technisch notwendige Daten wie IP-Adresse, Datum und Uhrzeit, aufgerufene Datei, Browser und
+        Betriebssystem, um die Seite auszuliefern und die Sicherheit zu gewährleisten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.
+        Eine Übermittlung in die USA ist möglich; GitHub ist nach dem EU-US Data Privacy Framework zertifiziert.
+        Mehr dazu: <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Datenschutzerklärung von GitHub</a>.</p>
+        <h3>Speicherung auf Ihrem Gerät</h3>
+        <p>Ihre Bestellung, die gewählte Abholung und Ihr Name, die Sprache und die Einstellung für Linkshänder speichern wir nur in Ihrem
+        Browser (Local Storage), damit sie beim nächsten Besuch noch da sind. Diese Daten werden nicht an uns übertragen. Für die Nutzung
+        ohne Internet legt Ihr Browser außerdem Seite, Schriften und Bilder in einem Zwischenspeicher ab. Sie können all das jederzeit
+        in den Einstellungen Ihres Browsers löschen („Websitedaten löschen“). Rechtsgrundlage: § 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. f DSGVO.</p>
+        <h3>Bestellung per WhatsApp oder Telefon</h3>
+        <p>Wenn Sie auf „Per WhatsApp bestellen“ tippen, öffnet sich WhatsApp mit Ihrer Bestellung als vorbereiteter Nachricht. Erst wenn
+        Sie die Nachricht dort absenden, erhalten wir sie – zusammen mit Ihrer Telefonnummer und Ihrem WhatsApp-Namen. Für WhatsApp gilt die
+        Datenschutzerklärung von WhatsApp Ireland Ltd. (Meta). Wir nutzen Ihre Angaben nur, um die Bestellung zu bearbeiten
+        (Art. 6 Abs. 1 lit. b DSGVO) und löschen den Chat, wenn er dafür nicht mehr gebraucht wird. Gleiches gilt für telefonische Bestellungen.
+        „Bestellung teilen“ und „Gemeinsam bestellen“ nutzen das Teilen-Menü Ihres Geräts; was Sie wohin senden, entscheiden Sie selbst.</p>
+        {zaehlen}
+        <h3>Links zu Google</h3>
+        <p>„Route planen“ und „Bewerten“ öffnen Google Maps bzw. die Google-Bewertung erst, wenn Sie darauf tippen. Dann gilt die
+        Datenschutzerklärung von Google.</p>
+        <h3>Ihre Rechte</h3>
+        <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie Widerspruch
+        gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 15–21 DSGVO). Wenden Sie sich dazu an die oben genannte Adresse.
+        Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei der Sächsischen Datenschutz- und
+        Transparenzbeauftragten, Devrientstraße 5, 01067 Dresden.</p>
+        <p class="klein">Stand: {_dt.date.today().strftime("%m/%Y")}</p>"""
 
 
 def hinweise_html(liste):
@@ -1948,6 +2036,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
               .replace("%%LATO_B%%", b64("lato-bold.sub.woff", "font/woff")))
     js = (JS.replace("%%ZEITEN%%", JS_ZEITEN).replace("%%SONDER%%", JS_SONDER).replace("%%AKTIONEN%%", JS_AKTIONEN).replace("%%WARTE%%", JS_WARTE).replace("%%ZETTEL_JS%%", ZETTEL_JS)
             .replace("%%WA%%", json.dumps(whatsapp_nummern(einzeln)))
+            .replace("%%GOOGLE%%", json.dumps({st["id"]: st["google"] for st in STANDORTE if st.get("google")}))
             .replace("%%TEL%%", json.dumps({st["id"]: [st["tel"], st["tel_href"]] for st in STANDORTE}))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
@@ -1971,8 +2060,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%ORTE%%": ORTE,
         "%%ZETTEL_BAR%%": ('<p class="zettel-bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
         "%%ALLERGENE%%": allergene_html(),
-        "%%ZAEHL_HINWEIS%%": (" und die cookielose Besucherzählung mit GoatCounter (keine personenbezogenen Daten, keine Cookies; "
-                              "gezählt werden Seitenaufrufe und Klicks auf WhatsApp, Anrufen, Teilen, Gemeinsam bestellen)") if ZAEHLER else "",
+        "%%DATENSCHUTZ%%": datenschutz_html(),
         "%%FUSS_ORTE%%": FUSS_ORTE,
         "%%HINWEISE%%": hinweise_html(HINWEISE if hinweise is None else hinweise),
         "%%WA_ICON%%": '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3 2.5 6 6 6.5l1.2-1.4-2-1-.9.8c-1-.4-1.9-1.3-2.3-2.3l.8-.9-1-2L9.4 8.4"/></svg>',
@@ -2047,7 +2135,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         (aus / "CNAME").write_text(CNAME + "\n")
     (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\n"))
     import chef_app
-    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO)
+    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())
     for w in WARNUNGEN:
         print("WARNUNG:", w)

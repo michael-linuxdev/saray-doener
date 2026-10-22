@@ -58,10 +58,11 @@
   function isoTag(off){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+(off||0)*864e5));}
   function tagZeit(ort,off){var s=SONDER[ort]||{},d=isoTag(off);if(d in s)return s[d];return ZEITEN[ort][(jetzt().tag+off)%7]||null;}
   /* Sonderaktion für Gericht k (Größe i) an Datum iso und Laden (null = noch nicht gewählt) */
-  function aktion(k,i,iso,laden){
+  function aktion(k,i,iso,laden,min){
     var wt=new Date(iso+'T12:00:00Z').getUTCDay();
     for(var j=0;j<AKTIONEN.length;j++){var a=AKTIONEN[j],p=a.p[k];
       if(!p||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.laden&&a.laden!==laden))continue;
+      if(a.za!=null&&(min==null||min<a.za||min>=a.zb))continue;
       return {c:p[Math.min(i||0,p.length-1)],a:a};}
     return null;
   }
@@ -75,13 +76,14 @@
       if(iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0))return;
       Object.keys(a.p).forEach(function(k){
         var st=document.querySelector('.sticker');
-        if(k==='1'&&st&&!a.laden){var c=a.p[k][0],sp=st.querySelector('.sticker-preis');st.querySelector('small').textContent=L('Aktion','Offer');
+        if(k==='1'&&st&&!a.laden&&a.za==null){var c=a.p[k][0],sp=st.querySelector('.sticker-preis');st.querySelector('small').textContent=L('Aktion','Offer');
           if(sp)sp.innerHTML=Math.floor(c/100)+'<span class="ct">'+('0'+c%100).slice(-2)+'</span>';st.classList.add('sticker-aktion');}
         document.querySelectorAll('li[data-k="'+(window.CSS&&CSS.escape?CSS.escape(k):k)+'"]').forEach(function(li){
           var ziel=li.querySelector('.name, .tipp-name');if(!ziel)return;
           var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
           var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
-          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
+          var uz=a.za!=null?' '+uhr(a.za).replace(' Uhr','')+'–'+uhr(a.zb):'';
+          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?L(' (nur'+ort+')',' ('+ort.trim()+' only)'):'');
           ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
           li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
         });
@@ -119,14 +121,27 @@
   }
   zaehlen(location.pathname);
   document.addEventListener('click',function(ev){
-    var a=ev.target.closest('a,button');if(!a)return;var laden=a.dataset.anruf||'';
-    if(a.id==='zettel-whatsapp')zaehlen('whatsapp-bestellung');
-    else if(/^tel:/.test(a.getAttribute('href')||''))zaehlen('anrufen'+(laden?'-'+laden:''));
+    var a=ev.target.closest('a,button');if(!a)return;var laden=a.dataset.anruf||'',href=a.getAttribute('href')||'';
+    if(!laden&&/^tel:/.test(href))try{Object.keys(TEL).forEach(function(l){if('tel:'+TEL[l][1]===href)laden=l;});}catch(e){}
+    if(a.id==='zettel-whatsapp')zaehlen('whatsapp-'+((typeof abh==='object'&&abh&&abh.laden)||'bestellung'));
+    else if(/^tel:/.test(href))zaehlen('anrufen'+(laden?'-'+laden:''));
     else if(a.id==='zettel-kopieren')zaehlen('bestellung-teilen');
     else if(a.id==='sammel-einladen')zaehlen('gemeinsam-bestellen');
   },true);
   /* Offline: Speisekarte bleibt verfügbar (Service Worker, nur auf der echten Seite) */
   if(true&&'serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+  /* „Hat's geschmeckt?“ – einmal, beim nächsten Besuch nach einer WhatsApp-Bestellung (2 Std. bis 14 Tage später) */
+  var GOOGLE={"freital": "ChIJi62UlB_FCUcRyZITkeCfe8Q", "altenberg": "ChIJ7XWZiUmTCUcRxe2o2WmxkxQ"};
+  setTimeout(function(){
+    var bw=null;try{bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');}catch(e){return;}
+    if(!bw||bw.fertig||!GOOGLE[bw.l])return;var alt=Date.now()-bw.t;if(alt<2*36e5||alt>14*864e5)return;
+    if(!document.getElementById('hand-tipp').hidden)return;
+    try{bw.fertig=1;localStorage.setItem('saray-bewertung',JSON.stringify(bw));}catch(e){return;}
+    var ort=bw.l==='freital'?'Freital':'Altenberg';
+    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+L('Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.','We would love a Google review for Saray Döner '+ort+'.'),
+      [[L('⭐ Bewerten','⭐ Review'),function(){zaehlen('bewertung-'+bw.l);window.open('https://search.google.com/local/writereview?placeid='+GOOGLE[bw.l],'_blank','noopener');handTippZu();}],
+       [L('Nein danke','No thanks'),handTippZu]],25000);
+  },1500);
   /* „Inhaltsstoffe … · Allergene …“ öffnet die Liste unten */
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-allergene]'))return;var d=document.getElementById('allergene');if(d)d.open=true;});
   if(location.hash==='#allergene'){var dA=document.getElementById('allergene');if(dA)dA.open=true;}
@@ -200,12 +215,14 @@
     return s.toLowerCase().replace(/ä|ae/g,'a').replace(/ö|oe/g,'o').replace(/ü|ue/g,'u').replace(/ß/g,'ss')
       .normalize('NFD').replace(/[̀-ͯ]/g,'');
   }
+  var vegK=document.getElementById('veg-schalter');
+  if(vegK)vegK.addEventListener('click',function(){vegK.setAttribute('aria-pressed',String(vegK.getAttribute('aria-pressed')!=='true'));suchen();});
   var feld=document.getElementById('suche-feld'),gerichte=[].slice.call(document.querySelectorAll('.gericht'));
   var treffer=document.querySelector('.treffer'),nichts=document.querySelector('.nichts'),wort=nichts&&nichts.querySelector('q');
   gerichte.forEach(function(g){g._s=norm(g.getAttribute('data-s'));});
   function suchen(){
-    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0;
-    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;});g.hidden=!ok;if(ok)n++;});
+    var roh=feld.value.trim(),q=norm(roh),teile=q.split(/\s+/).filter(Boolean),n=0,veg=vegK&&vegK.getAttribute('aria-pressed')==='true';
+    gerichte.forEach(function(g){var ok=teile.every(function(w){return g._s.indexOf(w)>-1;})&&(!veg||g.hasAttribute('data-veg'));g.hidden=!ok;if(ok)n++;});
     document.querySelectorAll('.liste').forEach(function(l){
       var v=l.querySelectorAll('.gericht:not([hidden])').length;l.style.setProperty('--zeilen',Math.max(1,Math.ceil(v/2)));
       l.closest('.abschnitt').hidden=v===0;
@@ -213,10 +230,10 @@
     document.querySelectorAll('.gruppe').forEach(function(g){
       var leer=!g.querySelector('.gericht:not([hidden])');g.hidden=leer;if(links[g.id])links[g.id].classList.toggle('leer',leer);
     });
-    treffer.hidden=!teile.length||n===0;
+    treffer.hidden=!(teile.length||veg)||n===0;
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
-    var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0;
+    var bl=document.querySelector('.beliebt');if(bl)bl.hidden=teile.length>0||veg;
     if(typeof letzteZeigen==='function')letzteZeigen();
     fest=null;verfolgen();
   }
@@ -327,7 +344,8 @@
   function grund(t){return {s:(t==='D'||t==='SA')?['Kräuter']:[],ohne:[],ex:[],wahl:[],va:''};}
   function exPreis(o){return (o.ex||[]).reduce(function(a,e){return a+(GEMUESE.indexOf(e)>-1?150:200);},0);}
   function aktionZ(x){var li=gerichtLi(x.k);if(!li)return null;var gs=li.dataset.g?li.dataset.g.split('|'):[''];
-    return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),abh.tag||isoTag(0),abh.laden||null);}
+    var tag=abh.tag||isoTag(0),zi=ZINFO[abh.zeit],min=zi?zi.min:(tag===isoTag(0)?jetzt().min:null);
+    return aktion(x.k,Math.max(0,gs.indexOf(x.g||'')),tag,abh.laden||null,min);}
   function stueck(x){var ak=aktionZ(x);return (ak?ak.c:x.c)+exPreis(x.o);}
   function sig(x){var o=x.o;return [x.k,x.g,o.s.slice().sort().join(','),o.ohne.slice().sort().join(','),o.ex.slice().sort().join(','),o.wahl.slice().sort().join(','),o.va,x.notiz||'',x.fuer||''].join('|');}
   function liste(a,en){var u=en?' and ':' und ';return a.length<2?a.join(''):a.slice(0,-1).join(', ')+u+a[a.length-1];}
@@ -597,6 +615,7 @@
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
   var TEL={"freital": ["0351 27676660", "+4935127676660"], "altenberg": ["035056 23674", "+493505623674"]},waGesendet=document.getElementById('wa-gesendet');
   waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
+    try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now()}));}catch(e){}
     if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';
     waGesendet.appendChild(document.createTextNode(L('Gesendet? Der Laden bestätigt Ihre Bestellung per WhatsApp. Ohne Antwort bitte anrufen: ','Sent? The shop confirms your order via WhatsApp. No reply? Please call: ')));
     var a=el('a',null,tl[0]);a.href='tel:'+tl[1];waGesendet.appendChild(a);waGesendet.hidden=false;});
@@ -797,7 +816,7 @@
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
-    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();
+    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{aktionenZeigen();}catch(e){}
   }
   spKnopf.addEventListener('click',function(){sprache(SP==='en'?'de':'en',true);});
   if(SP==='en')sprache('en',false);

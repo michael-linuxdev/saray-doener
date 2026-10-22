@@ -39,6 +39,9 @@ Nur Python 3, keine Pakete nötig. Nach jeder Änderung `python3 build.py` laufe
 - **Zutaten und Allergene:** `ALLERGENE`, `ZUTATEN`, `KENNZEICHNUNG` (je Abschnitt) und `SOSSEN` in `menu.py`, abgeschrieben von der gedruckten Karte („Gültig ab 01.02.2024“). Unter jedem Abschnitt steht eine Zeile „Inhaltsstoffe … · Allergene …“, unten die aufklappbare Liste.
 - **Barzahlung:** `"bar": True` je Laden in `STANDORTE` – zeigt „Nur Barzahlung“ beim Laden, in den Schildern oben, in „Meine Bestellung“ und in den Suchmaschinen-Daten.
 - **Besucher zählen (ohne Cookies):** `ZAEHLER` in `build.py` auf das GoatCounter-Kürzel setzen (Konto auf goatcounter.com, kostenlos für kleine Seiten). Gezählt werden Seitenaufrufe und Klicks auf WhatsApp, Anrufen, Teilen und Gemeinsam bestellen. Leer = aus. Der Datenschutz-Hinweis passt sich an.
+- **Vegetarisch:** `VEGETARISCH` in `menu.py` (Nummern bzw. Namen); Getränke und neue Gerichte mit „vegetarisch“ im Namen zählen automatisch. Blatt-Symbol am Gericht, Schalter „Nur vegetarisch“ unter der Suche.
+- **„Hat’s geschmeckt?“:** Wer per WhatsApp bestellt hat, sieht beim nächsten Besuch (2 Stunden bis 14 Tage später) einmal den Link zur Google-Bewertung des Ladens (`google` in `STANDORTE`).
+- **Datenschutz:** Entwurf in `datenschutz_html()` in `build.py` – beschreibt GitHub Pages, Speicherung im Browser, WhatsApp, GoatCounter. Vor dem Livegang rechtlich prüfen lassen.
 - **Empfehlung und „Beliebt“:** `EMPFEHLUNG` und `BELIEBT` in `build.py`.
 - **Vorbestellung:** `VORBESTELL_TAGE` in `build.py` (Standard 14 Tage; 0 = nur heute). Angeboten werden nur Öffnungstage im 15-Minuten-Raster; die Nachricht heißt dann „Vorbestellung“ und nennt Wochentag und Datum.
 
@@ -81,6 +84,8 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Zeiten:** Öffnungszeiten je Laden und Wochentag, auch „geschlossen“. Darunter **Besondere Tage** (Heiligabend, Feiertag, Urlaub): an einem Datum geschlossen oder andere Zeiten. Die Seite zeigt sie beim Laden an, Status und Abholzeiten richten sich danach; vergangene Tage verschwinden von selbst.
 - **Karte → Sonderaktionen:** z. B. „Döner 5 €, Dürüm 6 €“ mit Zeitraum, optional nur an bestimmten Wochentagen oder in einem Laden. Die Seite zeigt den alten Preis durchgestrichen mit roter Marke „Aktion 5,00 €“, oben ein Hinweisband, und die Bestellung rechnet am Abholtag mit dem Aktionspreis („(Aktion)“ in der Nachricht). Abgelaufene Aktionen verschwinden von selbst.
 - **Mehr → Preis-Stände:** Stand 01.02.2024 (gedruckte Karte) ist fest; dazu bis zu drei eigene Stände („Heutige Preise als Stand festlegen“). Ein Stand lässt sich ganz übernehmen; einzelne Preise holt man beim Gericht unter „Frühere Preise“ zurück.
+- **Mehr → Zahlen:** Seitenaufrufe, WhatsApp-Bestellungen und Anrufe je Laden, Teilen, Gemeinsam bestellen, Bewertungs-Klicks (heute / 7 Tage) aus GoatCounter. Einmal einen API-Schlüssel (nur Lesen) von GoatCounter eintragen; er bleibt auf dem Gerät.
+- **Sonderaktionen mit Uhrzeit:** z. B. Mittagsangebot 11–14 Uhr – gilt dann nur für Abholzeiten in diesem Fenster. Zu jeder Aktion gibt es unter „Drucken“ ein A4-Plakat fürs Schaufenster.
 - **Mehr → Drucken:** Flyer (A4 quer, beidseitig, Wickelfalz) und Aufsteller je Laden als PDF – immer mit den aktuellen Preisen. Erzeugt `druck.py` im GitHub-Workflow nach jedem Bauen (`docs/druck/`, nicht im Repo). Lokal: `python3 druck.py`.
 - **Mehr:** Hinweis oben auf der Seite (Text mit Zeitraum), „Letzte Änderung rückgängig“ (holt den Stand vor dem letzten Speichern zurück), „Alles auf Standard zurücksetzen“, Abmelden.
 

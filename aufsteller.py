@@ -20,10 +20,7 @@ HIER = pathlib.Path(__file__).parent
 AUS = HIER / "druck"
 # Adresse, auf die der Speisekarten-Code zeigt. Nach dem Umzug auf saraydöner.de hier ändern und neu erzeugen.
 SEITE = f"https://{build.CNAME}/"
-GOOGLE = {  # Google-Place-IDs der beiden Läden (Bewertungslink)
-    "freital": "ChIJi62UlB_FCUcRyZITkeCfe8Q",
-    "altenberg": "ChIJ7XWZiUmTCUcRxe2o2WmxkxQ",
-}
+GOOGLE = {st["id"]: st["google"] for st in build.STANDORTE}  # Google-Place-IDs (in STANDORTE)
 e = html.escape
 
 

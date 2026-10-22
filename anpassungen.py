@@ -251,7 +251,7 @@ def wartezeit(d, warnen):
 
 
 def aktionen(liste, gruppen, warnen):
-    """Sonderaktionen: [{"name", "von", "bis", "tage"?, "laden"?, "preise": {schlüssel: ["5,00"]}}].
+    """Sonderaktionen: [{"name", "von", "bis", "tage"?, "laden"?, "zeit_ab"?, "zeit_bis"?, "preise": {schlüssel: ["5,00"]}}].
     Gibt die gültigen zurück, Schlüssel umgestellt auf das data-k der Seite (Nummer oder Name)."""
     gerichte = {schluessel(gr["id"], ab["titel"], g): (g[0] or g[1], len(g[3]))
                 for gr in gruppen for ab in gr["abschnitte"] for g in ab["gerichte"]}
@@ -277,5 +277,11 @@ def aktionen(liste, gruppen, warnen):
             sauber["tage"] = sorted(set(a["tage"]))
         if a.get("laden") in LAEDEN:
             sauber["laden"] = a["laden"]
+        za, zb = a.get("zeit_ab"), a.get("zeit_bis")
+        if za or zb:
+            if isinstance(za, str) and isinstance(zb, str) and ZEIT_RE.match(za) and ZEIT_RE.match(zb) and _min(za) < _min(zb):
+                sauber["zeit_ab"], sauber["zeit_bis"] = za, zb
+            else:
+                warnen(f"Aktion {a['name']!r}: Uhrzeit {za!r}–{zb!r} ungültig – gilt ganztags")
         ok.append(sauber)
     return ok

@@ -745,6 +745,97 @@ def chef_app_aktion_und_preisstaende(b, url):
 
 
 @test
+def vegetarisch_filtern(b, url):
+    s = Seite(b, url)
+    assert s.js("!!document.querySelector('#nr-3 svg.veg')") and not s.js("!!document.querySelector('#nr-1 svg.veg')")
+    s.p.click("#veg-schalter")
+    assert s.js("document.getElementById('nr-1').hidden") and not s.js("document.getElementById('nr-3').hidden")
+    assert s.js("document.getElementById('kinder').hidden") and s.js("document.getElementById('lahmacun').hidden")
+    assert not s.js("document.getElementById('nr-80').hidden")
+    s.p.fill("#suche-feld", "pizza")
+    sichtbar = s.js("[...document.querySelectorAll('.gericht:not([hidden])')].map(g=>g.dataset.k)")
+    assert "80" in sichtbar and "82" not in sichtbar, sichtbar
+    s.p.fill("#suche-feld", "")
+    s.p.click("#veg-schalter")
+    assert not s.js("document.getElementById('nr-1').hidden")
+    s.schliessen()
+
+
+@test
+def bewertung_nach_bestellung(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="altenberg"]')
+    s.wa_text()
+    assert s.js("JSON.parse(localStorage.getItem('saray-bewertung')).l") == "altenberg"
+    s.schliessen()
+    # nächster Besuch drei Stunden später: einmal fragen; danach nicht mehr
+    ms = int(ZEIT.timestamp() * 1000) - 3 * 3600 * 1000
+    for fertig in (False, True):
+        ctx = b.new_context(viewport=HANDY, locale="de-DE", timezone_id="Europe/Berlin", reduced_motion="reduce", is_mobile=True, has_touch=True)
+        p = ctx.new_page()
+        p.clock.set_fixed_time(ZEIT)
+        wert = json.dumps({"l": "freital", "t": ms, **({"fertig": 1} if fertig else {})})
+        p.add_init_script(f"try{{localStorage.setItem('saray-hand-gefragt','1');localStorage.setItem('saray-bewertung',{json.dumps(wert)})}}catch(e){{}}")
+        p.goto(url)
+        p.wait_for_timeout(1900)
+        if not fertig:
+            assert not p.evaluate("document.getElementById('hand-tipp').hidden"), "Bewertungs-Hinweis fehlt"
+            assert "Hat’s geschmeckt?" in p.text_content("#hand-tipp") and "Freital" in p.text_content("#hand-tipp")
+            assert '"fertig":1' in p.evaluate("localStorage.getItem('saray-bewertung')")
+            p.click("#hand-tipp >> text=Nein danke")
+        else:
+            assert p.evaluate("document.getElementById('hand-tipp').hidden"), "Hinweis kam ein zweites Mal"
+        ctx.close()
+
+
+@test
+def sonderaktion_mit_uhrzeit_und_datenschutz(b, url):
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"aktionen": [{"name": "Mittag", "von": "2026-10-20", "bis": "2026-10-30", "zeit_ab": "11:00", "zeit_bis": "14:00",
+                                          "preise": {"130": ["4,00"]}}]}, tmp)
+        s = Seite(b, u)
+        assert "11–14 Uhr" in s.p.text_content("#nr-130 .marke-aktion")
+        assert "GoatCounter" in s.p.text_content("#datenschutz") and "GitHub" in s.p.text_content("#datenschutz")
+        s.p.click("#nr-130 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click('[data-laden="freital"]')
+        s.p.select_option("#abhol-tag", "2026-10-22")
+        for uhr, preis in (("12:00 Uhr", "4,00 € (Aktion)"), ("15:00 Uhr", "5,00 €\n")):
+            s.js(f"(()=>{{const z=document.getElementById('abhol-zeit');z.value=[...z.options].find(o=>o.value.endsWith(', {uhr}')).value;z.dispatchEvent(new Event('change'))}})()")
+            text = s.wa_text() + "\n"
+            assert "Nr. 130 Salat" in text and preis in text.split("Nr. 130 Salat")[1].split("\n")[0] + "\n", text
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
+def chef_app_zahlen(b, url):
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
+    gefragt = []
+
+    def gc(route):
+        gefragt.append(route.request.url)
+        assert route.request.headers.get("authorization") == "Bearer GCKEY"
+        heute = "start=" in route.request.url and len(gefragt) % 2 == 1
+        route.fulfill(status=200, headers={"Access-Control-Allow-Origin": "*"}, json={"hits": [
+            {"path": "/", "count": 30 if heute else 200, "event": False},
+            {"path": "whatsapp-freital", "count": 4 if heute else 21, "event": True},
+            {"path": "anrufen-altenberg", "count": 2 if heute else 9, "event": True}]})
+    p.route("https://saraymicana.goatcounter.com/**", gc)
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.fill("#gc-schl", " GCKEY ")
+    p.click(".karte:has(#gc-schl) >> text=Speichern")
+    p.wait_for_selector("table.zahlen")
+    zeilen = p.evaluate("[...document.querySelectorAll('table.zahlen tr')].map(r=>r.innerText.replace(/\\s+/g,' ').trim())")
+    assert any(z.startswith("WhatsApp Freital") and z.split()[-2:] in (["4", "21"], ["21", "4"]) for z in zeilen), zeilen
+    assert all("stats/hits" in x for x in gefragt), gefragt
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):
