@@ -1647,12 +1647,13 @@ JS = r"""
      unter der gläsernen Adressleiste weiß. Wichtig: kein anderes festes Element darf ganz oben darüber liegen. */
   var marke=document.querySelector('.kat-marke'),deckel=null,glas=null;
   function klebtPruefen(){if(!nav||!marke)return;
-    var k=getComputedStyle(nav).position==='sticky'&&nav.getBoundingClientRect().top-marke.getBoundingClientRect().bottom>1;
+    /* klebt = steht oben fest; am Ende der Speisekarte schiebt der Inhalt das Band nach oben weg – dann darf die weiße Fläche nicht stehen bleiben */
+    var r=nav.getBoundingClientRect(),k=getComputedStyle(nav).position==='sticky'&&r.top-marke.getBoundingClientRect().bottom>1&&r.bottom>0;
     if(k!==nav.classList.contains('klebt'))nav.classList.toggle('klebt',k);
     if(k&&glas){glas.remove();glas=null;}
     if(!k&&!glas){glas=document.createElement('div');glas.className='glas-oben';glas.setAttribute('aria-hidden','true');document.body.appendChild(glas);}
     if(k&&!deckel){deckel=document.createElement('div');deckel.className='deckel-oben';deckel.setAttribute('aria-hidden','true');document.body.appendChild(deckel);}
-    if(deckel)deckel.style.height=nav.offsetHeight+'px';
+    if(deckel)deckel.style.height=Math.max(0,Math.round(r.bottom))+'px';
     if(!k&&deckel){deckel.remove();deckel=null;}
     if(dbg){var vv=window.visualViewport;dbg.textContent='scrollY '+Math.round(scrollY)+'\ninnerH '+innerHeight+' vv.h '+(vv?Math.round(vv.height):'-')+' vv.top '+(vv?Math.round(vv.offsetTop):'-')+
       '\nnav.top '+Math.round(nav.getBoundingClientRect().top)+' marke.bottom '+Math.round(marke.getBoundingClientRect().bottom)+

@@ -1057,6 +1057,23 @@ def chef_app_nummer_aendern(b, url):
 
 
 @test
+def weisse_flaeche_folgt_dem_band(b, url):
+    """Am Ende der Speisekarte rutscht das Band weg – die weiße Fläche darüber muss mitgehen."""
+    s = Seite(b, url)
+    for y in (300, 200, 120, 60, 0):
+        s.js(f"window.scrollTo(0, document.getElementById('standorte').getBoundingClientRect().top + scrollY - {y})")
+        s.p.wait_for_timeout(150)
+        frei = s.js("""(()=>{const h=document.getElementById('standorte-titel').getBoundingClientRect();
+            if(h.top<0||h.top>innerHeight)return 'ok';const e=document.elementFromPoint(h.left+20,h.top+h.height/2);
+            return e&&e.closest('#standorte-titel')?'ok':(e&&e.className)})()""")
+        assert frei == "ok", f"Überschrift verdeckt von {frei} (Abstand {y})"
+        hoehe = s.js("(()=>{const d=document.querySelector('.deckel-oben');return d?d.getBoundingClientRect().height:0})()")
+        unten = s.js("Math.max(0,document.querySelector('.kategorien').getBoundingClientRect().bottom)")
+        assert hoehe <= unten + 1, (y, hoehe, unten)
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):
