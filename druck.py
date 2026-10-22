@@ -19,7 +19,7 @@ from playwright.async_api import async_playwright
 
 import build
 import aufsteller
-from menu import ALLERGENE, ZUTATEN, KENNZEICHNUNG, SOSSEN
+from menu import ALLERGENE, ZUTATEN, KENNZEICHNUNG, SOSSEN, GERICHT_ALLERGENE
 from qr import qr_svg
 
 HIER = pathlib.Path(__file__).parent
@@ -53,7 +53,8 @@ def gruppe_html(gid):
         for g in ab["gerichte"]:
             nr, name, desc, preise = g[:4]
             var = " · ".join(f"{k}: {v}" for k, v in (g[4] if len(g) > 4 else []))
-            klein = " – ".join(x for x in (desc, var) if x)
+            fisch = ", ".join(f"enthält {ALLERGENE[x]} ({x})" for x in GERICHT_ALLERGENE.get(nr, "").split(",") if x)
+            klein = " – ".join(x for x in (desc, var, fisch) if x)
             out.append(f'<li><span class="nr">{e(build.anz(nr) if nr else "")}</span><span class="nm"><b>{e(name)}</b>'
                        f'{"<small> " + e(klein) + "</small>" if klein else ""}</span>'
                        f'<span class="pr">{"".join(f"<b>{p}</b>" for p in preise)}</span></li>')

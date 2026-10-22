@@ -104,7 +104,7 @@
   var GC="saraymicana";
   function zaehlen(pfad,ereignis){
     if(!GC||navigator.doNotTrack==='1'||/^(localhost|127\.)/.test(location.hostname))return;
-    try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title)+'&r='+encodeURIComponent(document.referrer))+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
+    try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title))+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
   }
   zaehlen(location.pathname);
   document.addEventListener('click',function(ev){

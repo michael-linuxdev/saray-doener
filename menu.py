@@ -305,10 +305,12 @@ GRUPPEN = [
 ALLERGENE = {
     "a": "Weizenmehl", "b": "Milch und Milcherzeugnisse", "c": "Sellerie, Senf, Soja", "d": "Erbsen",
     "e": "Süßmolkepulver", "f": "Hühnereiweißpulver", "g": "Sesam",
+    "h": "Fisch", "i": "Ei (Eigelb)",   # nicht auf der gedruckten Karte – ergänzt (Thunfisch/Seelachs, Eigelb in der Soße)
 }
 ALLERGENE_EN = {
     "a": "Wheat flour", "b": "Milk and milk products", "c": "Celery, mustard, soy", "d": "Peas",
     "e": "Sweet whey powder", "f": "Egg white powder", "g": "Sesame",
+    "h": "Fish", "i": "Egg (yolk)",
 }
 ZUTATEN = {
     "1": ("Döner", "Hackfleischdrehspieß mit Kalb- und Putenfleisch, gewürzt, z. T. fein zerkleinert, tiefgefroren. Zutaten: Kalbfleisch (68 %), Putenfleisch (22 %), WEIZEN GLUTEN, Zwiebel, Gewürze, (SENF), Zuckerstoffe, Kochsalz, Stabilisator E450. Kann SESAM, SOJA, EI enthalten."),
@@ -339,7 +341,9 @@ KENNZEICHNUNG = {
     "Schnitzel, Fisch und Pommes": ("1,2,4,7,8,9", "a,b,c,f,g"),
     "Chicken Nuggets": ("4,8", "a,b,c,f,g"),
 }
-SOSSEN = ("Knoblauch, Kräuter, Chili", "8", "b,c,e")
+SOSSEN = ("Knoblauch, Kräuter, Chili", "8", "b,c,e,i")   # i: Eigelb laut Zutat 8 (fehlt auf der gedruckten Karte)
+# Allergene einzelner Gerichte zusätzlich zur Zeile ihres Abschnitts (Fisch steckt nur in diesen Gerichten)
+GERICHT_ALLERGENE = {"71": "h", "87": "h", "97": "h", "136": "h", "154": "h"}
 
 # Vegetarisch (ohne Fleisch und Fisch): Nummern bzw. Namen ohne Nummer. Getränke zählen immer dazu,
 # neue Gerichte aus der Chef-App, wenn „vegetarisch“ im Namen steht.

@@ -587,6 +587,9 @@ def allergene_und_barzahlung(b, url):
     s.p.wait_for_timeout(200)
     assert s.js("document.getElementById('allergene').open")
     assert "Süßmolkepulver" in s.p.text_content("#allergene")
+    assert "h = Fisch" in s.p.text_content("#allergene").replace("\xa0", " ")
+    assert "enthält Fisch (h)" in s.p.text_content("#nr-87")
+    assert "inkl. MwSt." in s.p.text_content("#speisekarte")
     assert s.js("document.querySelectorAll('.ort .bar').length") == 2
     # Bestellen: „nur bar“ im Zettel, nach WhatsApp der Hinweis mit Telefonnummer
     s.p.click("#nr-1 .plus")
@@ -1010,7 +1013,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 22 offen" in p.text_content(".checkliste summary")
+    assert "von 24 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")

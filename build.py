@@ -9,7 +9,7 @@ Standorte/Zeiten: STANDORTE unten · Hinweis-Band: HINWEISE unten.
 WhatsApp-Nummern stehen nicht im Repo: optional in lokal.json (siehe README).
 """
 import base64, html, json, math, pathlib, re, shutil, sys, urllib.parse
-from menu import GRUPPEN, VEGETARISCH, FISCH, VEG_WAEHLBAR, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN
+from menu import GRUPPEN, VEGETARISCH, FISCH, VEG_WAEHLBAR, ALLERGENE, ALLERGENE_EN, ZUTATEN, KENNZEICHNUNG, SOSSEN, GERICHT_ALLERGENE
 import englisch as EN
 import anpassungen as ANP
 
@@ -207,8 +207,11 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     else:
         teile.append(preis(preise[0]))
     teile.append(plus_knopf(name))
-    if desc or varianten:
-        inner = t(desc, EN.text(desc)) if desc else ""
+    zusatz = GERICHT_ALLERGENE.get(nr)
+    zusatz_html = ("".join(f' <span class="allergen-zusatz">{t("enthält " + ALLERGENE[x] + " (" + x + ")", "contains " + ALLERGENE_EN[x].lower() + " (" + x + ")")}</span>'
+                           for x in zusatz.split(","))) if zusatz else ""
+    if desc or varianten or zusatz:
+        inner = (t(desc, EN.text(desc)) if desc else "") + zusatz_html
         if varianten:
             inner += '<ul class="varianten">' + "".join(
                 f"<li><b>{e(k)}</b> {t(v, EN.text(v))}</li>" for k, v in varianten) + "</ul>"
@@ -705,7 +708,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
   font-weight:700;font-size:.82rem;color:var(--tinte-weich);text-align:right;padding-bottom:6px;border-bottom:2px solid var(--tinte)}
 .groessen-kopf .nur-breit{display:none}
 
-.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:-2px 0 8px;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
+.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:-2px 0 8px;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.allergen-zusatz{font-size:.85em;font-weight:700;color:var(--tinte-weich)}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
 
 @media (min-width:1100px){
   .karte-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:52px;align-items:start}
@@ -1587,7 +1590,7 @@ JS = r"""
   var GC=%%ZAEHLER%%;
   function zaehlen(pfad,ereignis){
     if(!GC||navigator.doNotTrack==='1'||/^(localhost|127\.)/.test(location.hostname))return;
-    try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title)+'&r='+encodeURIComponent(document.referrer))+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
+    try{(new Image()).src='https://'+GC+'.goatcounter.com/count?p='+encodeURIComponent(pfad)+(ereignis?'&e=true&t='+encodeURIComponent(pfad):'&t='+encodeURIComponent(document.title))+'&rnd='+Math.random().toString(36).slice(2);}catch(e){}
   }
   zaehlen(location.pathname);
   document.addEventListener('click',function(ev){
@@ -1832,7 +1835,7 @@ SEITE = r"""<!doctype html>
   <div class="wrap">
     <header class="karte-kopf abschnitt-kopf">
       <h2 id="karte-titel" data-en="Menu">Speisekarte</h2>
-      <p data-en="All prices in euros. Every dish comes with your choice of sauce: garlic, herb or chili.">Alle Preise in Euro. Zu jedem Gericht gibt es Soße nach Wahl: Knoblauch, Kräuter oder Chili.</p>
+      <p data-en="All prices in euros incl. VAT. Pickup only, no delivery or shipping costs. Every dish comes with your choice of sauce: garlic, herb or chili.">Alle Preise in Euro inkl. MwSt. Nur Abholung, keine Liefer- oder Versandkosten. Zu jedem Gericht gibt es Soße nach Wahl: Knoblauch, Kräuter oder Chili.</p>
       <p data-en="The menu applies in Freital and Altenberg.">Die Karte gilt in Freital und Altenberg.</p>
       <p class="sammel-start"><button type="button" class="knopf knopf-linie knopf-sammel" data-sammel-start data-en="👥 Order as a group">👥 Gemeinsam bestellen</button></p>
       <div class="sammel-band" id="sammel-band" hidden><p id="sammel-band-text"></p><button type="button" class="knopf-klein" id="sammel-ende" data-en="End">Beenden</button></div>
@@ -2047,18 +2050,20 @@ def datenschutz_html():
         '<h3>Reichweitenmessung mit GoatCounter</h3>'
         '<p>Um zu sehen, wie die Website genutzt wird, zählen wir Seitenaufrufe und Klicks auf „Per WhatsApp bestellen“, „Anrufen“, '
         '„Bestellung teilen“, „Gemeinsam bestellen“ und „Bewerten“ mit GoatCounter (Anbieter: Martin Tournoij, goatcounter.com). '
-        'Dabei werden keine Cookies gesetzt und keine Daten auf Ihrem Gerät gespeichert. Übermittelt werden die aufgerufene Seite bzw. der Klick, '
-        'die verweisende Seite, die Bildschirmbreite sowie technisch bedingt Ihre IP-Adresse und Browserkennung; GoatCounter speichert die '
+        'Dabei werden keine Cookies gesetzt und keine Informationen auf Ihrem Gerät gespeichert oder aus ihm ausgelesen. Übermittelt werden nur '
+        'die aufgerufene Seite bzw. der Klick sowie technisch bedingt Ihre IP-Adresse und Browserkennung; GoatCounter speichert die '
         'IP-Adresse nicht, sondern bildet daraus nur kurzzeitig eine nicht rückverfolgbare Kennung, um Mehrfachzählungen zu vermeiden. '
         'Ist in Ihrem Browser „Do Not Track“ eingeschaltet, zählen wir nicht. Rechtsgrundlage ist unser berechtigtes Interesse an einer '
-        'datensparsamen Auswertung (Art. 6 Abs. 1 lit. f DSGVO) bzw. § 25 Abs. 2 Nr. 2 TDDDG.</p>') if ZAEHLER else ""
+        'datensparsamen Auswertung (Art. 6 Abs. 1 lit. f DSGVO). '
+        '<span class="platzhalter">[Vertrag zur Auftragsverarbeitung mit GoatCounter klären und hier nennen]</span></p>') if ZAEHLER else ""
     entwurf = '<p class="platzhalter">Entwurf – vor dem Freischalten rechtlich prüfen lassen.</p>' if VORSCHAU else ""
     return f"""{entwurf}
         <h3>Verantwortlich</h3>
         <p>Ahmet Saglam, Saray Döner, Bahnhof 3, 01773 Altenberg, Telefon 035056 23674, E-Mail solino1@hotmail.de (siehe Impressum).</p>
         <h3>Das Wichtigste vorab</h3>
-        <p>Diese Website setzt keine Cookies und bindet keine Inhalte fremder Anbieter ein. Schriften, Bilder und Stadtpläne liegen auf
-        unserem eigenen Webspace. Sie müssen keine Daten angeben, um die Speisekarte anzusehen.</p>
+        <p>Diese Website setzt keine Cookies. Schriften, Bilder und Stadtpläne liegen auf unserem eigenen Webspace; Inhalte fremder Anbieter
+        binden wir nicht ein{" – mit Ausnahme der unten beschriebenen Besucherzählung mit GoatCounter" if ZAEHLER else ""}.
+        Sie müssen keine Daten angeben, um die Speisekarte anzusehen.</p>
         <h3>Hosting und Server-Logfiles</h3>
         <p>Die Website wird bei GitHub Pages betrieben (GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA).
         Beim Aufruf verarbeitet GitHub technisch notwendige Daten wie IP-Adresse, Datum und Uhrzeit, aufgerufene Datei, Browser und
@@ -2066,7 +2071,9 @@ def datenschutz_html():
         Eine Übermittlung in die USA ist möglich; GitHub ist nach dem EU-US Data Privacy Framework zertifiziert.
         Mehr dazu: <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Datenschutzerklärung von GitHub</a>.</p>
         <h3>Speicherung auf Ihrem Gerät</h3>
-        <p>Ihre Bestellung, die gewählte Abholung und Ihr Name, die Sprache und die Einstellung für Linkshänder speichern wir nur in Ihrem
+        <p>Ihre Bestellung, die gewählte Abholung und Ihr Name, Ihre letzte abgeschickte Bestellung (für „Wie letztes Mal?“), die Angaben
+        einer laufenden Sammelbestellung („Gemeinsam bestellen“), ob wir Sie nach einer Bestellung schon einmal um eine Bewertung gebeten haben,
+        die Sprache und die Einstellung für Linkshänder speichern wir nur in Ihrem
         Browser (Local Storage), damit sie beim nächsten Besuch noch da sind. Diese Daten werden nicht an uns übertragen. Für die Nutzung
         ohne Internet legt Ihr Browser außerdem Seite, Schriften und Bilder in einem Zwischenspeicher ab. Sie können all das jederzeit
         in den Einstellungen Ihres Browsers löschen („Websitedaten löschen“). Rechtsgrundlage: § 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. f DSGVO.</p>
@@ -2084,7 +2091,7 @@ def datenschutz_html():
         <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie Widerspruch
         gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 15–21 DSGVO). Wenden Sie sich dazu an die oben genannte Adresse.
         Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei der Sächsischen Datenschutz- und
-        Transparenzbeauftragten, Devrientstraße 5, 01067 Dresden.</p>
+        Transparenzbeauftragten, Maternistraße 17, 01067 Dresden.</p>
         <p class="klein">Stand: {_dt.date.today().strftime("%m/%Y")}</p>"""
 
 
