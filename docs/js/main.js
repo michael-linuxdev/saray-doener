@@ -572,7 +572,7 @@
     abhSpeichern();zeichnenSpaeter();
   }
   var zsp=false;function zeichnenSpaeter(){if(zsp)return;zsp=true;setTimeout(function(){zsp=false;zeichnen();waAktualisieren();},0);}
-  var WA={"freital": "4915737807403", "altenberg": "491601836249"},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
+  var WA={"freital": "491601836249", "altenberg": "491601836249"},waKnopf=document.getElementById('zettel-whatsapp'),waHinweis=document.getElementById('wa-hinweis');
   var verfHinweis=document.getElementById('verf-hinweis');
   function konflikte(){return zettel.filter(function(x){return sperreZettel(x.k);}).length;}
   function waAktualisieren(){

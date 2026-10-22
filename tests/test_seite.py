@@ -512,7 +512,8 @@ def chef_app_aenderungen(b, url):
     p.select_option("#ab-zeit", "17:00")
     p.check("#ab-immer")
     p.click("text=Übernehmen")
-    # Hinweis
+    # Hinweis (unter „Mehr“)
+    p.click('nav.tabs [data-tab="mehr"]')
     p.fill("#h-text", "Heute Lieferung ab 18 Uhr")
     p.click("text=Hinweis hinzufügen")
     # Karte: Preis Nr. 1 ändern, Nr. 8 löschen, neues Gericht

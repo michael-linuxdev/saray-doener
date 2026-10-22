@@ -261,7 +261,9 @@ function heuteTab(){
         el('button',{class:'knopf klein',text:'Dauerhaft aus',onclick:function(){frage(g.name+' dauerhaft aus? (bis Sie es wieder entfernen)','Dauerhaft aus').then(function(j){if(j)regelNeu(g.id,'aus',null,true);});}})])]);
     app.appendChild(k);
   });
-  /* Hinweis-Band */
+}
+function hinweisKarte(){ /* Hinweis-Band */
+  var t=heute();
   app.appendChild(el('h2',{text:'Hinweis oben auf der Seite'}));
   var hk=el('div',{class:'karte'});
   (ANP.hinweise||[]).forEach(function(h,i){if(h.bis<t)return;hk.appendChild(el('p',{},[el('span',{class:'chip'},[h.text+' ('+datumDE(h.von)+'–'+datumDE(h.bis)+')',
@@ -449,6 +451,7 @@ function sonderKarte(){
 }
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
+  hinweisKarte();
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
   /* Preis-Stände */

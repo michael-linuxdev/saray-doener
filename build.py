@@ -26,7 +26,7 @@ STANDORTE = [
         "id": "freital", "name": "Freital", "strasse": "Dresdner Str. 87", "plz": "01705", "ort": "Freital",
         "tel": "0351 27676660", "tel_href": "+4935127676660", "tel_ld": "+49 351 27676660",
         "bar": True,  # nur Barzahlung
-        "whatsapp": "4915737807403",  # Handy Freital 0157 37807403 (von der gedruckten Karte, im Test); leer: Knopf ausgeblendet
+        "whatsapp": "491601836249",  # Testnummer (Michael); Laden-Handy Freital wäre 4915737807403; leer: Knopf ausgeblendet
         "zeilen": [("Montag bis Freitag", "10–22 Uhr", [1, 2, 3, 4, 5]), ("Samstag und Sonntag", "11–22 Uhr", [6, 0])],
         "zeilen_en": ["Monday to Friday", "Saturday and Sunday"], "extra_en": "Outdoor seating in good weather.",
         "kurz": "Mo–Fr 10–22 Uhr, Sa–So 11–22 Uhr",
@@ -1982,8 +1982,8 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%TITEL_PRAEFIX%%": "[Nicht freigeschaltet] " if VORSCHAU else "",
         "%%BODY_KLASSE%%": ' class="vorschau"' if VORSCHAU else "",
         "%%VORSCHAU_BAND%%": ('<div class="vorschau-band" role="note"><strong data-en="NOT RELEASED">NICHT FREIGESCHALTET</strong> '
-                              '<span data-en="Draft – not yet the official website of Saray Döner. Orders are tests only.">'
-                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen sind nur Tests.</span>'
+                              '<span data-en="Draft – not yet the official website of Saray Döner. Orders go to a test number.">'
+                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span>'
                               f' <small class="stand">Stand {STAND}</small></div>')
                              if VORSCHAU else "",
         "%%APP_KOPF%%": "" if einzeln else (
