@@ -947,6 +947,44 @@ def entwurf_band_verdeckt_zettel_nicht(b, url):
 
 
 @test
+def zutaten_aus(b, url):
+    s = Seite(b, url, regeln=[{"was": "z:Kräuter"}, {"was": "z:Zwiebel"}, {"was": "z:Ananas", "laden": "freital"}])
+    s.p.click("#nr-1 .plus")
+    s.p.click("#nr-89 .plus")
+    s.p.click("#nr-89 .wahl button >> nth=0")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    text = s.wa_text()
+    assert "Kräuter" not in text and "ohne Soße" in text, text
+    s.p.click("[data-anpassen] >> nth=0")
+    assert s.js("document.querySelector('[data-o=\"s\"][data-w=\"Kräuter\"]').disabled")
+    assert s.js("document.querySelector('[data-o=\"ohne\"][data-w=\"Zwiebeln\"]').disabled")
+    s.p.click("[data-fertig]")
+    s.p.click(".z-eintrag:has-text('Hawaii') [data-anpassen]")
+    assert s.js("document.querySelector('[data-o=\"ohne\"][data-w=\"Ananas\"]').disabled")
+    assert s.js("document.querySelector('[data-o=\"ex\"][data-w=\"Ananas\"]').disabled")
+    assert not s.js("document.querySelector('[data-o=\"ex\"][data-w=\"Mais\"]').disabled")
+    s.p.click('[data-laden="altenberg"]')
+    assert not s.js("document.querySelector('[data-o=\"ex\"][data-w=\"Ananas\"]').disabled"), "Ananas nur in Freital aus"
+    s.schliessen()
+
+
+@test
+def chef_app_zutaten(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.click('[data-zutat="Ananas"]')
+    p.click('[data-zutat="Chili"]')
+    p.click('[data-zutat="Chili"]')
+    assert p.get_attribute('[data-zutat="Ananas"]', "aria-pressed") == "true"
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    assert gespeichert[-1]["verfuegbarkeit"] == [{"was": "z:Ananas", "datum": "2026-10-21"}], gespeichert[-1]
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):

@@ -265,6 +265,7 @@ function heuteTab(){
         el('button',{class:'knopf klein',text:'Dauerhaft aus',onclick:function(){frage(g.name+' dauerhaft aus? (bis Sie es wieder entfernen)','Dauerhaft aus').then(function(j){if(j)regelNeu(g.id,'aus',null,true);});}})])]);
     app.appendChild(k);
   });
+  zutatenKarte();
 }
 function hinweisKarte(){ /* Hinweis-Band */
   var t=heute();
@@ -280,6 +281,21 @@ function hinweisKarte(){ /* Hinweis-Band */
     if(!txt.value.trim()||!von.value||!bis.value||bis.value<von.value){status('Bitte Text und gültigen Zeitraum angeben.','rot',4000);return;}
     (ANP.hinweise=ANP.hinweise||[]).push({text:txt.value.trim(),von:von.value,bis:bis.value});zeichnen();}})]));
   app.appendChild(hk);
+}
+function zutatenKarte(){ /* einzelne Zutaten ausschalten – auf der Seite dann nicht wählbar */
+  var t=heute();app.appendChild(el('h2',{text:'Zutaten'}));
+  var k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Antippen = heute aus'+(LADEN==='alle'?' (beide Läden)':' in '+(LADEN==='freital'?'Freital':'Altenberg'))+'. Ausgeschaltetes kann auf der Seite nicht gewählt werden. Noch einmal antippen = wieder da.'})]);
+  STD.zutaten.forEach(function(gr){
+    k.appendChild(el('p',{class:'abschnitt',style:'margin:10px 0 6px',text:gr[0]}));
+    k.appendChild(el('div',{class:'reihe'},gr[1].map(function(z){
+      var was='z:'+z,idx=(ANP.verfuegbarkeit||[]).map(function(r,i){return {r:r,i:i};}).filter(function(x){return x.r.was===was&&(x.r.laden||'alle')===LADEN&&(!x.r.datum||x.r.datum>=t);});
+      var aus=idx.length>0;
+      return el('button',{class:'knopf klein'+(aus?' rot voll':''),'aria-pressed':String(aus),'data-zutat':z,text:(aus?'✕ ':'')+z,onclick:function(){
+        if(aus){var weg=idx.map(function(x){return x.i;});ANP.verfuegbarkeit=ANP.verfuegbarkeit.filter(function(_,i){return weg.indexOf(i)<0;});zeichnen();}
+        else regelNeu(was,'aus',null,false);}});
+    })));
+  });
+  app.appendChild(k);
 }
 function abUhrzeit(g){
   var sel=el('select',{id:'ab-zeit'},zeitListe(10*60,22*60,30).map(function(z){return el('option',{value:z,text:z+' Uhr'});}));sel.value='17:00';
@@ -587,6 +603,16 @@ start();
 """
 
 
+# Zutaten, die der Inhaber einzeln ausschalten kann (Namen wie auf der Seite; „Zwiebel“ gilt auch für „Zwiebeln“)
+ZUTATEN_SCHALTER = [
+    ["Soßen", ["Knoblauch", "Kräuter", "Chili"]],
+    ["Salat und Gemüse", ["Eisbergsalat", "Tomate", "Gurken", "Zwiebel", "Rotkohl", "Weißkohl", "Paprika", "Champignon",
+                          "Peperoni", "Ananas", "Oliven", "Brokkoli", "Mais"]],
+    ["Käse", ["Käse", "Halloumikäse", "Fetakäse", "Mozzarella"]],
+    ["Fleisch, Fisch, Ei", ["Dönerfleisch", "Hähnchen-Dönerfleisch", "Schinken", "Salami", "Thunfisch", "Ei"]],
+]
+
+
 def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler=""):
     """Schreibt docs/chef/: index.html, standard.json, manifest.webmanifest."""
     import anpassungen as ANP
@@ -600,6 +626,7 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler=""):
             "gerichte": [{"k": ANP.schluessel(g["id"], a["titel"], x), "nr": x[0], "name": x[1], "desc": x[2], "preise": list(x[3])}
                          for x in a["gerichte"]]} for a in g["abschnitte"]]} for g in gruppen],
         "grundstand": GRUNDSTAND,
+        "zutaten": ZUTATEN_SCHALTER,
         "zaehler": zaehler,
         "laeden": [{"id": s["id"], "name": s["name"],
                     "zeiten": {str(t): [zeit(v[0]), zeit(v[1])] for t, v in s["zeiten_standard"].items()}} for s in standorte],

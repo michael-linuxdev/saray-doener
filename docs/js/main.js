@@ -1,5 +1,5 @@
 (function(){
-  var ZEITEN={"freital": {"1": [600, 1320], "2": [600, 1320], "3": [600, 1320], "4": [600, 1320], "5": [600, 1320], "6": [660, 1320], "0": [660, 1320]}, "altenberg": {"1": [600, 1260], "2": [600, 1260], "3": [600, 1260], "4": [600, 1260], "5": [600, 1260], "6": [600, 1260], "0": [660, 1260]}},SONDER={"freital": {}, "altenberg": {}},WARTE={},AKTIONEN=[];
+  var ZEITEN={"freital": {"1": [600, 1320], "2": [600, 1320], "3": [600, 1320], "4": [600, 1320], "5": [600, 1320], "6": [660, 1320], "0": [660, 1320]}, "altenberg": {"1": [600, 1260], "2": [600, 1260], "3": [600, 1260], "4": [600, 1260], "5": [600, 1260], "6": [600, 1260], "0": [660, 1260]}},SONDER={"freital": {}, "altenberg": {}},WARTE={"freital": {"datum": "2026-10-22", "min": 30}},AKTIONEN=[];
   var TAGE=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
   var TAGE_E=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   /* Sprache: gespeicherte Wahl, sonst Browsersprache (Suchmaschinen bekommen immer Deutsch) */
@@ -394,9 +394,21 @@
   function melden(t){zmeld.textContent=t;zmeld.hidden=false;clearTimeout(meldTimer);meldTimer=setTimeout(function(){zmeld.hidden=true;},2400);}
   function el(tag,cls,text){var x=document.createElement(tag);if(cls)x.className=cls;if(text!=null)x.textContent=text;return x;}
   function knopf(text,attrs){var b=el('button',null,text);b.type='button';for(var a in attrs)b.setAttribute(a,attrs[a]);return b;}
+  /* Zutat vom Laden ausgeschaltet (Chef-App „Zutaten“)? Gilt für die gewählte Abholung, sonst jetzt */
+  var Z_NORM={'Zwiebeln':'Zwiebel','Tomaten':'Tomate'},Z_GRUPPE={'Hähnchen-Dönerfleisch':'huhn','Halloumikäse':'halloumi'};
+  function zAus(v){
+    var a=abholung()||{laden:abh.laden||null,off:0,min:jetzt().min};
+    return sperre('z:'+(Z_NORM[v]||v),a.laden,a.off,a.min)||(Z_GRUPPE[v]?sperre(Z_GRUPPE[v],a.laden,a.off,a.min):null);
+  }
+  /* ausgeschaltete Zutaten aus Wünschen entfernen (Soße, Extras, Zutaten, Belag) */
+  function bereinigen(x){var o=x.o;if(!o)return;
+    ['s','ex','wahl'].forEach(function(a){if(Array.isArray(o[a]))o[a]=o[a].filter(function(v){return !zAus(v);});});
+    if(x.t==='B'&&o.va&&zAus(o.va))o.va='';}
   function chips(titel,werte,gewaehlt,art,uid,extra){
     var g=el('div','z-gruppe');g.appendChild(el('span','z-gruppe-titel',titel));var wb=el('div','z-chips');
-    werte.forEach(function(v){var an=gewaehlt.indexOf(v)>-1;var b=knopf(w(v)+(extra||''),{'class':'chip','aria-pressed':String(an),'data-o':art,'data-w':v,'data-u':uid});
+    werte.forEach(function(v){var an=gewaehlt.indexOf(v)>-1,sp=art==='va'&&/^[A-D]: /.test(v)?null:zAus(v);
+      var b=knopf(w(v)+(extra||'')+(sp?' – '+sperrText(sp):''),{'class':'chip'+(sp?' chip-aus':''),'aria-pressed':String(an&&!sp),'data-o':art,'data-w':v,'data-u':uid});
+      if(sp)b.disabled=true;
       if(art==='wahl'&&!an&&gewaehlt.length>=3)b.disabled=true;wb.appendChild(b);});
     g.appendChild(wb);return g;
   }
@@ -436,7 +448,7 @@
     if(x.t==='D'||x.t==='SA'){
       /* Gemüse: alles drin, Abgewähltes geht als „ohne …“ an den Laden */
       var gg=chips(L('Gemüse – abwählen, was nicht rein soll','Vegetables – tap to leave out'),OHNE,[],'ohne',x.u);
-      gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(o.ohne.indexOf(c.dataset.w)<0));});
+      gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(!c.disabled&&o.ohne.indexOf(c.dataset.w)<0));});
       box.appendChild(gg);
     }
     if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(ohneFleisch(FLEISCH),KAESE).concat(o.wahl.filter(function(v){return ohneFleisch([v]).length===0;})),o.wahl,'wahl',x.u));
@@ -445,7 +457,7 @@
     if(x.t==='P'||x.t==='R'||x.t==='S'){
       var pz=x.t==='S'?['Käse']:pizzaZutaten(x);
       var pg=chips(L('Zutaten – abwählen, was nicht drauf soll','Toppings – tap to leave out'),pz,[],'ohne',x.u);
-      pg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(o.ohne.indexOf(c.dataset.w)<0));});
+      pg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(!c.disabled&&o.ohne.indexOf(c.dataset.w)<0));});
       box.appendChild(pg);
     }
     var nichtExtra=function(v){return o.ohne.indexOf(v)<0;};
@@ -456,6 +468,7 @@
     return box;
   }
   function zeichnen(){
+    zettel.forEach(bereinigen);
     var n=anzahl();
     zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);
     zl.querySelector('.zl-anzahl').textContent=n;zl.querySelector('.zl-summe').textContent=euro(summe());

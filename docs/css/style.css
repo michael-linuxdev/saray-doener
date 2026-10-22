@@ -393,7 +393,7 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .chip[data-o=ohne][aria-pressed=false]{text-decoration:line-through;color:#8d7486;border-color:#c9b8c3}
 .chip{min-height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font:700 .88rem var(--text);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--tinte);color:var(--gelb)}
-.chip:disabled{opacity:.35;cursor:not-allowed}
+.chip:disabled{opacity:.35;cursor:not-allowed}.chip.chip-aus:disabled{opacity:.6;border-style:dashed;font-weight:400}
 .z-fertig{justify-self:start;min-height:42px}
 .z-steuer button{width:36px;height:36px;border-radius:50%;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font:700 1.2rem/1 var(--text);cursor:pointer}
 .z-menge{min-width:2ch;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}

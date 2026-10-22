@@ -80,6 +80,7 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 
 - **Heute:** Hähnchen, Nuggets, Falafel, Pizza, Baguette … für heute aus, ab Uhrzeit (heute oder jeden Tag) oder dauerhaft aus – für beide Läden oder nur einen.
 - **Karte:** Preise, Namen und Beschreibungen ändern, Gerichte löschen (und wieder anzeigen), neue Gerichte anlegen.
+- **Heute → Zutaten:** einzelne Zutaten (Soßen, Salat/Gemüse, Käse, Fleisch/Fisch/Ei) heute aus – je Laden oder für beide. Auf der Seite sind sie dann beim Anpassen ausgegraut („heute nicht verfügbar“) und werden aus schon gewählten Wünschen entfernt. Liste: `ZUTATEN_SCHALTER` in `chef_app.py`; Regel `{"was": "z:Ananas"}`.
 - **Heute → Wartezeit:** bei viel Betrieb +15/+30/+45 Minuten je Laden, nur für heute. Die früheste Abholzeit verschiebt sich, die Schilder zeigen „Wartezeit ca. … Min.“.
 - **Zeiten:** Öffnungszeiten je Laden und Wochentag, auch „geschlossen“. Darunter **Besondere Tage** (Heiligabend, Feiertag, Urlaub): an einem Datum geschlossen oder andere Zeiten. Die Seite zeigt sie beim Laden an, Status und Abholzeiten richten sich danach; vergangene Tage verschwinden von selbst.
 - **Karte → Sonderaktionen:** z. B. „Döner 5 €, Dürüm 6 €“ mit Zeitraum, optional nur an bestimmten Wochentagen oder in einem Laden. Die Seite zeigt den alten Preis durchgestrichen mit roter Marke „Aktion 5,00 €“, oben ein Hinweisband, und die Bestellung rechnet am Abholtag mit dem Aktionspreis („(Aktion)“ in der Nachricht). Abgelaufene Aktionen verschwinden von selbst.
