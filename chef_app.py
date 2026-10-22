@@ -92,7 +92,9 @@ nav.tabs button[aria-current=page]{color:var(--paprika)}
 .blatt h3{margin:0 0 6px;font-size:1.2rem}
 .blatt .reihe{margin-top:14px}
 table.zahlen{width:100%;border-collapse:collapse;margin:4px 0 10px}.zahlen th,.zahlen td{padding:7px 4px;border-bottom:1px solid var(--linie);text-align:right}
-.zahlen th:first-child,.zahlen td:first-child{text-align:left}.zahlen td+td{font-weight:700;font-variant-numeric:tabular-nums}
+.zahlen th:first-child,.zahlen td:first-child{text-align:left}.zahlen th[scope=row]{text-align:left;font-weight:400}
+.zahlen td{font-weight:700;font-variant-numeric:tabular-nums}.zahlen th[scope=col]{font-size:.78rem;white-space:nowrap;width:3.6em}
+@media (max-width:360px){.zahlen{font-size:.9rem}}
 .frueher{margin-top:12px;padding:8px 10px;background:var(--blass);border-radius:10px}.frueher .reihe{margin-top:6px}
 a.knopf{color:inherit}
 [hidden]{display:none!important}
@@ -474,20 +476,22 @@ function zahlenKarte(){
   k.appendChild(el('div',{class:'reihe'},[link,el('button',{class:'knopf klein',text:'Schlüssel entfernen',onclick:function(){try{localStorage.removeItem(GK);}catch(e){}zeichnen();}})]));
   function stunde(tage){var n=new Date(),h=+new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',hour:'2-digit',hourCycle:'h23'}).format(n);
     var d=new Date(n);d.setUTCMinutes(0,0,0);d=new Date(d.getTime()-(h+24*tage)*36e5);return d.toISOString().replace('.000','');}
-  function holen(tage){var ende=new Date();ende.setUTCMinutes(0,0,0);ende=new Date(ende.getTime()+36e5);
-    return fetch(dash+'api/v0/stats/hits?limit=100&start='+encodeURIComponent(stunde(tage))+'&end='+encodeURIComponent(ende.toISOString().replace('.000','')),
+  function holen(start){var ende=new Date();ende.setUTCMinutes(0,0,0);ende=new Date(ende.getTime()+36e5);
+    return fetch(dash+'api/v0/stats/hits?limit=100&start='+encodeURIComponent(start)+'&end='+encodeURIComponent(ende.toISOString().replace('.000','')),
       {headers:{'Authorization':'Bearer '+schl,'Accept':'application/json'},cache:'no-store'})
       .then(function(r){if(r.ok)return r.json();
         return r.text().then(function(t){var m=t;try{var j=JSON.parse(t);m=j.error||JSON.stringify(j.errors||j);}catch(e){}
           throw new Error(r.status+(m?': '+String(m).slice(0,160):''));});});}
   function werte(d){var w={besuche:0};(d.hits||[]).forEach(function(h){if(h.event)w[h.path]=(w[h.path]||0)+h.count;else w.besuche+=h.count;});return w;}
-  Promise.all([holen(0),holen(6)]).then(function(x){var a=werte(x[0]),b=werte(x[1]);box.textContent='';
-    var z=[['Seitenaufrufe',['besuche']],['WhatsApp Freital',['whatsapp-freital']],['WhatsApp Altenberg',['whatsapp-altenberg']],
+  /* gezählt wird seit Oktober 2026 – „Gesamt“ beginnt dort */
+  var spalten=[['Heute',stunde(0)],['7 Tage',stunde(6)],['30 Tage',stunde(29)],['Gesamt','2026-10-01T00:00:00Z']];
+  Promise.all(spalten.map(function(sp){return holen(sp[1]);})).then(function(x){var w=x.map(werte);box.textContent='';
+    var z=[['Besucher',['besuche']],['WhatsApp Freital',['whatsapp-freital']],['WhatsApp Altenberg',['whatsapp-altenberg']],
       ['Anrufe Freital',['anrufen-freital']],['Anrufe Altenberg',['anrufen-altenberg']],['Bestellung geteilt',['bestellung-teilen']],
       ['Gemeinsam bestellt',['gemeinsam-bestellen']],['Zur Google-Bewertung',['bewertung-freital','bewertung-altenberg']]];
     var sum=function(w,ks){return ks.reduce(function(s,k){return s+(w[k]||0);},0);};
-    var t=el('table',{class:'zahlen'},[el('tr',{},[el('th',{text:''}),el('th',{text:'Heute'}),el('th',{text:'7 Tage'})])]);
-    z.forEach(function(r){t.appendChild(el('tr',{},[el('td',{text:r[0]}),el('td',{text:String(sum(a,r[1]))}),el('td',{text:String(sum(b,r[1]))})]));});
+    var t=el('table',{class:'zahlen'},[el('tr',{},[el('th',{text:''})].concat(spalten.map(function(sp){return el('th',{scope:'col',text:sp[0]});})))]);
+    z.forEach(function(r){t.appendChild(el('tr',{},[el('th',{scope:'row',text:r[0]})].concat(w.map(function(x){return el('td',{text:String(sum(x,r[1]))});}))));});
     box.appendChild(t);
   }).catch(function(e){box.textContent='';
     var m=String(e.message||e),t=/^404/.test(m)?'GoatCounter hat noch keine Zahlen geliefert ('+m+'). Das kommt vor, solange erst wenige Besuche gezählt sind – später noch einmal ansehen.'

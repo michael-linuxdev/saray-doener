@@ -815,18 +815,20 @@ def chef_app_zahlen(b, url):
     def gc(route):
         gefragt.append(route.request.url)
         assert route.request.headers.get("authorization") == "Bearer GCKEY"
-        heute = "start=" in route.request.url and len(gefragt) % 2 == 1
+        start = urllib.parse.parse_qs(urllib.parse.urlparse(route.request.url).query)["start"][0]
+        f = {"2026-10-20T22:00:00Z": 1, "2026-10-14T22:00:00Z": 5, "2026-09-21T22:00:00Z": 20, "2026-10-01T00:00:00Z": 30}[start]
         route.fulfill(status=200, headers={"Access-Control-Allow-Origin": "*"}, json={"hits": [
-            {"path": "/", "count": 30 if heute else 200, "event": False},
-            {"path": "whatsapp-freital", "count": 4 if heute else 21, "event": True},
-            {"path": "anrufen-altenberg", "count": 2 if heute else 9, "event": True}]})
+            {"path": "/", "count": 30 * f, "event": False},
+            {"path": "whatsapp-freital", "count": 4 * f, "event": True},
+            {"path": "anrufen-altenberg", "count": 2 * f, "event": True}]})
     p.route("https://saraymicana.goatcounter.com/**", gc)
     p.click('nav.tabs [data-tab="mehr"]')
     p.fill("#gc-schl", " GCKEY ")
     p.click(".karte:has(#gc-schl) >> text=Speichern")
     p.wait_for_selector("table.zahlen")
     zeilen = p.evaluate("[...document.querySelectorAll('table.zahlen tr')].map(r=>r.innerText.replace(/\\s+/g,' ').trim())")
-    assert any(z.startswith("WhatsApp Freital") and z.split()[-2:] in (["4", "21"], ["21", "4"]) for z in zeilen), zeilen
+    assert "Besucher 30 150 600 900" in zeilen and "WhatsApp Freital 4 20 80 120" in zeilen, zeilen
+    assert zeilen[0].split() == ["Heute", "7", "Tage", "30", "Tage", "Gesamt"], zeilen[0]
     assert all("stats/hits" in x for x in gefragt), gefragt
     assert not fehler, fehler
     ctx.close()
