@@ -1281,9 +1281,22 @@ def kuechenansicht(b, url):
     k.goto(link)   # derselbe Link noch einmal: nicht doppelt
     k.wait_for_selector("#offen .bon")
     assert k.locator("#offen .bon").count() == 1
+    k.evaluate("window.open=function(u){window._offen=decodeURIComponent(u)}")
+    k.click("#offen .bon [data-bestaetigen]")
+    gesendet = k.evaluate("window._offen")
+    assert gesendet.startswith("https://wa.me/?text=Hallo Jana, danke für Ihre Bestellung " + nr + "!"), gesendet
+    assert "in Freital abholbereit" in gesendet and "15,00 €" in gesendet, gesendet
+    assert k.text_content("#offen .bon [data-bestaetigen]") == "✓ Bestätigt"
     k.click("#offen .bon >> text=Fertig ✓")
     assert k.locator("#offen .bon").count() == 0 and not k.is_hidden("#leer")
     assert k.text_content("#erledigt-titel") == "Erledigt (1)"
+    k.evaluate("document.getElementById('erledigt-box').open=true")
+    k.click("#erledigt .bon [data-melden]")
+    assert "ist fertig und liegt in Freital für Sie bereit" in k.evaluate("window._offen")
+    k.evaluate("document.getElementById('abschluss').open=true")
+    zahlen = k.evaluate("[...document.querySelectorAll('#abschluss .zahlen b')].map(x=>x.textContent)")
+    assert zahlen[:3] == ["0", "0,00 €", "0"], zahlen   # Vorschau-Bestellungen sind Test und zählen nicht
+    assert "1 Test-Bestellung" in k.text_content("#abschluss")
     k.close()
     s.schliessen()
 
@@ -1299,6 +1312,9 @@ def bildschirm_im_laden(b, url):
                                                  body=json.dumps({"regeln": [{"was": "huhn", "datum": "2026-10-21"}, {"was": "z:Pommes", "datum": "2026-10-21"}]})))
     p.goto(url + "tv/")
     assert p.locator(".wahl a").count() == 2   # ohne Laden: Auswahl
+    p.goto(url + "tv/?laden=altenberg&modus=fenster")
+    p.wait_for_function("window.TV && TV.seiten() === 1")
+    assert p.locator(".qr-gross svg").count() == 1 and p.is_hidden(".fuss")
     p.goto(url + "tv/?laden=freital&sek=999")
     p.wait_for_function("window.TV && TV.seiten() >= 5")
     p.wait_for_timeout(500)

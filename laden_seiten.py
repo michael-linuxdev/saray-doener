@@ -83,6 +83,16 @@ main{position:relative;overflow:hidden;padding:2vh 2vw 1vh}
 .punkte{display:flex;gap:.6vw}
 .punkte i{width:1.2vh;height:1.2vh;border-radius:50%;background:rgba(255,255,255,.35)}
 .punkte i.an{background:var(--gelb)}
+.fenster .fuss{display:none}
+.fenster .heute{grid-template-columns:repeat(3,1fr);grid-template-rows:auto;grid-auto-rows:minmax(0,1fr);height:100%;align-content:stretch}
+.fenster .karte{overflow:hidden}
+.fenster .heute>h2{font-size:6vh;line-height:1.1}
+.fenster .karte b{font-size:4.2vh}.fenster .karte span{font-size:2.6vh}.fenster .karte .gp{font-size:6vh}
+.fenster .qr-gross{grid-row:span 2;align-items:center;justify-content:center;text-align:center;background:var(--tinte);color:#fff;border-color:var(--tinte)}
+.fenster .qr-gross .kl{color:var(--gelb);font-size:3vh}
+.qr-bild{background:#fff;padding:1.2vh;border-radius:1.6vh;width:min(100%,38vh);aspect-ratio:1;flex:none}.qr-bild svg{width:100%;height:100%;display:block}
+.fenster .kopf h1{font-size:5.4vh}.fenster .status{font-size:3.4vh}.fenster .uhr{font-size:5vh}
+@media (orientation:portrait){.fenster .heute{grid-template-columns:repeat(2,1fr)}}
 .wahl{display:grid;place-content:center;gap:2vh;height:100vh;text-align:center;font-size:3vh}
 .wahl a{display:block;padding:2vh 4vw;border-radius:2vh;background:var(--tinte);color:var(--gelb);font:700 4vh "Saray Slab",serif;text-decoration:none}
 </style>
@@ -96,12 +106,12 @@ main{position:relative;overflow:hidden;padding:2vh 2vw 1vh}
 (function(){
 'use strict';
 var D=%%DATEN%%;
-var q=new URLSearchParams(location.search),LADEN=q.get('laden'),SEK=Math.max(6,Math.min(120,+q.get('sek')||14)),NUR=(q.get('seiten')||'').split(',').filter(Boolean);
+var q=new URLSearchParams(location.search),LADEN=q.get('laden'),FENSTER=q.get('modus')==='fenster',SEK=Math.max(6,Math.min(120,+q.get('sek')||14)),NUR=(q.get('seiten')||'').split(',').filter(Boolean);
 if(!D.laeden[LADEN]){
   document.body.innerHTML='<div class="wahl"><p>Welcher Laden?</p>'+Object.keys(D.laeden).map(function(k){return '<a href="?laden='+k+'">'+D.laeden[k].name+'</a>';}).join('')+'<p style="font-size:2vh">Tipp: Adresse als Startseite im Browser des Fernsehers speichern.</p></div>';
   return;
 }
-document.getElementById('ort').textContent=D.laeden[LADEN].name;
+document.getElementById('ort').textContent=D.laeden[LADEN].name;if(FENSTER)document.body.classList.add('fenster');
 var REGELN=D.regeln.slice();
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
 function teile(){var f=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23',weekday:'short'}).formatToParts(new Date()),o={};
@@ -141,7 +151,10 @@ function gruppeEl(g,n){
   return box;}
 function zeilen(g){return g.abschnitte.reduce(function(s,a){return s+1.2+a.gerichte.length;},2);}
 function heuteSeite(n){
-  var s=el('div','seite'),h=el('div','heute');h.appendChild(el('h2',null,'Heute bei Saray'));var karten=0;
+  var s=el('div','seite'),h=el('div','heute');h.appendChild(el('h2',null,'Heute bei Saray'));var karten=FENSTER?2:0;
+  if(FENSTER){var qk=el('div','karte qr-gross');qk.appendChild(el('span','kl','Jetzt vorbestellen'));
+    var qb=el('div','qr-bild');qb.innerHTML=document.querySelector('.fuss .qr').innerHTML;qk.appendChild(qb);
+    qk.appendChild(el('b',null,'Handy-Kamera drauf'));qk.appendChild(el('span',null,'Per WhatsApp bestellen, ohne Warten abholen. Nur Barzahlung.'));h.appendChild(qk);}
   D.aktionen.forEach(function(a){if(n.iso<a.von||n.iso>a.bis||(a.tage&&a.tage.indexOf(n.tag)<0)||(a.laden&&a.laden!==LADEN))return;
     if(a.zb!=null&&n.min>=a.zb)return;
     Object.keys(a.p).forEach(function(k){var x=D.index[k];if(!x||karten>=6)return;karten++;
@@ -159,8 +172,8 @@ var seiten=[],jetztI=0,timer=null;
 function aufbauen(){
   var n=teile(),main=document.getElementById('main');
   main.querySelectorAll('.seite').forEach(function(x){x.remove();});seiten=[];
-  if(!NUR.length||NUR.indexOf('heute')>-1)seiten.push(heuteSeite(n));
-  var gs=D.gruppen.filter(function(g){return !NUR.length||NUR.indexOf(g.id)>-1;}),grenze=window.innerWidth>window.innerHeight?44:30,akt=null,summe=0;
+  if(FENSTER||!NUR.length||NUR.indexOf('heute')>-1)seiten.push(heuteSeite(n));
+  var gs=FENSTER?[]:D.gruppen.filter(function(g){return !NUR.length||NUR.indexOf(g.id)>-1;}),grenze=window.innerWidth>window.innerHeight?44:30,akt=null,summe=0;
   gs.forEach(function(g){var z=zeilen(g);if(!akt||summe+z>grenze){akt=el('div','seite');akt.appendChild(el('div','spalten'));seiten.push(akt);summe=0;}
     akt.firstChild.appendChild(gruppeEl(g,n));summe+=z;});
   seiten.forEach(function(s){main.appendChild(s);});
@@ -237,12 +250,21 @@ body{padding:0 0 40px}
 .knopf{flex:1;min-height:48px;border-radius:12px;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font-weight:700;cursor:pointer}
 .knopf.voll{background:var(--tinte);color:var(--gelb)}
 details.erledigt{margin:8px 16px}
+.chips.hell .chip{border-color:var(--tinte);color:var(--tinte)}.chips.hell .chip[aria-pressed=true]{background:var(--tinte);color:var(--gelb)}
+.abschluss table{border-collapse:collapse;width:100%;max-width:560px;margin:10px 0;background:#fff;border-radius:12px;overflow:hidden}
+.abschluss td,.abschluss th{padding:8px 12px;border-bottom:1px solid var(--linie);text-align:left}.abschluss td.z{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.zahlen{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.zahlen div{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:10px 14px;min-width:130px}
+.zahlen b{display:block;font:700 1.6rem "Saray Slab",serif}.zahlen span{font-size:.9rem;color:var(--tinte-weich)}
+.klein{font-size:.85rem;color:var(--tinte-weich)}
+.knoepfe.zwei{margin-top:-2px}
+.knopf.ok{border-color:var(--gruen);color:var(--gruen)}
+.gesendet{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--tinte);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:9;max-width:90vw}
 details.erledigt summary{cursor:pointer;font-weight:700;padding:10px 0}
 details.erledigt .liste{padding:8px 0}
 details.erledigt .bon{opacity:.6}
 @media print{
   body{background:#fff;padding:0}
-  .kopf,.leer,details.erledigt,.knoepfe,.bon:not(.druck){display:none!important}
+  .kopf,.leer,details.erledigt,.knoepfe,.bon:not(.druck),.gesendet{display:none!important}
   .liste{display:block;padding:0}
   .bon.druck{border:0;box-shadow:none;width:72mm;padding:0;font-size:12pt;break-after:page}
   .pos li.ok{opacity:1;text-decoration:none}.pos li .hk{display:none}
@@ -256,6 +278,10 @@ details.erledigt .bon{opacity:.6}
 „Für die Küche“ tippen. Die Bestellungen bleiben auf diesem Gerät gespeichert, sortiert nach Abholzeit. Antippen hakt ein Gericht ab.</p>
 <div class="liste" id="offen"></div>
 <details class="erledigt" id="erledigt-box" hidden><summary id="erledigt-titel">Erledigt</summary><div class="liste" id="erledigt"></div></details>
+<details class="erledigt abschluss" id="abschluss"><summary>Tagesabschluss</summary>
+<div class="chips hell" id="abschluss-tag"></div><div id="abschluss-inhalt"></div>
+<p class="klein">Nur Bestellungen, die auf diesem Gerät geöffnet wurden (die letzten 7 Tage). Ersetzt keine Kasse und kein Kassenbuch.</p></details>
+<p class="gesendet" id="gesendet" role="status" hidden></p>
 <script>
 (function(){
 'use strict';
@@ -269,12 +295,31 @@ function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').r
   if(!o||typeof o.nr!=='string'||!Array.isArray(o.p))return null;
   o.p=o.p.filter(Array.isArray).slice(0,60).map(function(x){return {q:Math.max(1,Math.min(99,+x[0]||1)),n:String(x[1]||'').slice(0,120),w:String(x[2]||'').slice(0,300),f:String(x[3]||'').slice(0,40),x:String(x[4]||'').slice(0,200),c:+x[5]||0,ok:false};});
   return {id:o.nr+'-'+(+o.a||0),nr:o.nr.slice(0,8),l:LAEDEN[o.l]?o.l:'',z:String(o.z||'').slice(0,60),t:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(o.t||'')?o.t:'',
-    m:String(o.m||'').slice(0,40),s:+o.s||0,p:o.p,zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
+    m:String(o.m||'').slice(0,40),s:+o.s||0,p:o.p,sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
 /* Link aus WhatsApp: Bestellung übernehmen (doppelt geöffnet = einmal gespeichert) */
 var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
 if(m){var o=lesen(m[1]);if(o&&!liste.some(function(x){return x.id===o.id;}))liste.push(o);speichern();history.replaceState(null,'',location.pathname+location.search);}
 /* alte Bestellungen (älter als 3 Tage) aufräumen */
-liste=liste.filter(function(x){return x&&Array.isArray(x.p)&&Date.now()-x.a<3*864e5;});speichern();
+liste=liste.filter(function(x){return x&&Array.isArray(x.p)&&Date.now()-x.a<7*864e5;});speichern();
+/* Antworten an den Gast in seiner Sprache (Sprache der Website beim Bestellen) */
+var TEXTE={
+  de:{hallo:'Hallo',heute:'heute um {z} Uhr',tag:'am {d} um {z} Uhr',ok:'{hallo}, danke für Ihre Bestellung {nr}! Sie ist {wann} in {ort} abholbereit. Bitte bar bezahlen: {summe}. Ihr Saray Döner',fertig:'Ihre Bestellung {nr} ist fertig und liegt in {ort} für Sie bereit. Bis gleich! Ihr Saray Döner'},
+  en:{hallo:'Hello',heute:'today at {z}',tag:'on {d} at {z}',ok:'{hallo}, thank you for your order {nr}! It will be ready for pickup {wann} in {ort}. Please pay in cash: {summe}. Saray Döner',fertig:'Your order {nr} is ready for you in {ort}. See you soon! Saray Döner'},
+  tr:{hallo:'Merhaba',heute:'bugün saat {z}',tag:'{d} saat {z}',ok:'{hallo}, {nr} numaralı siparişiniz için teşekkürler! Siparişiniz {wann} {ort} şubemizde hazır olacak. Lütfen nakit ödeyin: {summe}. Saray Döner',fertig:'{nr} numaralı siparişiniz {ort} şubemizde hazır. Görüşmek üzere! Saray Döner'},
+  cs:{hallo:'Dobrý den',heute:'dnes v {z}',tag:'{d} v {z}',ok:'{hallo}, děkujeme za objednávku {nr}! Bude připravena k vyzvednutí {wann} v provozovně {ort}. Platba v hotovosti: {summe}. Saray Döner',fertig:'Vaše objednávka {nr} je hotová a čeká na vás v provozovně {ort}. Brzy na viděnou! Saray Döner'},
+  ru:{hallo:'Здравствуйте',heute:'сегодня в {z}',tag:'{d} в {z}',ok:'{hallo}! Спасибо за заказ {nr}! Его можно забрать {wann} в кафе {ort}. Оплата наличными: {summe}. Saray Döner',fertig:'Ваш заказ {nr} готов и ждёт вас в кафе {ort}. До встречи! Saray Döner'},
+  ar:{hallo:'مرحبًا',heute:'اليوم الساعة {z}',tag:'يوم {d} الساعة {z}',ok:'{hallo}، شكرًا لطلبك {nr}! سيكون جاهزًا للاستلام {wann} في فرع {ort}. الدفع نقدًا: {summe}. Saray Döner',fertig:'طلبك {nr} جاهز وبانتظارك في فرع {ort}. نراك قريبًا! Saray Döner'}};
+var SP_NAME={de:'Deutsch',en:'Englisch',tr:'Türkisch',cs:'Tschechisch',ru:'Russisch',ar:'Arabisch'};
+function fuell(t,w){return t.replace(/\{(\w+)\}/g,function(_,k){return w[k]!=null?w[k]:'';});}
+function heuteISO(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function antwort(x,art){var T=TEXTE[x.sp]||TEXTE.de,wann='';
+  if(x.t){var d=x.t.slice(0,10),z=x.t.slice(11);wann=d===heuteISO()?fuell(T.heute,{z:z}):fuell(T.tag,{z:z,d:d.slice(8)+'.'+d.slice(5,7)+'.'});}
+  return fuell(T[art],{hallo:T.hallo+(x.m?' '+x.m:''),nr:x.nr,wann:wann,ort:LAEDEN[x.l]||'',summe:euro(x.s)});}
+function melden(t){var g=document.getElementById('gesendet');g.textContent=t;g.hidden=false;clearTimeout(melden.t);melden.t=setTimeout(function(){g.hidden=true;},4000);}
+/* WhatsApp öffnet die Kontaktauswahl: den Chat des Gastes antippen, senden */
+function senden(x,art){var t=antwort(x,art);x[art==='ok'?'bestaetigt':'gemeldet']=Date.now();x.neu=0;speichern();zeichnen();
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
+  melden((art==='ok'?'Bestätigung':'Fertig-Meldung')+(x.sp!=='de'?' auf '+SP_NAME[x.sp]:'')+' – in WhatsApp den Chat von '+(x.m||'dem Gast')+' wählen.');}
 function zeitpunkt(x){return x.t?new Date(x.t+':00').getTime():x.a+20*60000;}
 function rest(x){return Math.round((zeitpunkt(x)-Date.now())/60000);}
 function filterZeigen(){var f=document.getElementById('filter');f.textContent='';[['','Alle']].concat(Object.keys(LAEDEN).map(function(k){return [k,LAEDEN[k]];})).forEach(function(o){
@@ -296,8 +341,15 @@ function bon(x){
   var s=el('div','summe');s.appendChild(el('span',null,'Summe (bar)'));s.appendChild(el('span',null,euro(x.s)));b.appendChild(s);
   var kn=el('div','knoepfe'),dr=el('button','knopf','Bon drucken'),fe=el('button','knopf voll',x.fertig?'Zurückholen':'Fertig ✓');dr.type=fe.type='button';
   dr.addEventListener('click',function(){document.querySelectorAll('.bon.druck').forEach(function(y){y.classList.remove('druck');});b.classList.add('druck');window.print();});
-  fe.addEventListener('click',function(){x.fertig=x.fertig?0:Date.now();x.neu=0;speichern();zeichnen();});
-  kn.appendChild(dr);kn.appendChild(fe);b.appendChild(kn);return b;}
+  fe.addEventListener('click',function(){x.fertig=x.fertig?0:Date.now();x.neu=0;speichern();zeichnen();
+    if(x.fertig)melden('Erledigt. Unter „Erledigt“ können Sie dem Gast Bescheid geben.');});
+  kn.appendChild(dr);kn.appendChild(fe);b.appendChild(kn);
+  var k2=el('div','knoepfe zwei');
+  if(!x.fertig){var be=el('button','knopf'+(x.bestaetigt?' ok':''),x.bestaetigt?'✓ Bestätigt':'Bestätigen');be.type='button';be.dataset.bestaetigen='';
+    be.addEventListener('click',function(){senden(x,'ok');});k2.appendChild(be);}
+  else{var me=el('button','knopf'+(x.gemeldet?' ok':''),x.gemeldet?'✓ Gast Bescheid gegeben':'Gast: „Ist fertig“');me.type='button';me.dataset.melden='';
+    me.addEventListener('click',function(){senden(x,'fertig');});k2.appendChild(me);}
+  b.appendChild(k2);return b;}
 function zeichnen(){
   var sicht=liste.filter(function(x){return !filter||x.l===filter;}),offen=sicht.filter(function(x){return !x.fertig;}).sort(function(a,b){return zeitpunkt(a)-zeitpunkt(b);}),
     fertig=sicht.filter(function(x){return x.fertig;}).sort(function(a,b){return b.fertig-a.fertig;});
@@ -305,7 +357,34 @@ function zeichnen(){
   document.getElementById('leer').hidden=offen.length>0;
   var e=document.getElementById('erledigt');e.textContent='';fertig.forEach(function(x){e.appendChild(bon(x));});
   document.getElementById('erledigt-box').hidden=!fertig.length;document.getElementById('erledigt-titel').textContent='Erledigt ('+fertig.length+')';
-  document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';}
+  document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';
+  abschluss(sicht);}
+var abTag='';
+function tagVon(x){return x.t?x.t.slice(0,10):new Date(x.a).toISOString().slice(0,10);}
+function abschluss(sicht){
+  var tage=[],box=document.getElementById('abschluss-tag'),inh=document.getElementById('abschluss-inhalt');
+  sicht.forEach(function(x){var d=tagVon(x);if(tage.indexOf(d)<0)tage.push(d);});tage.sort().reverse();
+  if(tage.indexOf(heuteISO())<0)tage.unshift(heuteISO());
+  if(tage.indexOf(abTag)<0)abTag=tage[0];
+  box.textContent='';tage.slice(0,7).forEach(function(d){var b=el('button','chip',d===heuteISO()?'Heute':d.slice(8)+'.'+d.slice(5,7)+'.');b.type='button';
+    b.setAttribute('aria-pressed',String(d===abTag));b.addEventListener('click',function(){abTag=d;zeichnen();});box.appendChild(b);});
+  var tag=sicht.filter(function(x){return tagVon(x)===abTag;}),echt=tag.filter(function(x){return !x.test;}),test=tag.length-echt.length;
+  inh.textContent='';
+  var umsatz=echt.reduce(function(s,x){return s+x.s;},0),stueck=0,gerichte={},stunden={};
+  echt.forEach(function(x){x.p.forEach(function(p){stueck+=p.q;var n=p.n.replace(/\s*\(.*\)$/,'');gerichte[n]=(gerichte[n]||0)+p.q;});
+    if(x.t){var h=x.t.slice(11,13);stunden[h]=(stunden[h]||0)+1;}});
+  var zahlen=el('div','zahlen');
+  [[echt.length,'Bestellungen'],[euro(umsatz),'Summe (bar)'],[stueck,'Gerichte'],[echt.length?euro(Math.round(umsatz/echt.length)):'–','pro Bestellung']].forEach(function(z){
+    var d=el('div');d.appendChild(el('b',null,String(z[0])));d.appendChild(el('span',null,z[1]));zahlen.appendChild(d);});
+  inh.appendChild(zahlen);
+  if(test)inh.appendChild(el('p','klein','Dazu '+test+' Test-Bestellung'+(test===1?'':'en')+' (nicht mitgezählt).'));
+  var top=Object.keys(gerichte).sort(function(a,b){return gerichte[b]-gerichte[a]||a.localeCompare(b);}).slice(0,10);
+  if(top.length){var tb=el('table'),hd=el('tr');hd.appendChild(el('th',null,'Am meisten bestellt'));hd.appendChild(el('th',null,''));tb.appendChild(hd);
+    top.forEach(function(n){var tr=el('tr');tr.appendChild(el('td',null,n));tr.appendChild(el('td','z',gerichte[n]+'×'));tb.appendChild(tr);});inh.appendChild(tb);}
+  var hs=Object.keys(stunden).sort(function(a,b){return stunden[b]-stunden[a];});
+  if(hs.length)inh.appendChild(el('p',null,'Meiste Abholungen: '+(+hs[0])+'–'+(+hs[0]+1)+' Uhr ('+stunden[hs[0]]+')'));
+  if(!echt.length&&!test)inh.appendChild(el('p','klein','An diesem Tag noch keine Bestellungen.'));
+}
 window.addEventListener('storage',function(ev){if(ev.key===K){try{liste=JSON.parse(ev.newValue||'[]');}catch(e){}zeichnen();}});
 window.addEventListener('hashchange',function(){var m2=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m2)return;var o2=lesen(m2[1]);
   if(o2&&!liste.some(function(x){return x.id===o2.id;}))liste.push(o2);speichern();history.replaceState(null,'',location.pathname+location.search);zeichnen();});

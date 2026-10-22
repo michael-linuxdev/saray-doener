@@ -1535,7 +1535,7 @@ ZETTEL_JS = r'''
     if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
-    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),zug:abh.zug||'',
+    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),zug:abh.zug||'',sp:SP,
       test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];})};
     return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
