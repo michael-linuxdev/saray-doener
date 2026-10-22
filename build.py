@@ -168,6 +168,47 @@ def gericht_typ(nr, gruppe, abschnitt):
     return ""
 
 
+# Fotos der Gerichte (Chef-App lädt sie nach daten/fotos/nr-<Nummer>.jpg hoch); hier verkleinert als WebP
+FOTO_QUELLE = HIER / "daten" / "fotos"
+FOTO_CACHE = HIER / ".fotos-cache"
+
+
+def fotos_vorbereiten():
+    fertig = set()
+    if not FOTO_QUELLE.is_dir():
+        return fertig
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        print("WARNUNG: Pillow fehlt – Fotos der Gerichte werden übersprungen")
+        return fertig
+    FOTO_CACHE.mkdir(exist_ok=True)
+    for f in sorted(FOTO_QUELLE.glob("nr-*.jpg")):
+        nr = f.stem[3:]
+        try:
+            for breite in (400, 800):
+                ziel = FOTO_CACHE / f"nr-{nr}-{breite}.webp"
+                if not ziel.exists() or ziel.stat().st_mtime < f.stat().st_mtime:
+                    im = ImageOps.exif_transpose(Image.open(f)).convert("RGB")
+                    w, h = im.size   # auf 4:3 zuschneiden
+                    if w / h > 4 / 3:
+                        nw = int(h * 4 / 3); im = im.crop(((w - nw) // 2, 0, (w - nw) // 2 + nw, h))
+                    else:
+                        nh = int(w * 3 / 4); im = im.crop((0, (h - nh) // 2, w, (h - nh) // 2 + nh))
+                    im.resize((breite, breite * 3 // 4), Image.LANCZOS).save(ziel, "WEBP", quality=78, method=6)
+            fertig.add(nr)
+        except Exception as fehler:   # ein kaputtes Foto darf die Seite nicht verhindern
+            print(f"WARNUNG: Foto {f.name} nicht lesbar ({fehler})")
+    return fertig
+
+
+FOTOS = fotos_vorbereiten()
+
+
+def foto(nr, breite):
+    return f"%%DATEI:.fotos-cache/nr-{nr}-{breite}.webp|image/webp|img/gerichte/nr-{nr}-{breite}.webp%%"
+
+
 def zettel_daten(nr, name, desc, preise, groessen, typ="", varianten=()):
     ne = (("No. " + anz(nr) + " ") if nr else "") + EN.name(name)
     cent = "|".join(str(int(x.replace(",", ""))) for x in preise)
@@ -210,8 +251,10 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     zusatz = GERICHT_ALLERGENE.get(nr)
     zusatz_html = ("".join(f' <span class="allergen-zusatz">{t("enthält " + ALLERGENE[x] + " (" + x + ")", "contains " + ALLERGENE_EN[x].lower() + " (" + x + ")")}</span>'
                            for x in zusatz.split(","))) if zusatz else ""
-    if desc or varianten or zusatz:
-        inner = (t(desc, EN.text(desc)) if desc else "") + zusatz_html
+    bild = (f'<img class="gericht-foto" src="{foto(nr, 400)}" width="400" height="300" loading="lazy" decoding="async" alt="Foto: {e(name)}">'
+            if nr in FOTOS else "")
+    if desc or varianten or zusatz or bild:
+        inner = bild + (t(desc, EN.text(desc)) if desc else "") + zusatz_html
         if varianten:
             inner += '<ul class="varianten">' + "".join(
                 f"<li><b>{e(k)}</b> {t(v, EN.text(v))}</li>" for k, v in varianten) + "</ul>"
@@ -285,6 +328,7 @@ def beliebt_karte(nr, gross=False, koch=True):
     zusatz = f" ({ab['groessen'][0]})" if ab.get("groessen") else ""
     veg = nr in VEGETARISCH or nr in VEG_WAEHLBAR or "vegetarisch" in name.lower()
     return (f'<li class="tipp{" tipp-gross" if gross else ""}{" ohne-koch" if gross and not koch else ""}"{" data-veg" if veg else ""}{" data-fisch" if nr in FISCH else ""}{" data-nur-diaet hidden" if nr in NUR_DIAET else ""}{zettel_daten(nr, name, desc, preise, ab.get("groessen"), gericht_typ(nr, gr["titel"], ab["titel"]), g[4] if len(g) > 4 else ())}><a href="#nr-{nr}">'
+            + (f'<img class="tipp-foto" src="{foto(nr, 800)}" srcset="{foto(nr, 400)} 400w, {foto(nr, 800)} 800w" sizes="(min-width: 900px) 260px, 50vw" width="800" height="600" loading="lazy" decoding="async" alt="">' if nr in FOTOS else "") +
             f'<span class="tipp-nr"><span data-en="No.">Nr.</span> {e(anz(nr))}</span><b class="tipp-name" data-en="{e(EN.name(name))}">{e(name)}</b>'
             f'<span class="tipp-info" data-en="{e(EN.text(desc))}">{e(desc)}</span>'
             f'<span class="tipp-preis">{t("ab ", "from ") if zusatz else ""}{preis(preise[0])}</span>'
@@ -548,6 +592,9 @@ p{margin:0}
 .tipps{list-style:none;margin:0 calc(-1 * var(--rand));padding:4px var(--rand) 12px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:var(--rand);scrollbar-width:thin}
 .tipp{flex:0 0 200px;scroll-snap-align:start;display:flex;flex-direction:column;border:2px solid var(--tinte);border-radius:16px;background:#fff}
 .tipp a{display:flex;flex-direction:column;gap:4px;flex:1;padding:14px 16px;border-radius:14px;text-decoration:none}
+.tipp-foto{display:block;width:calc(100% + 32px);max-width:none;height:auto;aspect-ratio:4/3;object-fit:cover;margin:-14px -16px 6px;border-radius:13px 13px 0 0}
+.tipps-empfehlung .ohne-koch .tipp-foto{width:calc(100% + 28px);margin:-14px -14px 6px}
+.gericht-foto{float:right;width:84px;height:63px;object-fit:cover;border-radius:8px;margin:2px 0 4px 10px}
 @media (hover:hover){.tipp:hover{background:var(--gelb-blass)}.tipp-gross:hover{background:#FFDB4D}}
 .tipp-gross{flex-basis:100%}
 .tipps-empfehlung{overflow:visible;margin-bottom:22px;flex-wrap:wrap}
@@ -2271,7 +2318,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         (aus / "CNAME").write_text(CNAME + "\n")
     (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\n"))
     import chef_app
-    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER)
+    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())
     for w in WARNUNGEN:
         print("WARNUNG:", w)

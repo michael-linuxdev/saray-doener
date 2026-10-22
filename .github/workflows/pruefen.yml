@@ -30,6 +30,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Pillow (Fotos der Gerichte verkleinern)
+        run: pip install pillow==11.0.0
+
       - name: Seite neu bauen
         run: python3 build.py
 

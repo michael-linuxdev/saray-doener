@@ -3,7 +3,8 @@
 
     python3 druck.py [ziel]   ->  <ziel>/flyer.pdf, <ziel>/aufsteller-<laden>.pdf   (Standard: docs/druck)
 
-Aktions-Plakate: je laufender/kommender Sonderaktion ein A4-Plakat (aktion-<von>-<name>.pdf).
+Aktions-Plakate: je laufender/kommender Sonderaktion ein A4-Plakat (aktion-<von>-<name>.pdf) und ein Bild 1080 × 1080 (….png).
+Allergenmappe (allergenmappe.pdf) für die Theke, Aufkleber-Bogen (aufkleber.pdf, 24 × 70 × 37 mm) für Tüten.
 Flyer: A4 quer, beidseitig, Wickelfalz (3 Spalten je Seite). Außen: Innenklappe | Rückseite | Titel.
 Der GitHub-Workflow erzeugt die PDFs nach jedem Bauen; die Chef-App verlinkt sie unter „Mehr → Drucken“.
 Braucht Playwright mit Chromium.
@@ -162,8 +163,8 @@ def slug(name, von):
 TAGE_LANG = ["sonntags", "montags", "dienstags", "mittwochs", "donnerstags", "freitags", "samstags"]
 
 
-def plakat_html(a):
-    """A4 hoch: Aktions-Plakat fürs Schaufenster."""
+def plakat_html(a, quadrat=False):
+    """A4 hoch: Aktions-Plakat fürs Schaufenster. quadrat=True: Bild zum Posten (Instagram, WhatsApp-Status)."""
     gerichte = {(g[0] or g[1]): (g, ab) for gr in build.GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"]}
     zeilen = []
     for k, neu in a["preise"].items():
@@ -210,7 +211,8 @@ li{{display:flex;align-items:baseline;gap:5mm;background:#fff;border:1mm solid #
 .fuss{{flex:none;margin:6mm 0 12mm;display:flex;align-items:center;gap:6mm;background:#fff;border-radius:4mm;padding:5mm 7mm;width:170mm}}
 .fuss svg{{width:34mm;height:34mm;flex:none}}.fuss b{{font:700 7mm/1.2 Slab;display:block}}.fuss p{{margin:1mm 0 0;font-size:4.6mm;line-height:1.35}}
 .muster{{position:absolute;left:0;right:0;top:0;background:#3A1531;color:#fff;text-align:center;font:700 3.6mm Text;padding:1.6mm;letter-spacing:.3mm}}
-</style></head><body>{muster}
+{"body{height:210mm}.kopf{margin-top:8mm}.stoerer{margin-top:5mm;font-size:18mm}h1{margin-top:6mm}ul{margin-top:6mm}.fuss{margin:4mm 0 8mm}.fuss svg{width:26mm;height:26mm}" if quadrat else ""}
+</style></head><body>{"" if quadrat else muster}
 <main><div class="kopf"><img src="{uri("maskottchen", "saray-koch-kopf.svg")}" alt=""><b>Saray Döner</b></div>
 <div class="stoerer">AKTION</div>
 <h1>{e(a["name"]).replace(" €", "&nbsp;€")}</h1>
@@ -220,6 +222,71 @@ li{{display:flex;align-items:baseline;gap:5mm;background:#fff;border:1mm solid #
 <script>/* bei vielen Gerichten verkleinern, bis alles auf die Seite passt */
 var m=document.querySelector('main'),z=1;while(m.scrollHeight>m.clientHeight+1&&z>.5){{z-=.03;m.style.zoom=z;}}</script>
 </body></html>"""
+
+
+def allergenmappe_html():
+    """Allergenmappe für die Theke: jedes Gericht mit Inhaltsstoffen und Allergenen (A4 hoch, mehrere Seiten)."""
+    heute = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Berlin")).strftime("%d.%m.%Y")
+    leg = "".join(f"<tr><td><b>{k}</b></td><td>{e(v)}</td></tr>" for k, v in ALLERGENE.items())
+    zut = "".join(f"<tr><td><b>{k}</b></td><td><b>{e(n)}</b> – {e(t)}</td></tr>" for k, (n, t) in ZUTATEN.items())
+    teile = []
+    for gr in build.GRUPPEN:
+        zeilen = []
+        for ab in gr["abschnitte"]:
+            kz = KENNZEICHNUNG.get(ab["titel"])
+            for g in ab["gerichte"]:
+                nr, name = g[0], g[1]
+                al = (kz[1] if kz else "")
+                extra = GERICHT_ALLERGENE.get(nr, "")
+                al = ", ".join(x for x in (al + "," + extra).split(",") if x)
+                zeilen.append(f'<tr><td class="nr">{e(build.anz(nr) if nr else "")}</td><td>{e(name)}<small>{e(g[2])}</small></td>'
+                              f'<td>{e(kz[0].replace(",", ", ")) if kz else "–"}</td><td>{e(al) if al else "<i>bitte erfragen</i>"}</td></tr>')
+        teile.append(f'<section><h2>{e(gr["titel"])}</h2><table><thead><tr><th>Nr.</th><th>Gericht</th><th>Inhaltsstoffe</th><th>Allergene</th></tr></thead>'
+                     f'<tbody>{"".join(zeilen)}</tbody></table></section>')
+    muster = '<div class="muster">ENTWURF</div>' if build.VORSCHAU else ""
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A4;margin:14mm 14mm 16mm}}
+body{{font:9.5pt/1.35 Text;color:#3A1531;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+h1{{font:700 20pt/1.1 Slab;margin:0 0 2mm}}h2{{font:700 13pt Slab;margin:6mm 0 2mm;padding:1.5mm 3mm;background:#FFD21F;border-radius:1.5mm;break-after:avoid}}
+.stand{{color:#6b5566;margin:0 0 4mm}}
+table{{width:100%;border-collapse:collapse}}th,td{{text-align:left;vertical-align:top;padding:1.2mm 2mm;border-bottom:.2mm solid #e3d6de}}
+th{{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#6b5566}}tr{{break-inside:avoid}}
+td small{{display:block;color:#6b5566;font-size:8pt}}td.nr{{width:10mm;font-weight:700}}
+.leg td:first-child{{width:8mm}}.kasten{{display:grid;grid-template-columns:1fr 1.6fr;gap:6mm;margin-bottom:4mm}}
+.hinweis{{margin-top:6mm;font-size:8.5pt;color:#6b5566}}
+.muster{{background:#3A1531;color:#fff;text-align:center;font:700 8pt Text;padding:1mm;margin:-2mm 0 4mm}}
+</style></head><body>{muster}
+<h1>Allergene und Inhaltsstoffe</h1><p class="stand">Saray Döner Freital und Altenberg · Stand {heute}</p>
+<div class="kasten"><div><h2>Allergene</h2><table class="leg">{leg}</table>
+<p>Soßen ({e(SOSSEN[0])}): Inhaltsstoff {SOSSEN[1]} · Allergene {SOSSEN[2].replace(",", ", ")}</p></div>
+<div><h2>Inhaltsstoffe</h2><table class="leg">{zut}</table></div></div>
+{"".join(teile)}
+<p class="hinweis">Angaben nach Herstellerangaben. Spuren anderer Allergene durch die Zubereitung in unserer Küche sind möglich.
+Bei Fragen sprechen Sie uns bitte an.</p>
+</body></html>"""
+
+
+def aufkleber_html():
+    """A4-Bogen mit 24 Etiketten 70 × 37 mm (z. B. Zweckform 3474) für Tüten: QR-Code zur Speisekarte."""
+    qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
+    kopf = uri("maskottchen", "saray-koch-kopf.svg")
+    eins = (f'<div class="et"><div>{qr}</div><div class="t"><div class="k"><img src="{kopf}" alt=""><b>Saray Döner</b></div>'
+            f'<p>Nächstes Mal online vorbestellen – ohne Warten.</p><small>{e(build.CNAME)}</small></div></div>')
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A4;margin:0}}*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{width:210mm;height:297mm;display:grid;grid-template-columns:repeat(3,70mm);grid-template-rows:repeat(8,37mm);align-content:start;
+  font-family:Text;color:#3A1531;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.et{{display:flex;align-items:center;gap:2.5mm;padding:2.5mm 3mm;overflow:hidden}}
+.et svg{{width:27mm;height:27mm;display:block}}
+.t{{min-width:0}}.k{{display:flex;align-items:center;gap:1.5mm}}.k img{{width:7mm;height:7mm}}.k b{{font:700 4.2mm/1 Slab}}
+.t p{{margin:1.5mm 0 1mm;font:700 3.1mm/1.25 Text}}.t small{{font-size:2.6mm}}
+</style></head><body>{eins * 24}</body></html>"""
 
 
 async def main(ziel):
@@ -247,7 +314,28 @@ async def main(ziel):
             await pg.pdf(path=str(ziel / f"aufsteller-{st['id']}.pdf"), format="A5", print_background=True)
             await pg.close()
             tmp.unlink()
+        for name, inhalt in (("allergenmappe", allergenmappe_html()), ("aufkleber", aufkleber_html())):
+            tmp = HIER / f"_{name}.html"
+            tmp.write_text(inhalt, encoding="utf-8")
+            pg = await b.new_page(viewport={"width": 794, "height": 1123})
+            await pg.goto(tmp.as_uri())
+            await pg.wait_for_timeout(400)
+            await pg.pdf(path=str(ziel / f"{name}.pdf"), format="A4", print_background=True,
+                         prefer_css_page_size=True)
+            if "--vorschau" in sys.argv:
+                await pg.screenshot(path=str(HIER / "druck" / f"{name}-vorschau.png"))
+            await pg.close()
+            tmp.unlink()
         for a in build.AKTIONEN:
+            # quadratisches Bild zum Posten (1080 × 1080)
+            tmp = HIER / "_bild.html"
+            tmp.write_text(plakat_html(a, quadrat=True), encoding="utf-8")
+            pg = await b.new_page(viewport={"width": 794, "height": 794}, device_scale_factor=1080 / 794)
+            await pg.goto(tmp.as_uri())
+            await pg.wait_for_timeout(400)
+            await pg.screenshot(path=str(ziel / f"{slug(a['name'], a['von'])}.png"))
+            await pg.close()
+            tmp.unlink()
             tmp = HIER / "_plakat.html"
             tmp.write_text(plakat_html(a), encoding="utf-8")
             pg = await b.new_page(viewport={"width": 794, "height": 1123})
@@ -259,7 +347,7 @@ async def main(ziel):
             await pg.close()
             tmp.unlink()
         await b.close()
-    print("Druck:", ", ".join(f.name for f in sorted(ziel.glob("*.pdf"))))
+    print("Druck:", ", ".join(f.name for f in sorted(list(ziel.glob("*.pdf")) + list(ziel.glob("*.png")))))
 
 
 if __name__ == "__main__":

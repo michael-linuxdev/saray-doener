@@ -87,8 +87,13 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Mehr → Preis-Stände:** Stand 01.02.2024 (gedruckte Karte) ist fest; dazu bis zu drei eigene Stände („Heutige Preise als Stand festlegen“). Ein Stand lässt sich ganz übernehmen; einzelne Preise holt man beim Gericht unter „Frühere Preise“ zurück.
 - **Mehr → Zahlen:** Seitenaufrufe, WhatsApp-Bestellungen und Anrufe je Laden, Teilen, Gemeinsam bestellen, Bewertungs-Klicks (heute / 7 Tage) aus GoatCounter. Einmal einen API-Schlüssel (nur Lesen) von GoatCounter eintragen; er bleibt auf dem Gerät.
 - **Sonderaktionen mit Uhrzeit:** z. B. Mittagsangebot 11–14 Uhr – gilt dann nur für Abholzeiten in diesem Fenster. Zu jeder Aktion gibt es unter „Drucken“ ein A4-Plakat fürs Schaufenster.
+- **Drucken, weitere Vorlagen:** Allergenmappe für die Theke (alle Gerichte mit Inhaltsstoffen und Allergenen), Tüten-Aufkleber (A4-Bogen, 24 Etiketten 70 × 37 mm, z. B. Zweckform 3474) und je Aktion ein Bild 1080 × 1080 zum Posten.
 - **Mehr → Drucken:** Flyer (A4 quer, beidseitig, Wickelfalz) und Aufsteller je Laden als PDF – immer mit den aktuellen Preisen. Erzeugt `druck.py` im GitHub-Workflow nach jedem Bauen (`docs/druck/`, nicht im Repo). Lokal: `python3 druck.py`.
 - **Mehr → Vor dem Freischalten:** Checkliste der offenen Punkte (abhaken, Antwort notieren), gespeichert in `daten/anpassungen.json` unter `checkliste`; Liste: `CHECKLISTE` in `chef_app.py`. Bleibt bei „Standard wiederherstellen“ erhalten.
+- **Zeiten → Feiertage demnächst:** sächsische Feiertage (dazu Heiligabend, Silvester) der nächsten Wochen mit „Beide geschlossen“, „Wie sonntags“ oder „Normal geöffnet“; unter „Heute“ ein Hinweis, wenn einer in den nächsten 14 Tagen noch offen ist.
+- **Karte → Gericht → Foto:** Foto aufnehmen oder auswählen; wird verkleinert nach `daten/fotos/nr-<Nr>.jpg` gespeichert und erscheint auf der Seite (4:3, WebP) bei „Wir empfehlen“/„Beliebt“ und klein in der Karte.
+- **Mehr → Google-Unternehmensprofil:** Name, Adresse, Telefon, Website, Bestell-Link, Öffnungszeiten, Zahlungsart, Beschreibung und Merkmale je Laden zum Kopieren.
+- **Bestellung:** Jede WhatsApp-Nachricht hat eine kurze Bestellnummer (z. B. K47); nach dem Senden kann der Gast die Abholung in seinen Kalender eintragen (.ics, Erinnerung 15 Minuten vorher).
 - **Mehr → Gefahrenbereich:** „Alles auf Standard zurücksetzen“ und „Auf diesem Gerät abmelden“, rot gekennzeichnet.
 - **Mehr:** Hinweis oben auf der Seite (Text mit Zeitraum), „Letzte Änderung rückgängig“ (holt den Stand vor dem letzten Speichern zurück), „Alles auf Standard zurücksetzen“, Abmelden.
 

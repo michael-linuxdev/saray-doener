@@ -460,6 +460,9 @@ def barrierefreiheit(b, url):
     ctx.close()
 
 
+FOTO_HOCHGELADEN = []
+
+
 def chef_oeffnen(b, url, anp=None, gespeichert=None, vorher=None):
     """Öffnet die Chef-App mit nachgebildeter GitHub-API (es wird nichts wirklich gespeichert)."""
     import base64
@@ -472,7 +475,14 @@ def chef_oeffnen(b, url, anp=None, gespeichert=None, vorher=None):
 
     def github(route):
         r = route.request
-        if "/commits?" in r.url:
+        if "daten/fotos/" in r.url:
+            if r.method == "PUT":
+                body = json.loads(r.post_data)
+                FOTO_HOCHGELADEN.append((r.url.split("/contents/")[1], body["message"], len(body["content"])))
+                route.fulfill(status=200, json={"content": {"sha": "f1"}, "commit": {"sha": "c1"}})
+            else:
+                route.fulfill(status=404, json={"message": "Not Found"})
+        elif "/commits?" in r.url:
             route.fulfill(status=200, json=[{"sha": "c2", "commit": {"message": "Chef-App: 1 Änderung(en)", "author": {"date": "2026-10-21T15:00:00Z"}}},
                                             {"sha": "c1", "commit": {"message": "vorher", "author": {"date": "2026-10-20T15:00:00Z"}}}])
         elif "ref=c1" in r.url:
@@ -657,7 +667,7 @@ def chef_app_wartezeit_tage_rueckgaengig(b, url):
     p.click("text=Tag hinzufügen")
     p.fill("#s-datum", "2026-12-25")
     p.click(".wahl >> text=Beide")
-    p.click("text=Geschlossen")
+    p.click(".wahl button:text-is('Geschlossen')")
     p.click("text=Tag hinzufügen")
     assert "24.12. Freital: 10:00–14:00 Uhr" in p.text_content("#app")
     p.click("#speichern-knopf")
@@ -1116,6 +1126,45 @@ def bestellnummer_und_kalender(b, url):
     s.p.click(".z-eintrag [data-a=plus]")
     assert ("Bestellnummer: " + nr) not in s.wa_text()
     s.schliessen()
+
+
+@test
+def chef_app_foto_hochladen(b, url):
+    from PIL import Image
+    FOTO_HOCHGELADEN.clear()
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
+    with tempfile.TemporaryDirectory() as tmp:
+        bild = pathlib.Path(tmp) / "doener.jpg"
+        Image.new("RGB", (3000, 2000), (200, 120, 40)).save(bild)
+        p.click('nav.tabs [data-tab="karte"]')
+        p.click('.liste-gericht[data-k="1"]')
+        p.set_input_files("#foto-datei", str(bild))
+        p.wait_for_selector(".foto-bereich >> text=Foto gespeichert")
+    assert FOTO_HOCHGELADEN and FOTO_HOCHGELADEN[0][0] == "daten/fotos/nr-1.jpg" and FOTO_HOCHGELADEN[0][1] == "Chef-App: Foto Nr. 1", FOTO_HOCHGELADEN
+    assert FOTO_HOCHGELADEN[0][2] < 1_500_000, "Foto nicht verkleinert"
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
+def chef_app_feiertage_und_google(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    assert "Reformationstag" in p.text_content("#app"), "Hinweis auf Feiertag fehlt unter Heute"
+    p.click("text=Jetzt festlegen")
+    p.locator('[data-feiertag="2026-10-31"]').locator("text=Wie sonntags").click()
+    p.locator('[data-feiertag="2026-11-18"]').locator("text=Normal geöffnet").click()
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert d["sonderzeiten"] == {"2026-10-31": {"freital": ["11:00", "22:00"], "altenberg": ["11:00", "21:00"]}}, d
+    assert d["feiertage_ok"] == ["2026-11-18"], d
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click("text=Google-Unternehmensprofil")
+    txt = p.evaluate("[...document.querySelectorAll('.gp-zeile textarea, .gp-zeile input')].map(x=>x.value).join('|')")
+    assert "Dresdner Str. 87, 01705 Freital" in txt and "Mo: 10:00–22:00" in txt and "Nur Barzahlung" in txt, txt
+    assert not fehler, fehler
+    ctx.close()
 
 
 @test

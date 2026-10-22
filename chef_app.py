@@ -100,6 +100,12 @@ nav.tabs button[aria-current=page]{color:var(--paprika)}
 .karte.gefahr{border:2px solid var(--paprika);background:#fff7f4}
 .checkliste summary{cursor:pointer;min-height:40px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .cl-punkt{padding:8px 0;border-bottom:1px solid var(--linie)}
+.karte.feiertag{border:2px solid var(--gelb);background:var(--blass)}
+.foto-bereich{margin-top:14px;padding-top:10px;border-top:1px solid var(--linie)}
+.foto-vorschau{display:block;width:100%;max-width:320px;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin:6px 0}
+.foto-datei{position:absolute;width:1px;height:1px;opacity:0}
+.gp-zeile{margin:8px 0}.gp-kopf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.gp-zeile input,.gp-zeile textarea{width:100%;font-size:.95rem}
 .cl-punkt .schalter{font-weight:700;align-items:flex-start}
 .cl-punkt.erledigt .schalter span{text-decoration:line-through;opacity:.6}
 .cl-punkt input[type=text]{margin-left:32px;width:calc(100% - 32px);min-height:40px}
@@ -179,6 +185,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
   if(o.verfuegbarkeit)o.verfuegbarkeit=o.verfuegbarkeit.filter(function(r){return !r.datum||r.datum>=t;});
   if(o.hinweise)o.hinweise=o.hinweise.filter(function(h){return h.bis>=t;});
   if(o.aktionen)o.aktionen=o.aktionen.filter(function(a){return a.bis>=t;});
+  if(o.feiertage_ok)o.feiertage_ok=o.feiertage_ok.filter(function(d){return d>=t;});
   if(o.sonderzeiten)Object.keys(o.sonderzeiten).forEach(function(d){if(d<t||!Object.keys(o.sonderzeiten[d]).length)delete o.sonderzeiten[d];});
   if(o.wartezeit)Object.keys(o.wartezeit).forEach(function(l){var w=o.wartezeit[l];if(!w||w.datum<t||!w.min)delete o.wartezeit[l];});
   Object.keys(o).forEach(function(k){var v=o[k];if(v==null||(Array.isArray(v)&&!v.length)||(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length))delete o[k];});
@@ -189,7 +196,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
   ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
-  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
+  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
 function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
   document.getElementById('speichern-text').textContent=(n===1?'1 Änderung':n+' Änderungen')+' – noch nicht gespeichert';}
@@ -260,6 +267,10 @@ function wartezeitKarte(){
   return k;
 }
 function heuteTab(){
+  var bald=offeneFeiertage(14);
+  if(bald.length)app.appendChild(el('div',{class:'karte feiertag'},[el('b',{text:'📅 '+bald.map(function(f){return datumDE(f[0])+' '+f[1];}).join(', ')}),
+    el('p',{class:'hinweis',style:'margin:4px 0 8px',text:'Öffnungszeiten für diesen Tag noch nicht festgelegt.'}),
+    el('button',{class:'knopf klein voll',text:'Jetzt festlegen',onclick:function(){TAB='zeiten';[].forEach.call(document.querySelectorAll('[data-tab]'),function(x){if(x.dataset.tab==='zeiten')x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});zeichnen();window.scrollTo(0,0);}})]));
   app.appendChild(wartezeitKarte());
   app.appendChild(el('h2',{text:'Was gibt es heute nicht?'}));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Für welchen Laden?'}),
@@ -394,8 +405,45 @@ function bearbeiten(x){
   else if(x)knoepfe.push(el('button',{class:'knopf rot',text:'Löschen',onclick:function(){(ANP.geloescht=ANP.geloescht||[]).push(x.k);b.remove();zeichnen();}}));
   if(x&&x.geaendert)knoepfe.push(el('button',{class:'knopf klein',text:'Alles wie Stand '+STD.grundstand,onclick:function(){delete ANP.gerichte[x.k];b.remove();zeichnen();}}));
   if(!x||!x.geloescht)knoepfe.push(el('button',{class:'knopf voll',text:'Übernehmen',onclick:uebernehmen}));
+  var fnr=x?(x.neu?x.nr:(x.std&&x.std.nr)):'';
+  if(fnr&&(!x.neu||(JSON.parse(ALT).neu||[]).some(function(n){return n.nr===fnr;})))inhalt.appendChild(fotoBereich(fnr,x.name));
   inhalt.appendChild(el('div',{class:'reihe'},knoepfe));b.appendChild(inhalt);document.body.appendChild(b);name.focus();
 }
+
+/* ---------- Fotos der Gerichte: daten/fotos/nr-<Nummer>.jpg im Repo; die Seite zeigt sie verkleinert ---------- */
+function fotoPfad(nr){return 'daten/fotos/nr-'+nr+'.jpg';}
+function fotoSha(nr){return api('/contents/'+fotoPfad(nr)+'?ref=main',{cache:'no-store'}).then(function(r){
+  if(r.status===404)return null;if(!r.ok)throw new Error('GitHub antwortet nicht ('+r.status+')');return r.json().then(function(d){return d.sha;});});}
+function verkleinern(datei){ /* längste Seite 1600 px, JPEG – spart Speicher und Ladezeit */
+  return new Promise(function(ok,nein){var url=URL.createObjectURL(datei),bild=new Image();
+    bild.onload=function(){var f=Math.min(1,1600/Math.max(bild.naturalWidth,bild.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.round(bild.naturalWidth*f);c.height=Math.round(bild.naturalHeight*f);c.getContext('2d').drawImage(bild,0,0,c.width,c.height);URL.revokeObjectURL(url);
+      ok(c.toDataURL('image/jpeg',.85).split(',')[1]);};
+    bild.onerror=function(){nein(new Error('Das Bild lässt sich nicht öffnen.'));};bild.src=url;});}
+function fotoBereich(nr,name){
+  var vorhanden=(STD.fotos||[]).indexOf(nr)>-1||fotoBereich.neu[nr];
+  var vorschau=el('img',{class:'foto-vorschau',alt:'Foto '+name,hidden:!vorhanden});
+  if(fotoBereich.neu[nr])vorschau.src='data:image/jpeg;base64,'+fotoBereich.neu[nr];else if(vorhanden)vorschau.src='../img/gerichte/nr-'+nr+'-400.webp?'+Date.now();
+  var eingabe=el('input',{type:'file',accept:'image/*',id:'foto-datei',class:'foto-datei'}),meldung=el('p',{class:'hinweis',role:'status'});
+  var loeschen=el('button',{class:'knopf klein rot',text:'Foto entfernen',hidden:!vorhanden,onclick:function(){
+    frage('Foto von Nr. '+nr+' entfernen?','Entfernen').then(function(j){if(!j)return;meldung.textContent='Entfernt …';
+      fotoSha(nr).then(function(sha){if(!sha)return null;return api('/contents/'+fotoPfad(nr),{method:'DELETE',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:'Chef-App: Foto Nr. '+nr+' entfernt',sha:sha,branch:'main'})}).then(function(r){if(!r.ok)throw new Error('Entfernen fehlgeschlagen ('+r.status+')');return r.json();});})
+      .then(function(d){delete fotoBereich.neu[nr];STD.fotos=(STD.fotos||[]).filter(function(f){return f!==nr;});vorschau.hidden=true;loeschen.hidden=true;
+        meldung.textContent='Foto entfernt – in ca. 3 Minuten auch auf der Seite.';if(d&&d.commit)beobachten(d.commit.sha);})
+      .catch(function(e){meldung.textContent=e.message;});});}});
+  eingabe.addEventListener('change',function(){var f=eingabe.files&&eingabe.files[0];if(!f)return;meldung.textContent='Foto wird vorbereitet …';
+    verkleinern(f).then(function(b64){meldung.textContent='Wird hochgeladen …';vorschau.src='data:image/jpeg;base64,'+b64;vorschau.hidden=false;
+      return fotoSha(nr).then(function(sha){var body={message:'Chef-App: Foto Nr. '+nr,content:b64,branch:'main'};if(sha)body.sha=sha;
+        return api('/contents/'+fotoPfad(nr),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});})
+        .then(function(r){if(!r.ok)throw new Error('Hochladen fehlgeschlagen ('+r.status+')');return r.json();})
+        .then(function(d){fotoBereich.neu[nr]=b64;loeschen.hidden=false;meldung.textContent='Foto gespeichert ✓ – in ca. 3 Minuten auf der Seite.';beobachten(d.commit&&d.commit.sha);});})
+    .catch(function(e){meldung.textContent=e.message;});});
+  return el('div',{class:'foto-bereich'},[el('label',{for:'foto-datei',text:'Foto des Gerichts'}),vorschau,
+    el('div',{class:'reihe'},[el('label',{class:'knopf',for:'foto-datei',style:'display:inline-flex;align-items:center;margin:0',text:vorhanden?'Neues Foto …':'Foto aufnehmen oder auswählen'}),loeschen]),eingabe,meldung,
+    el('p',{class:'hinweis',text:'Querformat wirkt am besten; die Seite schneidet auf 4:3 zu. Das Foto wird sofort gespeichert.'})]);
+}
+fotoBereich.neu={};
 
 var TAGE=['So','Mo','Di','Mi','Do','Fr','Sa'],WOCHE=[1,2,3,4,5,6,0];
 function aktionBearbeiten(index){
@@ -469,8 +517,40 @@ function zeitenTab(){
   app.appendChild(el('p',{class:'hinweis',text:'Gelb markierte Tage weichen vom Standard ab.'}));
   sonderKarte();
 }
+/* Feiertage in Sachsen (plus Heiligabend und Silvester) für die nächsten Tage */
+function iso(d){return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);}
+function feiertage(jahr){
+  var a=jahr%19,b=Math.floor(jahr/100),c=jahr%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+      h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+      mon=Math.floor((h+l-7*m+114)/31),tag=((h+l-7*m+114)%31)+1,ostern=Date.UTC(jahr,mon-1,tag);
+  var plus=function(n){return iso(new Date(ostern+n*864e5));};
+  var bb=new Date(Date.UTC(jahr,10,22));while(bb.getUTCDay()!==3)bb=new Date(bb.getTime()-864e5);
+  return [[jahr+'-01-01','Neujahr'],[plus(-2),'Karfreitag'],[plus(1),'Ostermontag'],[jahr+'-05-01','Tag der Arbeit'],
+    [plus(39),'Christi Himmelfahrt'],[plus(50),'Pfingstmontag'],[jahr+'-10-03','Tag der Deutschen Einheit'],[jahr+'-10-31','Reformationstag'],
+    [iso(bb),'Buß- und Bettag'],[jahr+'-12-24','Heiligabend (kein Feiertag)'],[jahr+'-12-25','1. Weihnachtstag'],[jahr+'-12-26','2. Weihnachtstag'],
+    [jahr+'-12-31','Silvester (kein Feiertag)']];
+}
+function offeneFeiertage(tage){
+  var t=heute(),bis=heute(tage),j=+t.slice(0,4),SZ=ANP.sonderzeiten||{},ok=ANP.feiertage_ok||[];
+  return feiertage(j).concat(feiertage(j+1)).filter(function(f){return f[0]>=t&&f[0]<=bis&&!SZ[f[0]]&&ok.indexOf(f[0])<0;});
+}
+function feiertagKarte(){
+  var liste=offeneFeiertage(75);if(!liste.length)return;
+  var k=el('div',{class:'karte feiertag'},[el('h3',{text:'Feiertage demnächst'}),el('p',{class:'hinweis',style:'margin:0 0 6px',text:'Wie ist an diesen Tagen geöffnet? Einmal antippen, dann steht es auf der Seite.'})]);
+  liste.forEach(function(f){
+    var wt=['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(f[0]+'T12:00:00Z').getUTCDay()];
+    k.appendChild(el('div',{class:'cl-punkt','data-feiertag':f[0]},[el('b',{text:wt+', '+datumDE(f[0])+' '+f[1]}),
+      el('div',{class:'reihe',style:'margin-top:6px'},[
+        el('button',{class:'knopf klein rot',text:'Beide geschlossen',onclick:function(){var e={};STD.laeden.forEach(function(l){e[l.id]=null;});(ANP.sonderzeiten=ANP.sonderzeiten||{})[f[0]]=e;zeichnen();}}),
+        el('button',{class:'knopf klein',text:'Wie sonntags',onclick:function(){var e={};STD.laeden.forEach(function(l){var z=Object.assign({},l.zeiten,(ANP.zeiten||{})[l.id]||{})['0'];e[l.id]=z?[z[0],z[1]]:null;});
+          (ANP.sonderzeiten=ANP.sonderzeiten||{})[f[0]]=e;zeichnen();}}),
+        el('button',{class:'knopf klein',text:'Normal geöffnet',onclick:function(){(ANP.feiertage_ok=ANP.feiertage_ok||[]).push(f[0]);zeichnen();}})])]));
+  });
+  app.appendChild(k);
+}
 function sonderKarte(){
   app.appendChild(el('h2',{text:'Besondere Tage'}));
+  feiertagKarte();
   var t=heute(),k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Z. B. Heiligabend, Feiertag, Betriebsferien. Gilt nur an diesem Datum – die Seite zeigt es an und bietet passende Abholzeiten an.'})]);
   var SZ=ANP.sonderzeiten||{},namen={};STD.laeden.forEach(function(l){namen[l.id]=l.name;});
   Object.keys(SZ).sort().forEach(function(d){if(d<t)return;Object.keys(SZ[d]).forEach(function(l){var w=SZ[d][l];
@@ -545,11 +625,41 @@ function zahlenKarte(){
     box.appendChild(el('p',{class:'fehler',text:t}));
     box.appendChild(el('p',{class:'hinweis',text:'Abfrage: '+dash+'api/v0/stats/hits'}));});
 }
+function kopierZeile(titel,wert,lang){
+  var k=el('button',{class:'knopf klein',text:'Kopieren',onclick:function(){
+    var fertig=function(){k.textContent='Kopiert ✓';setTimeout(function(){k.textContent='Kopieren';},1500);};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(wert).then(fertig,function(){t.select();});else t.select();}});
+  var t=el(lang?'textarea':'input',{readonly:true,'aria-label':titel,rows:lang?'5':null});t.value=wert;
+  return el('div',{class:'gp-zeile'},[el('div',{class:'gp-kopf'},[el('b',{text:titel}),k]),t]);
+}
+function googleKarte(){ /* Angaben fürs Google-Unternehmensprofil – zum Abgleichen und Kopieren */
+  var T=['So','Mo','Di','Mi','Do','Fr','Sa'],W=[1,2,3,4,5,6,0];
+  var d=el('details',{class:'karte checkliste'},[el('summary',{},[el('b',{text:'Google-Unternehmensprofil'}),' · Angaben zum Kopieren'])]);
+  d.appendChild(el('p',{class:'hinweis',text:'In der Google-Maps-App oder auf business.google.com anmelden, das Profil des Ladens öffnen und diese Angaben vergleichen. Abweichungen übernehmen.'}));
+  STD.laeden.forEach(function(l){
+    var z=Object.assign({},l.zeiten,(ANP.zeiten||{})[l.id]||{}),zeilen=[];
+    W.forEach(function(t){var w=z[String(t)];zeilen.push(T[t]+': '+(w?w[0]+'–'+w[1]:'geschlossen'));});
+    d.appendChild(el('p',{class:'abschnitt',text:'Saray Döner '+l.name}));
+    [['Name','Saray Döner '+l.name],['Adresse',l.strasse+', '+l.plz+' '+l.ort],['Telefon',l.tel],
+     ['Website',STD.seite],['Link zum Bestellen (Speisekarte)',STD.seite+'?laden='+l.id+'#speisekarte'],
+     ['Öffnungszeiten',zeilen.join('\n'),1],
+     ['Zahlungsarten',l.bar?'Nur Barzahlung (bei Google unter „Zahlungen“: nur Bargeld)':'Bar'],
+     ['Beschreibung (max. 750 Zeichen)','Saray Döner in '+l.ort+' – seit 1997 Döner, Dürüm, Pizza, Lahmacun, Salate und Teller. '+
+       'Dönerfleisch aus Kalb und Pute, Hähnchen-Döner, viele vegetarische Gerichte mit Falafel und Halloumi. '+
+       'Online vorbestellen: Gerichte auf der Website zusammenstellen und per WhatsApp schicken, dann ohne Warten abholen. '+
+       (l.extra?l.extra+' ':'')+'Bezahlung nur bar.',1],
+     ['Merkmale','Abholung: ja · Lieferung: nein · Vegetarische Gerichte: ja · Zahlungen: nur Bargeld'+(l.extra&&/draußen/.test(l.extra)?' · Sitzplätze im Freien: ja':'')]
+    ].forEach(function(x){d.appendChild(kopierZeile(x[0],x[1],x[2]));});
+  });
+  d.appendChild(el('p',{class:'hinweis',text:'Außerdem: Kategorie „Döner-Restaurant“, Fotos vom Laden und von Gerichten hochladen, auf Bewertungen antworten. Halal nur angeben, wenn es bestätigt ist.'}));
+  app.appendChild(d);
+}
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
   checklisteKarte();
   hinweisKarte();
   zahlenKarte();
+  googleKarte();
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
   /* Preis-Stände */
@@ -571,7 +681,9 @@ function mehrTab(){
   /* Drucken */
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
     el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}),
-      (JSON.parse(ALT).aktionen||[]).filter(function(a){return a.bis>=heute();}).map(function(a){return ['../druck/'+slug(a.name,a.von)+'.pdf','Plakat: '+a.name+' (A4)'];}))
+      [['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)']],
+      [].concat.apply([],(JSON.parse(ALT).aktionen||[]).filter(function(a){return a.bis>=heute();}).map(function(a){return [['../druck/'+slug(a.name,a.von)+'.pdf','Plakat: '+a.name+' (A4)'],
+        ['../druck/'+slug(a.name,a.von)+'.png','Bild zum Posten: '+a.name]];})))
       .map(function(d){return el('a',{class:'knopf',href:d[0],target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:d[1]});}))]));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Letzte Änderung rückgängig'}),
     el('p',{class:'hinweis',text:'Holt den Stand vor dem letzten Speichern zurück.'}),
@@ -708,7 +820,7 @@ CHECKLISTE = [
 ]
 
 
-def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler=""):
+def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="", fotos=()):
     """Schreibt docs/chef/: index.html, standard.json, manifest.webmanifest."""
     import anpassungen as ANP
     from menu import GRUNDSTAND
@@ -723,7 +835,10 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler=""):
         "grundstand": GRUNDSTAND,
         "zutaten": ZUTATEN_SCHALTER,
         "zaehler": zaehler,
-        "laeden": [{"id": s["id"], "name": s["name"],
+        "seite": f"https://{cname}/",
+        "fotos": sorted(fotos),
+        "laeden": [{"id": s["id"], "name": s["name"], "strasse": s["strasse"], "plz": s["plz"], "ort": s["ort"], "tel": s["tel"],
+                    "bar": bool(s.get("bar")), "extra": s.get("extra", ""),
                     "zeiten": {str(t): [zeit(v[0]), zeit(v[1])] for t, v in s["zeiten_standard"].items()}} for s in standorte],
         # Reihenfolge der Kärtchen unter „Heute“
         "sperren": [{"id": k, "name": sperrgruppen[k]["de"]} for k in

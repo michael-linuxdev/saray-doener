@@ -135,6 +135,9 @@ p{margin:0}
 .tipps{list-style:none;margin:0 calc(-1 * var(--rand));padding:4px var(--rand) 12px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:var(--rand);scrollbar-width:thin}
 .tipp{flex:0 0 200px;scroll-snap-align:start;display:flex;flex-direction:column;border:2px solid var(--tinte);border-radius:16px;background:#fff}
 .tipp a{display:flex;flex-direction:column;gap:4px;flex:1;padding:14px 16px;border-radius:14px;text-decoration:none}
+.tipp-foto{display:block;width:calc(100% + 32px);max-width:none;height:auto;aspect-ratio:4/3;object-fit:cover;margin:-14px -16px 6px;border-radius:13px 13px 0 0}
+.tipps-empfehlung .ohne-koch .tipp-foto{width:calc(100% + 28px);margin:-14px -14px 6px}
+.gericht-foto{float:right;width:84px;height:63px;object-fit:cover;border-radius:8px;margin:2px 0 4px 10px}
 @media (hover:hover){.tipp:hover{background:var(--gelb-blass)}.tipp-gross:hover{background:#FFDB4D}}
 .tipp-gross{flex-basis:100%}
 .tipps-empfehlung{overflow:visible;margin-bottom:22px;flex-wrap:wrap}
