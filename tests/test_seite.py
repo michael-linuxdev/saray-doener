@@ -1074,6 +1074,25 @@ def weisse_flaeche_folgt_dem_band(b, url):
 
 
 @test
+def gemeinsam_dialog_oben_und_ruhig(b, url):
+    s = Seite(b, url)
+    assert s.js("getComputedStyle(document.querySelector('.sammel-start')).textAlign") == "center"
+    breiten = s.js("[...document.querySelectorAll('.diaet .veg-schalter')].map(b=>Math.round(b.getBoundingClientRect().width))")
+    suche = s.js("Math.round(document.getElementById('suche-feld').getBoundingClientRect().width)")
+    assert sum(breiten) + 10 >= suche - 4, (breiten, suche)
+    s.p.click("[data-sammel-start]")
+    oben = s.js("document.querySelector('.sammel-box').getBoundingClientRect().top")
+    assert oben < 40, oben
+    assert s.js("document.documentElement.style.overflow") == "hidden"
+    s.p.click("#sammel-name")
+    s.p.keyboard.type("Mi")
+    assert s.js("document.querySelector('.sammel-box').getBoundingClientRect().top") == oben
+    s.p.keyboard.press("Escape")
+    assert s.js("document.documentElement.style.overflow") == ""
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):

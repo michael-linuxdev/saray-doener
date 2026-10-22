@@ -591,6 +591,7 @@ p{margin:0}
   background:#fff;color:var(--tinte);font:700 .95rem var(--text);cursor:pointer}
 .veg-schalter svg{width:18px;height:18px}
 .veg-schalter[aria-pressed=true]{background:#2E7D32;border-color:#2E7D32;color:#fff}.veg-schalter[aria-pressed=true] path{fill:#fff}.veg-schalter.pesc[aria-pressed=true]{background:#1565C0;border-color:#1565C0}.diaet{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:719px){.diaet{display:grid;grid-template-columns:1fr 1fr;gap:10px}.diaet .veg-schalter{justify-content:center;width:100%;min-width:0;padding:0 10px}}
 svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .suche input::placeholder{color:#8d7486}
 .suche input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:20px;height:20px;cursor:pointer;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233A1531' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat}
@@ -617,7 +618,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .hand-knopf{background:none;border:0;padding:6px 0;min-height:32px;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .fuss-hand{margin:0}
 /* Sammelbestellung */
-.sammel-start{margin:12px 0 0}
+.sammel-start{margin:12px 0 0;text-align:center}
 .knopf-sammel{min-height:44px;padding:0 18px;font-size:.98rem;white-space:nowrap}
 /* Teilnehmer einer Sammelbestellung: Laden, Tag und Uhrzeit wählt der Sammler */
 .im-sammel .abholung legend,.im-sammel .abholung .z-chips,.im-sammel label[for=abhol-tag],.im-sammel #abhol-tag,
@@ -626,10 +627,12 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
 .sammel-band{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--gelb-blass);border:2px solid var(--tinte)}
 .sammel-band p{margin:0;font-weight:700;line-height:1.35}
 .z-fuer{display:inline-block;margin-top:2px;padding:0 8px;border-radius:999px;background:var(--gelb-blass);font-size:.82rem;font-weight:700}
-.sammel-dialog{position:fixed;inset:0;z-index:90;background:rgba(58,21,49,.5);display:flex;align-items:flex-end;justify-content:center}
+.sammel-dialog{position:fixed;inset:0;z-index:90;background:rgba(58,21,49,.5);display:flex;align-items:center;justify-content:center}
+/* Handy: oben statt unten – so verdeckt die Tastatur das Feld nicht und nichts muss nachgeschoben werden */
+@media (max-width:719px){.sammel-dialog{align-items:flex-start;padding:calc(12px + env(safe-area-inset-top)) 10px 0}.sammel-box{border-radius:20px!important;max-height:calc(100% - 24px)}}
 .sammel-box:focus{outline:none}
 .sammel-box{background:#fff;width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
-@media (min-width:720px){.sammel-dialog{align-items:center}.sammel-box{border-radius:20px}}
+@media (min-width:720px){.sammel-box{border-radius:20px}}
 .sammel-box h2{margin:0 0 8px;font-size:1.3rem}
 .sammel-box label{display:block;font-weight:700;margin:12px 0 4px}
 .sammel-box input{width:100%;min-height:46px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit}
@@ -1400,14 +1403,9 @@ ZETTEL_JS = r'''
     var beruehrung=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
     var f=beruehrung?sDlg.querySelector('.sammel-box'):sDlg.querySelector('input,button');if(f)f.focus({preventScroll:true});
   }
-  function dialogZu(){sDlg.hidden=true;}
-  /* Fenster immer über der Bildschirmtastatur: an den sichtbaren Bereich anpassen (iOS verkleinert ihn) */
-  function dlgAnpassen(){
-    if(sDlg.hidden||!window.visualViewport)return;var v=window.visualViewport;
-    sDlg.style.top=v.offsetTop+'px';sDlg.style.height=v.height+'px';sDlg.style.bottom='auto';
-  }
-  if(window.visualViewport){window.visualViewport.addEventListener('resize',dlgAnpassen);window.visualViewport.addEventListener('scroll',dlgAnpassen);}
-  sDlg.addEventListener('focusin',function(ev){if(ev.target.tagName==='INPUT')setTimeout(function(){dlgAnpassen();ev.target.scrollIntoView({block:'nearest'});},300);});
+  function dialogZu(){sDlg.hidden=true;if(huelle.hidden)document.documentElement.style.overflow='';}
+  /* Fenster steht auf dem Handy oben (CSS) – kein Nachschieben beim Tippen; Seite dahinter festhalten */
+  function dlgAnpassen(){document.documentElement.style.overflow='hidden';}
   sDlg.addEventListener('click',function(ev){if(ev.target===sDlg)dialogZu();});
   document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!sDlg.hidden)dialogZu();});
   function nameFeld(){var f=document.createElement('input');f.type='text';f.id='sammel-name';f.autocomplete='given-name';f.maxLength=40;f.value=abh.name||'';
