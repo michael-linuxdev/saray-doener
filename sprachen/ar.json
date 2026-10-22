@@ -493,5 +493,6 @@
 "Remove code": "إزالة الرمز",
 "Unknown code.": "لا نعرف هذا الرمز.",
 "e.g. ELBTAL{n}": "مثلًا ELBTAL{n}",
-"{x}: {p} % off": "{x}: خصم {p}٪"
+"{x}: {p} % off": "{x}: خصم {p}٪",
+" – left out": " – بدون"
 }

@@ -970,6 +970,30 @@ def pizza_ohne_zutaten(b, url):
     s.schliessen()
 
 
+
+@test
+def pizza_saray_ohne_kaese_nicht_zur_wahl(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-91 .plus")
+    s.p.click("#nr-91 .wahl button >> nth=0")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    s.p.click("[data-anpassen]")
+    for z in ("Käse", "Halloumikäse", "Fetakäse"):
+        s.p.click(f'[data-o="wahl"][data-w="{z}"]')
+    s.p.click('[data-o="ohne"][data-w="Käse"]')
+    wahl = s.js("[...document.querySelectorAll('[data-o=\"wahl\"][aria-pressed=\"true\"]')].map(b=>b.dataset.w)")
+    assert wahl == ["Halloumikäse", "Fetakäse"], wahl
+    assert s.js("document.querySelector('[data-o=\"wahl\"][data-w=\"Käse\"]').disabled")
+    assert "(2 von 3)" in s.p.text_content(".z-optionen")
+    assert "noch 1 Zutat wählen" in s.wa_text()
+    s.p.click('[data-o="wahl"][data-w="Paprika"]')
+    text = s.wa_text()
+    zeile = [z for z in text.split("\n") if "Pizza Saray" in z][0]
+    assert "ohne Käse" in zeile and "mit Käse" not in zeile and "Halloumikäse, Fetakäse und Paprika" in zeile, zeile
+    s.schliessen()
+
+
 @test
 def entwurf_band_verdeckt_zettel_nicht(b, url):
     s = Seite(b, url, {"width": 390, "height": 664})

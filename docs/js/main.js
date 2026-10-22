@@ -405,7 +405,7 @@
     if(o.ohne.length)t.push(en?fuell(T('no {list}'),{list:liste(tr(o.ohne),en)}):'ohne '+liste(o.ohne,en));
     var fe=fehlend(x);if(fe.length)t.push(en?fuell(T('no {list}'),{list:liste(fe.map(function(b){return T(b==='Pommes'?'fries':'rice');}),en)})+' ('+T('not available')+', −'+euro(fe.length*BEILAGE_RABATT)+')'
       :'ohne '+liste(fe,en)+' (heute aus, −'+euro(fe.length*BEILAGE_RABATT)+')');
-    if(x.t==='S')t.push(o.wahl.length<3?(en?T('choose '+(3-o.wahl.length)+' more toppings'):'noch '+(3-o.wahl.length)+' Zutaten wählen'):(en?fuell(T('with {list}'),{list:liste(tr(o.wahl),en)}):'mit '+liste(o.wahl,en)));
+    if(x.t==='S')t.push(o.wahl.length<3?(en?T('choose '+(3-o.wahl.length)+' more toppings'):'noch '+(3-o.wahl.length)+(3-o.wahl.length===1?' Zutat wählen':' Zutaten wählen')):(en?fuell(T('with {list}'),{list:liste(tr(o.wahl),en)}):'mit '+liste(o.wahl,en)));
     if(x.t==='R')t.push(o.va?(en?fuell(T('option {x}'),{x:o.va.charAt(0)}):'Variante '+o.va.charAt(0)):(en?T('choose option'):'Variante wählen'));
     if(x.t==='B')t.push(o.va?(en?fuell(T('with {list}'),{list:W[o.va]?T(W[o.va]):o.va}):'mit '+o.va):(en?T('choose topping'):'Belag wählen'));
     tr(o.ex).forEach(function(e){t.push(en?fuell(T('extra {x}'),{x:e}):'extra '+e);});
@@ -445,6 +445,8 @@
   /* ausgeschaltete Zutaten aus Wünschen entfernen (Soße, Extras, Zutaten, Belag) */
   function bereinigen(x){var o=x.o;if(!o)return;
     ['s','ex','wahl'].forEach(function(a){if(Array.isArray(o[a]))o[a]=o[a].filter(function(v){return !zAus(v);});});
+    /* „ohne Käse“ und gleichzeitig Käse als Zutat zur Wahl geht nicht */
+    if(Array.isArray(o.ohne)&&Array.isArray(o.wahl))o.wahl=o.wahl.filter(function(v){return o.ohne.indexOf(v)<0;});
     if(x.t==='B'&&o.va&&zAus(o.va))o.va='';}
   function chips(titel,werte,gewaehlt,art,uid,extra){
     var g=el('div','z-gruppe');g.appendChild(el('span','z-gruppe-titel',titel));var wb=el('div','z-chips');
@@ -495,7 +497,10 @@
       gg.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',String(!c.disabled&&o.ohne.indexOf(c.dataset.w)<0));});
       box.appendChild(gg);
     }
-    if(x.t==='S')box.appendChild(chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(ohneFleisch(FLEISCH),KAESE).concat(o.wahl.filter(function(v){return ohneFleisch([v]).length===0;})),o.wahl,'wahl',x.u));
+    if(x.t==='S'){var wg=chips(L('3 Zutaten Ihrer Wahl (','3 toppings of your choice (')+o.wahl.length+L(' von 3)',' of 3)'),GEMUESE.concat(ohneFleisch(FLEISCH),KAESE).concat(o.wahl.filter(function(v){return ohneFleisch([v]).length===0;})),o.wahl,'wahl',x.u);
+      wg.querySelectorAll('.chip').forEach(function(c){if(o.ohne.indexOf(c.dataset.w)>-1){c.disabled=true;c.classList.add('chip-aus');c.setAttribute('aria-pressed','false');
+        c.textContent=w(c.dataset.w)+L(' – abgewählt',' – left out');}});
+      box.appendChild(wg);}
     if(x.t==='R')box.appendChild(chips(L('Variante','Option'),(x.v||'').split('|').filter(Boolean),[o.va],'va',x.u));
     if(x.t==='B')box.appendChild(chips(L('Belag (einer zur Wahl)','Topping (choose one)'),ohneFleisch(BELAG).concat(o.va&&ohneFleisch([o.va]).length===0?[o.va]:[]),[o.va],'va',x.u));
     if(x.t==='P'||x.t==='R'||x.t==='S'){
@@ -606,7 +611,7 @@
     if(ch){var z=finde(ch.dataset.u);if(!z)return;var o=z.o,art=ch.dataset.o,wert=ch.dataset.w;
       if(art==='va')o[art]=wert;
       else{var arr=o[art],i2=arr.indexOf(wert);if(i2>-1)arr.splice(i2,1);else if(!(art==='wahl'&&arr.length>=3))arr.push(wert);
-        if(art==='ohne'&&o.ohne.indexOf(wert)>-1)o.ex=o.ex.filter(function(v){return v!==wert;});}
+        if(art==='ohne'&&o.ohne.indexOf(wert)>-1){o.ex=o.ex.filter(function(v){return v!==wert;});o.wahl=(o.wahl||[]).filter(function(v){return v!==wert;});}}
       speichern();zeichnen();var wieder=zliste.querySelector('[data-o="'+art+'"][data-w="'+wert+'"]');if(wieder)wieder.focus();return;}
     var fu=ev.target.closest('[data-fuell]');
     if(fu){var zf=finde(fu.dataset.u);if(!zf)return;var zielF=variante(zf.k,{f:fu.dataset.fuell});if(!zielF)return;

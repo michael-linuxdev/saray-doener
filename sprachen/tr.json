@@ -459,5 +459,6 @@
 "Remove code": "Kodu kaldır",
 "Unknown code.": "Bu kodu tanımıyoruz.",
 "e.g. ELBTAL{n}": "örn. ELBTAL{n}",
-"{x}: {p} % off": "{x}: %{p} indirim"
+"{x}: {p} % off": "{x}: %{p} indirim",
+" – left out": " – çıkarıldı"
 }

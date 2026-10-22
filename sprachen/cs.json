@@ -456,5 +456,6 @@
 "Remove code": "Odebrat kód",
 "Unknown code.": "Tento kód neznáme.",
 "e.g. ELBTAL{n}": "např. ELBTAL{n}",
-"{x}: {p} % off": "{x}: sleva {p} %"
+"{x}: {p} % off": "{x}: sleva {p} %",
+" – left out": " – vynecháno"
 }
