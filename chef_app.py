@@ -918,7 +918,7 @@ ZUTATEN_SCHALTER = [
 CHECKLISTE = [
     ["Freischalten", [
         ["domain", "Domain saraydöner.de", "Wer hat Zugang zu Domain und DNS? Wo liegt die alte Seite?", 1],
-        ["wa-freital", "WhatsApp Freital", "Ist 0157 37807403 das Laden-Handy für Bestellungen?", 1],
+        ["wa-freital", "WhatsApp Freital", "Vorerst gehen Bestellungen an Khans privates Handy (01573 3729521). Später durch das Laden-Handy ersetzen – welche Nummer?", 1],
         ["wa-altenberg", "WhatsApp Altenberg", "Welche Nummer nimmt Bestellungen an?", 1],
         ["wa-wer", "Wer bestätigt die Bestellungen?", "Wer schaut während der Öffnungszeiten aufs Handy und antwortet?", 1],
         ["impressum", "Impressum Altenberg (Ahmet)", "Anschrift (Bahnhof 3 oder Dresdner Str. 23?), Firmenform, USt-IdNr. (falls vorhanden), E-Mail. Mehr als 10 Beschäftigte? Dann Hinweis zur Verbraucherschlichtung (§ 36 VSBG) nötig.", 1],
