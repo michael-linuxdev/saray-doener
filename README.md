@@ -110,7 +110,7 @@ Tests lokal: `python3 tests/test_seite.py` (braucht `pip install playwright` und
 
 ## QR-Aufsteller
 
-`python3 aufsteller.py` erzeugt `druck/aufsteller-freital.pdf` und `-altenberg.pdf` (A5): oben Speisekarte & vorbestellen (wählt den Laden vor), unten Google-Bewertung. Solange `VORSCHAU = True` mit MUSTER-Streifen. Nach dem Umzug auf saraydöner.de neu erzeugen und vor dem Druck mit dem Handy testen.
+`python3 aufsteller.py` erzeugt `druck/aufsteller-freital.pdf` und `-altenberg.pdf` (A5): oben Speisekarte & vorbestellen (wählt den Laden vor), unten Google-Bewertung. Solange `VORSCHAU = True` mit ENTWURF-Streifen. Nach dem Umzug auf saraydöner.de neu erzeugen und vor dem Druck mit dem Handy testen.
 
 ## WhatsApp-Bestellung
 
@@ -123,7 +123,7 @@ Optional nur lokal: `lokal.json` (steht in `.gitignore`) überschreibt die Numme
 
 ## Vor dem Wechsel auf saraydöner.de
 
-- `VORSCHAU = False` in `build.py`. Das entfernt das Band „Nicht freigeschaltet“, das Wasserzeichen, den Titel-Zusatz, den TEST-Hinweis in der WhatsApp-Nachricht, `noindex` und die Sperre in `robots.txt`.
+- `VORSCHAU = False` in `build.py`. Das entfernt das Band „Entwurf“, das Wasserzeichen, den Titel-Zusatz, den TEST-Hinweis in der WhatsApp-Nachricht, `noindex` und die Sperre in `robots.txt`.
 - `CNAME` in `build.py` auf die endgültige Domain setzen und den DNS-Eintrag umstellen.
 - Testnummer bei `whatsapp` durch die Nummern der Läden ersetzen (Freital: Laden-Handy 0157 37807403 → `4915737807403`).
 - Datenschutzerklärung fertigstellen (inkl. Hinweis auf WhatsApp/Meta).

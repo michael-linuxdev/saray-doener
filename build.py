@@ -775,7 +775,7 @@ body.mit-zettel .nach-oben{bottom:calc(80px + env(safe-area-inset-bottom))}
 /* nicht position:fixed: Safari 26 richtet die Farbe der Adressleiste nach festen Elementen am Rand aus */
 body.vorschau{position:relative}
 body.vorschau::after{content:"";position:absolute;inset:0;z-index:90;pointer-events:none;opacity:.09;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='30' fill='%23C8371A'%3ENICHT FREIGESCHALTET%3C/text%3E%3C/svg%3E") repeat}
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='300'%3E%3Ctext x='210' y='160' text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial,sans-serif' font-weight='700' font-size='40' fill='%23C8371A'%3EENTWURF%3C/text%3E%3C/svg%3E") repeat}
 @media print{body.vorschau::after{opacity:.15;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .marke-verf{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;font:700 .72rem/1.6 var(--text);vertical-align:middle;white-space:nowrap}
 li.nicht-da .name,li.nicht-da .tipp-name{color:#7a6471}
@@ -1301,7 +1301,7 @@ ZETTEL_JS = r'''
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
   function zettelText(){
-    var test=document.body.classList.contains('vorschau')?['*TEST – Seite nicht freigeschaltet, keine echte Bestellung*','']:[];
+    var test=document.body.classList.contains('vorschau')?['*TEST – Entwurf, keine echte Bestellung*','']:[];
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     if(abh.zeit)z.push('Abholung: '+abh.zeit);
@@ -2078,11 +2078,11 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%LADEN_CHIPS%%": "".join(f'<button type="button" class="chip" data-laden="{st["id"]}" aria-pressed="false">{e(st["name"])}</button>' for st in STANDORTE),
         "%%ZETTEL_ANRUF%%": "".join(f'<a class="knopf knopf-dunkel" data-anruf="{st["id"]}" href="tel:{st["tel_href"]}">{TEL_ICON}{t(st["name"] + " anrufen: " + st["tel"], "Call " + st["name"] + ": " + st["tel"])}</a>' for st in STANDORTE),
 
-        "%%TITEL_PRAEFIX%%": "[Nicht freigeschaltet] " if VORSCHAU else "",
+        "%%TITEL_PRAEFIX%%": "[Entwurf] " if VORSCHAU else "",
         "%%BODY_KLASSE%%": ' class="vorschau"' if VORSCHAU else "",
-        "%%VORSCHAU_BAND%%": ('<div class="vorschau-band" role="note"><strong data-en="NOT RELEASED">NICHT FREIGESCHALTET</strong> '
-                              '<span data-en="Draft – not yet the official website of Saray Döner. Orders go to a test number.">'
-                              'Entwurf – noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span>'
+        "%%VORSCHAU_BAND%%": ('<div class="vorschau-band" role="note"><strong data-en="DRAFT">ENTWURF</strong> '
+                              '<span data-en="Not yet the official website of Saray Döner. Orders go to a test number.">'
+                              'Noch nicht die offizielle Seite von Saray Döner. Bestellungen gehen an eine Testnummer.</span>'
                               f' <small class="stand">Stand {STAND}</small></div>')
                              if VORSCHAU else "",
         "%%APP_KOPF%%": "" if einzeln else (

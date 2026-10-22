@@ -27,7 +27,7 @@ e = html.escape
 def vorlage(st):
     karte = qr_svg(f"{SEITE}?laden={st['id']}#speisekarte", "M", "#3A1531")
     bewertung = qr_svg(f"https://search.google.com/local/writereview?placeid={GOOGLE[st['id']]}", "M", "#3A1531")
-    muster = '<div class="muster">MUSTER – Seite noch nicht freigeschaltet</div>' if build.VORSCHAU else ""
+    muster = '<div class="muster">ENTWURF</div>' if build.VORSCHAU else ""
     font = lambda n: (HIER / "assets" / n).resolve().as_uri()
     return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
 @font-face{{font-family:Slab;src:url({font("Roboto-Slab-Bold.sub.woff")});font-weight:700}}

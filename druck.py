@@ -67,7 +67,7 @@ def gruppe_html(gid):
 def flyer_html():
     heute = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Berlin")).strftime("%d.%m.%Y")
     qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
-    muster = '<div class="muster">MUSTER – Seite noch nicht freigeschaltet</div>' if build.VORSCHAU else ""
+    muster = '<div class="muster">ENTWURF</div>' if build.VORSCHAU else ""
     laeden = "".join(
         f'<div class="laden"><h3>{e(s["name"])}</h3><p>{e(s["strasse"])}, {e(s["plz"])} {e(s["ort"])}<br>'
         f'Telefon <b>{e(s["tel"])}</b></p><table>'
@@ -185,7 +185,7 @@ def plakat_html(a):
     wo = next((f"nur in {s['name']}" for s in build.STANDORTE if s["id"] == a.get("laden")),
               " und ".join(s["name"] for s in build.STANDORTE))
     qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
-    muster = '<div class="muster">MUSTER – Seite noch nicht freigeschaltet</div>' if build.VORSCHAU else ""
+    muster = '<div class="muster">ENTWURF</div>' if build.VORSCHAU else ""
     return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
 @font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
 @font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
