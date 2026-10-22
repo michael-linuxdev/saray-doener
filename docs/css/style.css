@@ -420,6 +420,20 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 @media (min-width:720px){.zettel-meldung{bottom:92px;left:auto;right:24px;transform:none}}
 @media print{.plus,.zettel-leiste{display:none!important}}
 
+/* ---------- Für Firmen, Vereine und Feiern ---------- */
+.gruppen{padding-block:56px 60px;border-top:6px solid var(--gelb)}
+.gruppen-wrap{display:grid;gap:24px}
+@media (min-width:860px){.gruppen-wrap{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}}
+.gruppen .intro{color:var(--tinte-weich);max-width:60ch}
+.schritte{list-style:none;counter-reset:s;margin:18px 0;padding:0;display:grid;gap:12px;max-width:60ch}
+.schritte li{counter-increment:s;display:grid;grid-template-columns:2.2rem minmax(0,1fr);column-gap:10px}
+.schritte li::before{content:counter(s);grid-row:1 / span 2;display:grid;place-items:center;width:2rem;height:2rem;border-radius:50%;background:var(--gelb);font:700 1rem var(--slab)}
+.schritte b{font-family:var(--slab)}
+.gruppen .sammel-start{text-align:left}
+.gruppen-info{background:var(--gelb-blass);border-radius:16px;padding:18px 20px;display:grid;gap:10px}
+.gruppen-info p{margin:0}
+.gruppen-info .knopf{justify-content:flex-start}
+
 /* ---------- Standorte ---------- */
 .standorte{background:var(--gelb-blass);padding-block:60px 72px}
 .standorte .intro{color:var(--tinte-weich);max-width:60ch;margin-bottom:28px}

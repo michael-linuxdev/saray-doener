@@ -1023,7 +1023,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 24 offen" in p.text_content(".checkliste summary")
+    assert "von 25 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1165,6 +1165,15 @@ def chef_app_feiertage_und_google(b, url):
     assert "Dresdner Str. 87, 01705 Freital" in txt and "Mo: 10:00–22:00" in txt and "Nur Barzahlung" in txt, txt
     assert not fehler, fehler
     ctx.close()
+
+
+@test
+def gruppen_abschnitt(b, url):
+    s = Seite(b, url)
+    assert "Für Firmen, Vereine und Feiern" in s.p.text_content("#gruppen")
+    s.p.click("#gruppen [data-sammel-start]")
+    assert not s.js("document.getElementById('sammel-dialog').hidden")
+    s.schliessen()
 
 
 @test

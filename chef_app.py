@@ -681,7 +681,7 @@ function mehrTab(){
   /* Drucken */
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
     el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}),
-      [['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)']],
+      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)']],
       [].concat.apply([],(JSON.parse(ALT).aktionen||[]).filter(function(a){return a.bis>=heute();}).map(function(a){return [['../druck/'+slug(a.name,a.von)+'.pdf','Plakat: '+a.name+' (A4)'],
         ['../druck/'+slug(a.name,a.von)+'.png','Bild zum Posten: '+a.name]];})))
       .map(function(d){return el('a',{class:'knopf',href:d[0],target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:d[1]});}))]));
@@ -803,6 +803,7 @@ CHECKLISTE = [
     ["Chef-App und Abläufe", [
         ["chef-wer", "Wer bedient die Chef-App, auf welchen Handys?", "Pro Person ein eigener Zugang.", 0],
         ["einweisung", "Einweisung", "Heute aus, Zutaten, Wartezeit, besondere Tage, Aktionen, Hinweis, Drucken, Rückgängig", 0],
+        ["gruppen-vorlauf", "Größere Bestellungen", "Ab wie vielen Portionen wie viel Vorlauf? Zum Beispiel „ab 10 Portionen am Vortag bestellen“. Kommt auf die Seite und den Gruppen-Flyer.", 0],
         ["vorbestellung", "Vorbestellung", "Bis 14 Tage im Voraus, frühestens 20 Minuten nach der Bestellung – passt das?", 0],
         ["beilage", "Pommes oder Reis aus = 0,50 € weniger", "So in Ordnung?", 0],
         ["zahlung", "Nur Barzahlung", "Kommt irgendwann Kartenzahlung dazu?", 0],

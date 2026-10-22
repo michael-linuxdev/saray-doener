@@ -877,6 +877,20 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 @media (min-width:720px){.zettel-meldung{bottom:92px;left:auto;right:24px;transform:none}}
 @media print{.plus,.zettel-leiste{display:none!important}}
 
+/* ---------- Für Firmen, Vereine und Feiern ---------- */
+.gruppen{padding-block:56px 60px;border-top:6px solid var(--gelb)}
+.gruppen-wrap{display:grid;gap:24px}
+@media (min-width:860px){.gruppen-wrap{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}}
+.gruppen .intro{color:var(--tinte-weich);max-width:60ch}
+.schritte{list-style:none;counter-reset:s;margin:18px 0;padding:0;display:grid;gap:12px;max-width:60ch}
+.schritte li{counter-increment:s;display:grid;grid-template-columns:2.2rem minmax(0,1fr);column-gap:10px}
+.schritte li::before{content:counter(s);grid-row:1 / span 2;display:grid;place-items:center;width:2rem;height:2rem;border-radius:50%;background:var(--gelb);font:700 1rem var(--slab)}
+.schritte b{font-family:var(--slab)}
+.gruppen .sammel-start{text-align:left}
+.gruppen-info{background:var(--gelb-blass);border-radius:16px;padding:18px 20px;display:grid;gap:10px}
+.gruppen-info p{margin:0}
+.gruppen-info .knopf{justify-content:flex-start}
+
 /* ---------- Standorte ---------- */
 .standorte{background:var(--gelb-blass);padding-block:60px 72px}
 .standorte .intro{color:var(--tinte-weich);max-width:60ch;margin-bottom:28px}
@@ -1945,6 +1959,26 @@ SEITE = r"""<!doctype html>
   </div>
 </section>
 
+<section class="gruppen" id="gruppen" aria-labelledby="gruppen-titel">
+  <div class="wrap gruppen-wrap">
+    <div>
+      <h2 id="gruppen-titel" data-en="For companies, clubs and parties">Für Firmen, Vereine und Feiern</h2>
+      <p class="intro" data-en="Several people, one pickup: at lunchtime for the office or in the evening for the birthday party.">Mehrere Leute, eine Abholung: mittags fürs Büro oder abends für die Geburtstagsfeier.</p>
+      <ol class="schritte">
+        <li><b data-en="Start">Starten</b> <span data-en="Tap “Order as a group” and send the link to your group – WhatsApp, Teams or e-mail.">„Gemeinsam bestellen“ antippen und den Link in Ihre Gruppe schicken – per WhatsApp, Teams oder E-Mail.</span></li>
+        <li><b data-en="Choose">Aussuchen</b> <span data-en="Everyone picks their food on their own phone and sends you their part.">Jeder sucht sich sein Essen am eigenen Handy aus und schickt Ihnen seinen Teil.</span></li>
+        <li><b data-en="Send">Abschicken</b> <span data-en="You choose the shop and pickup time – even days ahead – and send everything in one message.">Sie wählen Laden und Abholzeit – auch Tage im Voraus – und schicken alles mit einer Nachricht.</span></li>
+      </ol>
+      <p class="sammel-start"><button type="button" class="knopf knopf-dunkel knopf-sammel" data-sammel-start data-en="👥 Order as a group">👥 Gemeinsam bestellen</button></p>
+    </div>
+    <aside class="gruppen-info">
+      <p><b data-en="Larger orders">Größere Bestellungen</b> <span data-en="Please pre-order in good time or give us a quick call:">bitte rechtzeitig vorbestellen oder kurz anrufen:</span></p>
+      %%GRUPPEN_TEL%%
+      %%GRUPPEN_BAR%%
+    </aside>
+  </div>
+</section>
+
 <section class="standorte" id="standorte" aria-labelledby="standorte-titel">
   <div class="wrap">
     <h2 id="standorte-titel" data-en="Opening hours and directions">Öffnungszeiten und Anfahrt</h2>
@@ -2241,6 +2275,8 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%KARTE%%": KARTE,
         "%%BELIEBT%%": BELIEBT_HTML,
         "%%ORTE%%": ORTE,
+        "%%GRUPPEN_TEL%%": "".join(f'<a class="knopf knopf-linie" href="tel:{st["tel_href"]}">{TEL_ICON}{e(st["name"])}: {e(st["tel"])}</a>' for st in STANDORTE),
+        "%%GRUPPEN_BAR%%": ('<p class="bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
         "%%ZETTEL_BAR%%": ('<p class="zettel-bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
         "%%ALLERGENE%%": allergene_html(),
         "%%DATENSCHUTZ%%": datenschutz_html(),

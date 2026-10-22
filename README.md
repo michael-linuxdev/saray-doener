@@ -93,6 +93,7 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Zeiten → Feiertage demnächst:** sächsische Feiertage (dazu Heiligabend, Silvester) der nächsten Wochen mit „Beide geschlossen“, „Wie sonntags“ oder „Normal geöffnet“; unter „Heute“ ein Hinweis, wenn einer in den nächsten 14 Tagen noch offen ist.
 - **Karte → Gericht → Foto:** Foto aufnehmen oder auswählen; wird verkleinert nach `daten/fotos/nr-<Nr>.jpg` gespeichert und erscheint auf der Seite (4:3, WebP) bei „Wir empfehlen“/„Beliebt“ und klein in der Karte.
 - **Mehr → Google-Unternehmensprofil:** Name, Adresse, Telefon, Website, Bestell-Link, Öffnungszeiten, Zahlungsart, Beschreibung und Merkmale je Laden zum Kopieren.
+- **Für Firmen, Vereine und Feiern:** eigener Abschnitt vor den Öffnungszeiten (gemeinsam bestellen, mittags oder abends abholen) und A5-Flyer `flyer-gruppen.pdf` unter „Drucken“. Vorlauf für große Bestellungen steht als Frage in der Checkliste.
 - **Bestellung:** Jede WhatsApp-Nachricht hat eine kurze Bestellnummer (z. B. K47); nach dem Senden kann der Gast die Abholung in seinen Kalender eintragen (.ics, Erinnerung 15 Minuten vorher).
 - **Mehr → Gefahrenbereich:** „Alles auf Standard zurücksetzen“ und „Auf diesem Gerät abmelden“, rot gekennzeichnet.
 - **Mehr:** Hinweis oben auf der Seite (Text mit Zeitraum), „Letzte Änderung rückgängig“ (holt den Stand vor dem letzten Speichern zurück), „Alles auf Standard zurücksetzen“, Abmelden.

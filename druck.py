@@ -111,7 +111,7 @@ li{{display:flex;gap:1.5mm;padding:.45mm 0;border-bottom:.15mm dotted #d9cbd4;br
 .titel .unter{{font:700 13pt Slab;margin:1mm 0 0}}
 .titel .orte{{font:700 12pt Text;margin:3mm 0 0}}
 .titel .qr{{display:flex;gap:4mm;align-items:center;background:#fff;border:.8mm solid #3A1531;border-radius:3mm;padding:3mm;text-align:left}}
-.titel .qr svg{{width:30mm;height:30mm;flex:none}}
+.titel .qr svg{{width:26mm;height:26mm;flex:none}}
 .titel .qr b{{font:700 11pt/1.2 Slab;display:block;margin-bottom:1mm}}
 .titel .qr span{{font-size:8.5pt;line-height:1.3}}
 .gueltig{{font-size:7.5pt;opacity:.8}}
@@ -289,6 +289,46 @@ body{{width:210mm;height:297mm;display:grid;grid-template-columns:repeat(3,70mm)
 </style></head><body>{eins * 24}</body></html>"""
 
 
+def gruppen_flyer_html():
+    """A5-Flyer für Betriebe, Vereine und Feiern: gemeinsam bestellen, gesammelt abholen."""
+    qr = qr_svg(f"https://{build.CNAME}/#gruppen", "M", "#3A1531")
+    muster = '<div class="muster">ENTWURF</div>' if build.VORSCHAU else ""
+    laeden = "".join(f'<div class="laden"><b>{e(st["name"])}</b><span>{e(st["strasse"])}</span><span>Tel. {e(st["tel"])}</span>'
+                     f'<span>{e(st["kurz"])}</span></div>' for st in build.STANDORTE)
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A5;margin:0}}*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{width:148mm;height:210mm;font-family:Text;color:#3A1531;background:#fff;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.kopf{{background:#FFD21F;padding:7mm 9mm 5mm;border-bottom:1.5mm solid #3A1531}}
+.kopf .marke{{display:flex;align-items:center;gap:3mm;font:700 6mm Slab}}.kopf img{{width:13mm}}
+h1{{font:700 9mm/1.05 Slab;margin:4mm 0 2mm}}.kopf p{{margin:0;font-size:4.2mm;line-height:1.35}}
+.inhalt{{flex:1;min-height:0;padding:5mm 9mm;display:flex;flex-direction:column;gap:3.5mm}}
+ol{{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;gap:3mm}}
+li{{counter-increment:s;display:grid;grid-template-columns:9mm 1fr;align-items:start;font-size:3.9mm;line-height:1.35}}
+li::before{{content:counter(s);display:grid;place-items:center;width:7mm;height:7mm;border-radius:50%;background:#FFD21F;font:700 4mm Slab}}
+li b{{font-family:Slab}}
+.qr{{display:flex;gap:5mm;align-items:center;border:.7mm solid #3A1531;border-radius:3mm;padding:3.5mm}}
+.qr svg{{width:26mm;height:26mm;flex:none}}.qr b{{font:700 5mm/1.2 Slab;display:block}}.qr span{{font-size:3.5mm}}
+.hinweis{{font-size:3.5mm;background:#FFF3C2;border-radius:2mm;padding:2.5mm 3mm}}
+.laeden{{display:grid;grid-template-columns:1fr 1fr;gap:4mm;font-size:3.2mm;padding:3.5mm 9mm 6mm;border-top:.3mm solid #e6dbe2}}
+.laden{{display:flex;flex-direction:column;gap:.6mm}}.laden b{{font:700 4mm Slab}}
+.muster{{background:#3A1531;color:#fff;text-align:center;font:700 3mm Text;padding:1mm}}
+</style></head><body>{muster}
+<div class="kopf"><div class="marke"><img src="{uri("maskottchen", "saray-koch-kopf.svg")}" alt="">Saray Döner</div>
+<h1>Mittagspause fürs Team? Feier am Abend?</h1><p>Für Firmen, Vereine und Feiern: alle bestellen gemeinsam, einer holt ab.</p></div>
+<div class="inhalt"><ol>
+<li><span><b>Starten:</b> Code scannen, „Gemeinsam bestellen“ antippen und den Link an die Gruppe schicken.</span></li>
+<li><span><b>Aussuchen:</b> Jeder wählt sein Essen am eigenen Handy und schickt seinen Teil zurück.</span></li>
+<li><span><b>Abholen:</b> Laden und Uhrzeit wählen – auch Tage im Voraus – und alles mit einer Nachricht schicken.</span></li>
+</ol>
+<div class="qr">{qr}<div><b>Gemeinsam bestellen</b><span>{e(build.CNAME)}</span></div></div>
+<p class="hinweis"><b>Größere Bestellungen</b> bitte rechtzeitig vorbestellen oder kurz anrufen. Bezahlt wird bei Abholung, nur bar.</p></div>
+<div class="laeden">{laeden}</div>
+</body></html>"""
+
+
 async def main(ziel):
     ziel.mkdir(parents=True, exist_ok=True)
     async with async_playwright() as p:
@@ -314,6 +354,16 @@ async def main(ziel):
             await pg.pdf(path=str(ziel / f"aufsteller-{st['id']}.pdf"), format="A5", print_background=True)
             await pg.close()
             tmp.unlink()
+        tmp = HIER / "_gruppen.html"
+        tmp.write_text(gruppen_flyer_html(), encoding="utf-8")
+        pg = await b.new_page(viewport={"width": 559, "height": 794})
+        await pg.goto(tmp.as_uri())
+        await pg.wait_for_timeout(400)
+        await pg.pdf(path=str(ziel / "flyer-gruppen.pdf"), format="A5", print_background=True)
+        if "--vorschau" in sys.argv:
+            await pg.screenshot(path=str(HIER / "druck" / "gruppen-vorschau.png"))
+        await pg.close()
+        tmp.unlink()
         for name, inhalt in (("allergenmappe", allergenmappe_html()), ("aufkleber", aufkleber_html())):
             tmp = HIER / f"_{name}.html"
             tmp.write_text(inhalt, encoding="utf-8")
