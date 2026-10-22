@@ -448,5 +448,9 @@
 " · pausiert bis ": " · mola: ",
 "Pause beenden": "Molayı bitir",
 "Pause {n} Min.": "{n} dk. mola",
-"Preisschilder Getränke (8 je A4)": "İçecek fiyat etiketleri (A4'te 8 adet)"
+"Preisschilder Getränke (8 je A4)": "İçecek fiyat etiketleri (A4'te 8 adet)",
+"Ohne Besteck, ohne Tüte": "Çatal bıçaksız, poşetsiz",
+"Zwei Häkchen im Bestellzettel; spart Material, die Küche sieht es auf dem Bon.": "Sipariş listesinde iki onay kutusu; malzeme tasarrufu, mutfak fişte görür.",
+"Vorlauf bei großen Bestellungen automatisch": "Büyük siparişlerde otomatik hazırlık süresi",
+"Ab z. B. 10 Gerichten bietet der Bestellzettel nur Abholzeiten mit genug Vorlauf an (z. B. 1 Stunde).": "Örn. 10 yemekten itibaren sipariş listesi sadece yeterli hazırlık süresi olan teslim saatleri sunar (örn. 1 saat)."
 }

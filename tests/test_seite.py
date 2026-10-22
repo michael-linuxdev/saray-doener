@@ -818,8 +818,10 @@ def bewertung_nach_bestellung(b, url):
         p.wait_for_timeout(1900)
         if not fertig:
             assert not p.evaluate("document.getElementById('hand-tipp').hidden"), "Bewertungs-Hinweis fehlt"
-            assert "Hat’s geschmeckt?" in p.text_content("#hand-tipp") and "Freital" in p.text_content("#hand-tipp")
+            assert "Hat alles gepasst?" in p.text_content("#hand-tipp") and "Freital" in p.text_content("#hand-tipp")
             assert '"fertig":1' in p.evaluate("localStorage.getItem('saray-bewertung')")
+            p.click("#hand-tipp >> text=👍 Ja, lecker")
+            assert "Google-Bewertung" in p.text_content("#hand-tipp")
             p.click("#hand-tipp >> text=Nein danke")
         else:
             assert p.evaluate("document.getElementById('hand-tipp').hidden"), "Hinweis kam ein zweites Mal"
@@ -1073,7 +1075,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 34 offen" in p.text_content(".checkliste summary")
+    assert "von 36 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1439,7 +1441,7 @@ def chef_app_tuerkisch(b, url):
     p.click('nav.tabs [data-tab="karte"]')
     assert "Pizza Margherita" in p.text_content("#app"), "Gerichtsnamen bleiben deutsch"
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "Hediye çekleri" in p.text_content("#app") and "34 / 34 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    assert "Hediye çekleri" in p.text_content("#app") and "36 / 36 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
     p.click("#sprache")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
@@ -1592,6 +1594,66 @@ def bestell_pause(b, url):
     assert gespeichert[-1]["pause"] == {"freital": {"bis": "2026-10-21T18:15"}}, gespeichert[-1]
     assert not fehler, fehler
     ctx.close()
+
+
+
+@test
+def rueckmeldung_zuerst_an_den_laden(b, url):
+    ctx = b.new_context(viewport=HANDY, locale="de-DE", timezone_id="Europe/Berlin", reduced_motion="reduce", is_mobile=True, has_touch=True)
+    p = ctx.new_page()
+    p.clock.set_fixed_time(ZEIT)
+    wert = json.dumps({"l": "freital", "t": int(ZEIT.timestamp() * 1000) - 3 * 3600 * 1000, "nr": "K47"})
+    p.add_init_script(f"try{{localStorage.setItem('saray-hand-gefragt','1');localStorage.setItem('saray-bewertung',{json.dumps(wert)})}}catch(e){{}}window.open=function(u){{window._offen=decodeURIComponent(u)}}")
+    p.goto(url)
+    p.wait_for_timeout(1900)
+    p.click("#hand-tipp >> text=👎 Nicht ganz")
+    assert "Sagen Sie es uns direkt" in p.text_content("#hand-tipp")
+    p.click("#hand-tipp >> text=💬 Nachricht an den Laden")
+    assert p.evaluate("window._offen").startswith("https://wa.me/4915733729521?text=Rückmeldung zu meiner Bestellung K47 bei Saray Döner Freital: ")
+    ctx.close()
+
+
+@test
+def nochmal_bestellen_und_doener_tag(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#nr-91 .plus")
+    s.p.click("#nr-91 .wahl button >> nth=1")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=altenberg]")
+    text = s.wa_text()
+    link = [z for z in text.split("\n") if z.startswith("Für die Küche: ")][0].split(": ", 1)[1]
+    k = s.ctx.new_page()
+    k.add_init_script("window.open=function(u){window._offen=decodeURIComponent(u)}")
+    k.goto(link)
+    k.click("#offen .bon [data-bestaetigen]")
+    antwort = k.evaluate("window._offen")
+    nochmal = antwort.split("genau so bestellen: ")[1]
+    assert "#nochmal=" in nochmal, antwort
+    k.close()
+    s.schliessen()
+    s = Seite(b, url)
+    s.p.goto(nochmal)
+    s.p.wait_for_selector("#sammel-dialog:not([hidden])")
+    assert "Nochmal bestellen" in s.p.text_content("#sammel-titel")
+    inhalt = s.p.text_content("#sammel-inhalt")
+    assert "Döner Kebap" in inhalt and "Pizza Saray (30 cm)" in inhalt, inhalt
+    s.p.click("#sammel-knoepfe >> text=In meine Bestellung")
+    assert len(s.zettel_zeilen()) == 2, s.zettel_zeilen()
+    assert s.p.get_attribute("[data-laden=altenberg]", "aria-pressed") == "true"
+    s.p.click(".zettel-zu")
+    # Fester Döner-Tag: wöchentliche Erinnerung mit Link „#gemeinsam“
+    s.p.click("[data-doenertag]")
+    s.p.click("#sammel-inhalt [data-tag='3']")
+    with s.p.expect_download() as dl:
+        s.p.click("#sammel-knoepfe >> text=📅 In den Kalender")
+    ics = pathlib.Path(dl.value.path()).read_text()
+    assert "RRULE:FREQ=WEEKLY;BYDAY=WE" in ics and "DTSTART:20261021T110000" in ics and "#gemeinsam" in ics, ics
+    s.schliessen()
+    s = Seite(b, url + "#gemeinsam")
+    s.p.wait_for_selector("#sammel-dialog:not([hidden])")
+    assert "Gemeinsam bestellen" in s.p.text_content("#sammel-titel")
+    s.schliessen()
 
 
 @test

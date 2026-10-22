@@ -111,7 +111,7 @@ function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').r
   if(!o||typeof o.nr!=='string'||!Array.isArray(o.p))return null;
   o.p=o.p.filter(Array.isArray).slice(0,60).map(function(x){return {q:Math.max(1,Math.min(99,+x[0]||1)),n:String(x[1]||'').slice(0,120),w:String(x[2]||'').slice(0,300),f:String(x[3]||'').slice(0,40),x:String(x[4]||'').slice(0,200),c:+x[5]||0,ok:false};});
   return {id:o.nr+'-'+(+o.a||0),nr:o.nr.slice(0,8),l:LAEDEN[o.l]?o.l:'',z:String(o.z||'').slice(0,60),t:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(o.t||'')?o.t:'',
-    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
+    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,w:Array.isArray(o.w)?o.w.slice(0,60):[],sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
 /* Link aus WhatsApp: Bestellung übernehmen (doppelt geöffnet = einmal gespeichert) */
 var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
 /* Jahresstatistik: pro Tag Bestellungen, Summe, Gerichte, Uhrzeiten, Sprachen, Laden (ohne Tests) */
@@ -127,18 +127,22 @@ if(m){aufnehmen(lesen(m[1]));speichern();history.replaceState(null,'',location.p
 liste=liste.filter(function(x){return x&&Array.isArray(x.p)&&Date.now()-x.a<7*864e5;});speichern();
 /* Antworten an den Gast in seiner Sprache (Sprache der Website beim Bestellen) */
 var TEXTE={
-  de:{hallo:'Hallo',heute:'heute um {z} Uhr',tag:'am {d} um {z} Uhr',ok:'{hallo}, danke für Ihre Bestellung {nr}! Sie ist {wann} in {ort} abholbereit. Bitte bar bezahlen: {summe}. Ihr Saray Döner',fertig:'Ihre Bestellung {nr} ist fertig und liegt in {ort} für Sie bereit. Bis gleich! Ihr Saray Döner'},
-  en:{hallo:'Hello',heute:'today at {z}',tag:'on {d} at {z}',ok:'{hallo}, thank you for your order {nr}! It will be ready for pickup {wann} in {ort}. Please pay in cash: {summe}. Saray Döner',fertig:'Your order {nr} is ready for you in {ort}. See you soon! Saray Döner'},
-  tr:{hallo:'Merhaba',heute:'bugün saat {z}',tag:'{d} saat {z}',ok:'{hallo}, {nr} numaralı siparişiniz için teşekkürler! Siparişiniz {wann} {ort} şubemizde hazır olacak. Lütfen nakit ödeyin: {summe}. Saray Döner',fertig:'{nr} numaralı siparişiniz {ort} şubemizde hazır. Görüşmek üzere! Saray Döner'},
-  cs:{hallo:'Dobrý den',heute:'dnes v {z}',tag:'{d} v {z}',ok:'{hallo}, děkujeme za objednávku {nr}! Bude připravena k vyzvednutí {wann} v provozovně {ort}. Platba v hotovosti: {summe}. Saray Döner',fertig:'Vaše objednávka {nr} je hotová a čeká na vás v provozovně {ort}. Brzy na viděnou! Saray Döner'},
-  ru:{hallo:'Здравствуйте',heute:'сегодня в {z}',tag:'{d} в {z}',ok:'{hallo}! Спасибо за заказ {nr}! Его можно забрать {wann} в кафе {ort}. Оплата наличными: {summe}. Saray Döner',fertig:'Ваш заказ {nr} готов и ждёт вас в кафе {ort}. До встречи! Saray Döner'},
-  ar:{hallo:'مرحبًا',heute:'اليوم الساعة {z}',tag:'يوم {d} الساعة {z}',ok:'{hallo}، شكرًا لطلبك {nr}! سيكون جاهزًا للاستلام {wann} في فرع {ort}. الدفع نقدًا: {summe}. Saray Döner',fertig:'طلبك {nr} جاهز وبانتظارك في فرع {ort}. نراك قريبًا! Saray Döner'}};
+  de:{nochmal:'Nächstes Mal mit einem Tipp genau so bestellen:',hallo:'Hallo',heute:'heute um {z} Uhr',tag:'am {d} um {z} Uhr',ok:'{hallo}, danke für Ihre Bestellung {nr}! Sie ist {wann} in {ort} abholbereit. Bitte bar bezahlen: {summe}. Ihr Saray Döner',fertig:'Ihre Bestellung {nr} ist fertig und liegt in {ort} für Sie bereit. Bis gleich! Ihr Saray Döner'},
+  en:{nochmal:'Order exactly the same again next time:',hallo:'Hello',heute:'today at {z}',tag:'on {d} at {z}',ok:'{hallo}, thank you for your order {nr}! It will be ready for pickup {wann} in {ort}. Please pay in cash: {summe}. Saray Döner',fertig:'Your order {nr} is ready for you in {ort}. See you soon! Saray Döner'},
+  tr:{nochmal:'Bir dahaki sefere tek dokunuşla aynısını sipariş edin:',hallo:'Merhaba',heute:'bugün saat {z}',tag:'{d} saat {z}',ok:'{hallo}, {nr} numaralı siparişiniz için teşekkürler! Siparişiniz {wann} {ort} şubemizde hazır olacak. Lütfen nakit ödeyin: {summe}. Saray Döner',fertig:'{nr} numaralı siparişiniz {ort} şubemizde hazır. Görüşmek üzere! Saray Döner'},
+  cs:{nochmal:'Příště objednáte totéž jedním klepnutím:',hallo:'Dobrý den',heute:'dnes v {z}',tag:'{d} v {z}',ok:'{hallo}, děkujeme za objednávku {nr}! Bude připravena k vyzvednutí {wann} v provozovně {ort}. Platba v hotovosti: {summe}. Saray Döner',fertig:'Vaše objednávka {nr} je hotová a čeká na vás v provozovně {ort}. Brzy na viděnou! Saray Döner'},
+  ru:{nochmal:'В следующий раз закажите то же самое одним нажатием:',hallo:'Здравствуйте',heute:'сегодня в {z}',tag:'{d} в {z}',ok:'{hallo}! Спасибо за заказ {nr}! Его можно забрать {wann} в кафе {ort}. Оплата наличными: {summe}. Saray Döner',fertig:'Ваш заказ {nr} готов и ждёт вас в кафе {ort}. До встречи! Saray Döner'},
+  ar:{nochmal:'في المرة القادمة اطلب الطلب نفسه بلمسة واحدة:',hallo:'مرحبًا',heute:'اليوم الساعة {z}',tag:'يوم {d} الساعة {z}',ok:'{hallo}، شكرًا لطلبك {nr}! سيكون جاهزًا للاستلام {wann} في فرع {ort}. الدفع نقدًا: {summe}. Saray Döner',fertig:'طلبك {nr} جاهز وبانتظارك في فرع {ort}. نراك قريبًا! Saray Döner'}};
 var SP_NAME={de:'Deutsch',en:'Englisch',tr:'Türkisch',cs:'Tschechisch',ru:'Russisch',ar:'Arabisch'};
 function fuell(t,w){return t.replace(/\{(\w+)\}/g,function(_,k){return w[k]!=null?w[k]:'';});}
 function heuteISO(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 function antwort(x,art){var T=TEXTE[x.sp]||TEXTE.de,wann='';
   if(x.t){var d=x.t.slice(0,10),z=x.t.slice(11);wann=d===heuteISO()?fuell(T.heute,{z:z}):fuell(T.tag,{z:z,d:d.slice(8)+'.'+d.slice(5,7)+'.'});}
-  return fuell(T[art],{hallo:T.hallo+(x.m?' '+x.m:''),nr:x.nr,wann:wann,ort:LAEDEN[x.l]||'',summe:euro(x.s)});}
+  var t=fuell(T[art],{hallo:T.hallo+(x.m?' '+x.m:''),nr:x.nr,wann:wann,ort:LAEDEN[x.l]||'',summe:euro(x.s)});
+  if(art==='ok'&&x.w&&x.w.length)t+='\n\n'+T.nochmal+' '+nochmalLink(x);
+  return t;}
+function b64url(t){return btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function nochmalLink(x){return location.origin+location.pathname.replace(/kueche\/?(index\.html)?$/,'')+'#nochmal='+b64url(JSON.stringify({l:x.l,p:x.w}));}
 function melden(t){var g=document.getElementById('gesendet');g.textContent=t;g.hidden=false;clearTimeout(melden.t);melden.t=setTimeout(function(){g.hidden=true;},4000);}
 /* WhatsApp öffnet die Kontaktauswahl: den Chat des Gastes antippen, senden */
 function senden(x,art){var t=antwort(x,art);x[art==='ok'?'bestaetigt':'gemeldet']=Date.now();x.neu=0;speichern();zeichnen();

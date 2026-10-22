@@ -152,9 +152,17 @@
     if(!document.getElementById('hand-tipp').hidden)return;
     try{bw.fertig=1;localStorage.setItem('saray-bewertung',JSON.stringify(bw));}catch(e){return;}
     var ort=bw.l==='freital'?'Freital':'Altenberg';
-    handTippZeigen('<b>'+L('Hat’s geschmeckt?','Did you enjoy it?')+'</b><br>'+(SP==='de'?'Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.':fuell(T('We would love a Google review for Saray Döner {ort}.'),{ort:ort})),
+    /* Erst fragen: War alles gut? Ja -> Google-Bewertung. Nein -> Nachricht direkt an den Laden statt öffentlicher Kritik */
+    function google(){handTippZeigen('<b>'+L('Danke!','Thank you!')+'</b><br>'+(SP==='de'?'Über eine Google-Bewertung für Saray Döner '+ort+' freuen wir uns sehr.':fuell(T('We would love a Google review for Saray Döner {ort}.'),{ort:ort})),
       [[L('⭐ Bewerten','⭐ Review'),function(){zaehlen('bewertung-'+bw.l);window.open('https://search.google.com/local/writereview?placeid='+GOOGLE[bw.l],'_blank','noopener');handTippZu();}],
-       [L('Nein danke','No thanks'),handTippZu]],25000);
+       [L('Nein danke','No thanks'),handTippZu]],25000);}
+    function laden(){zaehlen('rueckmeldung-'+bw.l);var nr=WA[bw.l],t='Rückmeldung zu meiner Bestellung'+(bw.nr?' '+bw.nr:'')+' bei Saray Döner '+ort+': ';
+      handTippZeigen('<b>'+L('Das tut uns leid.','We are sorry.')+'</b><br>'+L('Sagen Sie es uns direkt – wir kümmern uns darum.','Tell us directly – we will take care of it.'),
+        [[nr?L('💬 Nachricht an den Laden','💬 Message the shop'):L('📞 Laden anrufen','📞 Call the shop'),function(){
+          if(nr)window.open('https://wa.me/'+nr+'?text='+encodeURIComponent(t),'_blank','noopener');else location.href='tel:'+TEL[bw.l][1];handTippZu();}],
+         [L('Schließen','Close'),handTippZu]],25000);}
+    handTippZeigen('<b>'+L('Hat alles gepasst?','Was everything okay?')+'</b><br>'+(SP==='de'?'Ihre Bestellung bei Saray Döner '+ort:fuell(T('Your order at Saray Döner {ort}'),{ort:ort})),
+      [[L('👍 Ja, lecker','👍 Yes, delicious'),google],[L('👎 Nicht ganz','👎 Not quite'),laden]],25000);
   },1500);
   /* „Inhaltsstoffe … · Allergene …“ öffnet die Liste unten */
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-allergene]'))return;var d=document.getElementById('allergene');if(d)d.open=true;});
@@ -762,7 +770,7 @@
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
   var TEL={"freital": ["0351 27676660", "+4935127676660"], "altenberg": ["035056 23674", "+493505623674"]},waGesendet=document.getElementById('wa-gesendet');
   waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
-    try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now()}));}catch(e){}
+    try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now(),nr:BNR}));}catch(e){}
     if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';bnrGesendet=true;
     var nrP=el('p','wa-nr');nrP.appendChild(document.createTextNode(L('Ihre Bestellnummer: ','Your order number: ')));nrP.appendChild(el('b',null,BNR));waGesendet.appendChild(nrP);
     waGesendet.appendChild(document.createTextNode(L('Gesendet? Der Laden bestätigt Ihre Bestellung per WhatsApp. Ohne Antwort bitte anrufen: ','Sent? The shop confirms your order via WhatsApp. No reply? Please call: ')));
@@ -848,7 +856,8 @@
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
     var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,
       test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
-      p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];})};
+      p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];}),
+      w:zettel.map(function(x){var y={k:x.k,q:x.q};if(x.g)y.g=x.g;if(x.o&&Object.keys(x.o).some(function(k){return x.o[k]&&x.o[k].length;}))y.o=x.o;if(x.notiz)y.notiz=x.notiz;return y;})};
     return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
   }
   function zettelText(mitKueche){
@@ -918,6 +927,29 @@
        [L('Abbrechen','Cancel'),dialogZu]]);
   }
   document.querySelectorAll('[data-sammel-start]').forEach(function(b){b.addEventListener('click',einladen);});
+  /* Fester Döner-Tag: wöchentliche Erinnerung (.ics) mit Link, der „Gemeinsam bestellen“ öffnet */
+  function doenerTag(){
+    var WT=[[1,'MO'],[2,'TU'],[3,'WE'],[4,'TH'],[5,'FR']],tag=5,zeit='11:00',wb=el('div','wahl-chips'),zb=el('div','wahl-chips');
+    function z(){wb.textContent='';zb.textContent='';
+      WT.forEach(function(w2){var b=knopf(SP==='de'?TAGE[w2[0]]:new Intl.DateTimeFormat(LOC[SP],{weekday:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,4+w2[0]))),{'class':'chip','aria-pressed':String(tag===w2[0]),'data-tag':w2[0]});
+        b.addEventListener('click',function(){tag=w2[0];z();});wb.appendChild(b);});
+      ['10:30','11:00','11:30','17:00'].forEach(function(t){var b=knopf(t+(SP==='de'?' Uhr':''),{'class':'chip','aria-pressed':String(zeit===t),'data-zeit':t});b.addEventListener('click',function(){zeit=t;z();});zb.appendChild(b);});}
+    z();
+    dialog(L('Fester Döner-Tag','Weekly döner day'),[el('p',null,L('Eine Erinnerung jede Woche in Ihrem Kalender – mit Link, der die Sammelbestellung startet.','A weekly reminder in your calendar – with a link that starts the group order.')),
+      el('p','z-gruppe-titel',L('Welcher Tag?','Which day?')),wb,el('p','z-gruppe-titel',L('Wann erinnern?','Remind at')),zb],
+      [[L('📅 In den Kalender','📅 Add to calendar'),function(){
+        var d=new Date(),diff=(tag-d.getDay()+7)%7,st=new Date(d.getFullYear(),d.getMonth(),d.getDate()+diff),hh=zeit.slice(0,2),mm=zeit.slice(3);
+        var ds=st.getFullYear()+('0'+(st.getMonth()+1)).slice(-2)+('0'+st.getDate()).slice(-2),link=basisUrl()+'#gemeinsam';
+        var ende=('0'+((+hh)+((+mm)+15>=60?1:0))).slice(-2)+('0'+(((+mm)+15)%60)).slice(-2);
+        var esc=function(t){return String(t).replace(/[\\;,]/g,function(c){return '\\'+c;}).replace(/\n/g,'\\n');};
+        var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Saray Doener//Doener-Tag//DE','BEGIN:VEVENT','UID:doenertag-'+Date.now()+'@saray','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',
+          'DTSTART:'+ds+'T'+hh+mm+'00','DTEND:'+ds+'T'+ende+'00','RRULE:FREQ=WEEKLY;BYDAY='+WT.filter(function(w2){return w2[0]===tag;})[0][1],
+          'SUMMARY:'+esc(L('Döner-Tag: Bestellung bei Saray sammeln','Döner day: collect the order at Saray')),'URL:'+link,
+          'DESCRIPTION:'+esc(L('Gemeinsam bestellen: ','Order as a group: ')+link),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc(L('Döner-Tag','Döner day')),'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+        icsLaden(ics,'saray-doener-tag.ics');dialogZu();melden(L('Erinnerung gespeichert – im Kalender öffnen.','Reminder saved – open it in your calendar.'));}],
+       [L('Abbrechen','Cancel'),dialogZu]]);
+  }
+  document.querySelectorAll('[data-doenertag]').forEach(function(b){b.addEventListener('click',doenerTag);});
   function teilSchicken(){
     var name=(eName.value||'').trim();
     if(!name){eName.focus();melden(L('Bitte zuerst Ihren Namen eintragen.','Please enter your name first.'));return;}
@@ -941,9 +973,19 @@
   document.getElementById('sammel-ende').addEventListener('click',function(){sammel=null;sammelSpeichern();sammelZeigen();waAktualisieren();});
   document.getElementById('sammel-einladen').addEventListener('click',einladen);
   function linkPruefen(){
-    var m=/^#(sammel|teil)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;
+    if(location.hash==='#gemeinsam'){history.replaceState(null,'',location.pathname+location.search);if(!sammel)einladen();return;}
+    var m=/^#(sammel|teil|nochmal)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;
     history.replaceState(null,'',location.pathname+location.search);
     var d;try{d=dekodieren(m[2]);}catch(e){melden(L('Der Link ist unvollständig. Bitte noch einmal schicken lassen.','The link is incomplete. Please ask for it again.'));return;}
+    if(m[1]==='nochmal'){
+      var nm=(d&&Array.isArray(d.p)?d.p:[]).slice(0,60).map(function(p){return ausDaten(p);}).filter(Boolean);
+      if(!nm.length){dialog(L('Nochmal bestellen','Order again'),[el('p',null,L('Die Gerichte gibt es so nicht mehr auf der Karte.','These dishes are no longer on the menu.'))],[[L('OK','OK'),dialogZu]]);return;}
+      if(d.l&&ZEITEN[d.l]){abh.laden=d.l;abhSpeichern();ladenZeigen();}
+      var ul=el('ul','sammel-liste');nm.forEach(function(x){ul.appendChild(el('li',null,x.q+'× '+nameA(x)+(x.g?' ('+x.g+')':'')+': '+euro(stueck(x)*x.q)));});
+      dialog(L('Nochmal bestellen','Order again'),[ul,el('p','sammel-summe',L('Summe: ','Total: ')+euro(nm.reduce(function(a,x){return a+x.q*stueck(x);},0)))],
+        [[L('In meine Bestellung','Add to my order'),function(){nm.forEach(function(x){zettel.push(x);});zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();dialogZu();oeffnen();}],
+         [L('Abbrechen','Cancel'),dialogZu]]);
+      return;}
     if(m[1]==='sammel'){
       if(!d||!d.an)return;
       sammel={an:String(d.an).slice(0,40)};sammelSpeichern();
