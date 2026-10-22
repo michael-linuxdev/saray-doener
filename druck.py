@@ -54,7 +54,7 @@ def gruppe_html(gid):
             nr, name, desc, preise = g[:4]
             var = " · ".join(f"{k}: {v}" for k, v in (g[4] if len(g) > 4 else []))
             klein = " – ".join(x for x in (desc, var) if x)
-            out.append(f'<li><span class="nr">{e(nr)}</span><span class="nm"><b>{e(name)}</b>'
+            out.append(f'<li><span class="nr">{e(build.anz(nr) if nr else "")}</span><span class="nm"><b>{e(name)}</b>'
                        f'{"<small> " + e(klein) + "</small>" if klein else ""}</span>'
                        f'<span class="pr">{"".join(f"<b>{p}</b>" for p in preise)}</span></li>')
         out.append('</ul>')

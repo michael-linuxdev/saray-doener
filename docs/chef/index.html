@@ -45,6 +45,11 @@ h2{font-size:1.3rem;margin:18px 4px 10px}
 label{display:block;font-weight:700;font-size:.92rem;margin:10px 0 4px}
 input[type=text],input[type=date],input[type=search],select,textarea{width:100%;min-height:46px;border:2px solid #cdbfc8;border-radius:10px;padding:8px 10px;background:#fff}
 input:focus,select:focus,textarea:focus{outline:3px solid var(--gelb);border-color:var(--tinte)}
+/* iOS: Datumsfelder sonst breiter als die Karte */
+input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+.reihe > div{min-width:0}
+.karte > .reihe{margin-top:12px}
 .hinweis{font-size:.9rem;opacity:.8;margin:6px 4px}
 .fehler{color:var(--paprika);font-weight:700}
 .liste-gericht{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--linie);
@@ -139,7 +144,7 @@ function api(pfad,opt){opt=opt||{};opt.headers=Object.assign({'Accept':'applicat
 function gerichte(){ /* aktuelle Karte = Standard + Änderungen, für die Anzeige */
   var res=[],ae=ANP.gerichte||{},weg=ANP.geloescht||[];
   STD.gruppen.forEach(function(g){g.abschnitte.forEach(function(a){
-    a.gerichte.forEach(function(x){var o=ae[x.k]||{};res.push({k:x.k,g:g,a:a,nr:x.nr,name:o.name!=null?o.name:x.name,desc:o.desc!=null?o.desc:x.desc,
+    a.gerichte.forEach(function(x){var o=ae[x.k]||{};res.push({k:x.k,g:g,a:a,nr:o.nr!=null?o.nr:x.nr,name:o.name!=null?o.name:x.name,desc:o.desc!=null?o.desc:x.desc,
       preise:o.preise||x.preise,std:x,geaendert:!!ae[x.k],geloescht:weg.indexOf(x.k)>-1,neu:false});});
     (ANP.neu||[]).forEach(function(n,i){if(n.gruppe===g.id&&n.abschnitt===a.titel)res.push({k:'neu:'+i,g:g,a:a,nr:n.nr||'',name:n.name,desc:n.desc||'',preise:n.preise,neu:true,index:i});});
   });});
@@ -345,7 +350,7 @@ function bearbeiten(x){
   var fehler=el('p',{class:'fehler',hidden:true});
   var b=el('div',{class:'blatt'}),inhalt=el('div',{},[el('h3',{text:neu?'Neues Gericht':(x.nr?'Nr. '+x.nr+' ':'')+x.name}),
     neu?el('div',{},[el('label',{for:'b-ab',text:'Kategorie'}),wahlAb]):null,
-    x&&!x.neu?null:el('div',{},[el('label',{for:'b-nr',text:'Nummer (optional, muss frei sein)'}),nr]),
+    x&&!x.neu&&!x.std.nr?null:el('div',{},[el('label',{for:'b-nr',text:x&&!x.neu?'Nummer (muss frei sein; nur die angezeigte Nummer ändert sich)':'Nummer (optional, muss frei sein)'}),nr]),
     el('label',{for:'b-name',text:'Name'}),name,el('label',{for:'b-desc',text:'Beschreibung'}),desc,preisBox,fehler]);
   preisFelder();
   if(x){var frueher=staende().filter(function(st){var p=st.preise[schl(x)];return p&&JSON.stringify(p)!==JSON.stringify(x.preise);});
@@ -359,11 +364,15 @@ function bearbeiten(x){
     if(!name.value.trim()){fehler.textContent='Bitte einen Namen eingeben.';fehler.hidden=false;return;}
     if(preise.some(function(p){return !p;})){fehler.textContent='Preis bitte so eingeben: 7,50';fehler.hidden=false;return;}
     if(neu||x.neu){var n=nr.value.trim();
-      var belegt=gerichte().some(function(y){return y.nr&&y.nr===n&&(!x||y.k!==x.k);});
+      var belegt=gerichte().some(function(y){return (!x||y.k!==x.k)&&((y.nr&&y.nr===n)||(y.std&&y.std.nr===n));});
       if(n&&(belegt||!/^[0-9A-Za-z]{1,5}$/.test(n))){fehler.textContent='Nummer '+n+' ist schon vergeben oder ungültig.';fehler.hidden=false;return;}
       var ab=neu?abschnitte[+wahlAb.value]:{g:x.g,a:x.a},obj={gruppe:ab.g.id,abschnitt:ab.a.titel,nr:n,name:name.value.trim(),desc:desc.value.trim(),preise:preise};
       ANP.neu=ANP.neu||[];if(neu)ANP.neu.push(obj);else ANP.neu[x.index]=obj;
     }else{var s=x.std,o={};if(name.value.trim()!==s.name)o.name=name.value.trim();if(desc.value.trim()!==s.desc)o.desc=desc.value.trim();
+      if(s.nr){var n2=nr.value.trim();
+        if(n2!==s.nr){var belegt2=gerichte().some(function(y){return y.k!==x.k&&y.nr===n2;});
+          if(!/^[0-9A-Za-z]{1,5}$/.test(n2)||belegt2){fehler.textContent='Nummer '+n2+' ist schon vergeben oder ungültig.';fehler.hidden=false;return;}
+          o.nr=n2;}}
       if(JSON.stringify(preise)!==JSON.stringify(s.preise))o.preise=preise;
       ANP.gerichte=ANP.gerichte||{};if(Object.keys(o).length)ANP.gerichte[x.k]=o;else delete ANP.gerichte[x.k];}
     b.remove();zeichnen();}
@@ -484,7 +493,7 @@ function zahlenKarte(){
     k.appendChild(el('p',{class:'hinweis',text:'Einmal einrichten: bei GoatCounter unter „API“ einen Schlüssel mit Leserechten erstellen und hier eintragen. Er bleibt nur auf diesem Gerät.'}));
     k.appendChild(f);k.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'Speichern',onclick:function(){try{localStorage.setItem(GK,f.value.replace(/\s+/g,''));}catch(e){}zeichnen();}}),link]));return;}
   var box=el('div',{},[el('p',{class:'hinweis',text:'Lädt …'})]);k.appendChild(box);
-  k.appendChild(el('div',{class:'reihe'},[link,el('button',{class:'knopf klein',text:'Schlüssel entfernen',onclick:function(){try{localStorage.removeItem(GK);}catch(e){}zeichnen();}})]));
+  k.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf klein',text:'Aktualisieren',onclick:function(){zahlenKarte.cache=null;zeichnen();}}),link,el('button',{class:'knopf klein',text:'Schlüssel entfernen',onclick:function(){try{localStorage.removeItem(GK);}catch(e){}zeichnen();}})]));
   function stunde(tage){var n=new Date(),h=+new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',hour:'2-digit',hourCycle:'h23'}).format(n);
     var d=new Date(n);d.setUTCMinutes(0,0,0);d=new Date(d.getTime()-(h+24*tage)*36e5);return d.toISOString().replace('.000','');}
   function holen(start){var ende=new Date();ende.setUTCMinutes(0,0,0);ende=new Date(ende.getTime()+36e5);
@@ -496,7 +505,14 @@ function zahlenKarte(){
   function werte(d){var w={besuche:0};(d.hits||[]).forEach(function(h){if(h.event)w[h.path]=(w[h.path]||0)+h.count;else w.besuche+=h.count;});return w;}
   /* gezählt wird seit Oktober 2026 – „Gesamt“ beginnt dort */
   var spalten=[['Heute',stunde(0)],['7 Tage',stunde(6)],['30 Tage',stunde(29)],['Gesamt','2026-10-01T00:00:00Z']];
-  Promise.all(spalten.map(function(sp){return holen(sp[1]);})).then(function(x){var w=x.map(werte);box.textContent='';
+  /* nacheinander abfragen (GoatCounter begrenzt die Anfragen pro Sekunde), bei 429 kurz warten; Ergebnis 5 Minuten merken */
+  function warten(ms){return new Promise(function(ok){setTimeout(ok,ms);});}
+  function holenGeduldig(start,versuch){return holen(start).catch(function(e){var m=String(e.message||e),t=/try again in ([\d.]+)ms/.exec(m);
+    if(/^429/.test(m)&&(versuch||0)<4)return warten((t?Math.ceil(+t[1]):1000)+300).then(function(){return holenGeduldig(start,(versuch||0)+1);});throw e;});}
+  var cache=zahlenKarte.cache&&Date.now()-zahlenKarte.cache.t<5*60e3&&zahlenKarte.cache.schl===schl?Promise.resolve(zahlenKarte.cache.x):
+    spalten.reduce(function(kette,sp){return kette.then(function(liste){return holenGeduldig(sp[1]).then(function(d){return liste.concat([d]);});});},Promise.resolve([]))
+      .then(function(x){zahlenKarte.cache={t:Date.now(),x:x,schl:schl};return x;});
+  cache.then(function(x){var w=x.map(werte);box.textContent='';
     var z=[['Besucher',['besuche']],['WhatsApp Freital',['whatsapp-freital']],['WhatsApp Altenberg',['whatsapp-altenberg']],
       ['Anrufe Freital',['anrufen-freital']],['Anrufe Altenberg',['anrufen-altenberg']],['Bestellung geteilt',['bestellung-teilen']],
       ['Gemeinsam bestellt',['gemeinsam-bestellen']],['Zur Google-Bewertung',['bewertung-freital','bewertung-altenberg']]];

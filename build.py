@@ -60,6 +60,12 @@ ANPASSUNGEN = ANP.laden(pathlib.Path(os.environ.get("SARAY_ANPASSUNGEN") or HIER
 WARNUNGEN = []
 STANDARD_GRUPPEN = GRUPPEN
 GRUPPEN = ANP.karte(GRUPPEN, ANPASSUNGEN, WARNUNGEN.append)
+ANZEIGE_NR = ANP.nummern(GRUPPEN, ANPASSUNGEN, WARNUNGEN.append)
+
+
+def anz(nr):
+    """angezeigte Nummer (Chef-App kann sie ändern); intern bleibt nr der Schlüssel"""
+    return ANZEIGE_NR.get(nr, nr)
 
 import datetime as _dt0, zoneinfo as _zi0
 HEUTE_ISO = os.environ.get("SARAY_HEUTE") or _dt0.datetime.now(_zi0.ZoneInfo("Europe/Berlin")).date().isoformat()  # Tests setzen das Datum fest
@@ -163,10 +169,10 @@ def gericht_typ(nr, gruppe, abschnitt):
 
 
 def zettel_daten(nr, name, desc, preise, groessen, typ="", varianten=()):
-    ne = (("No. " + nr + " ") if nr else "") + EN.name(name)
+    ne = (("No. " + anz(nr) + " ") if nr else "") + EN.name(name)
     cent = "|".join(str(int(x.replace(",", ""))) for x in preise)
     v = "|".join(f"{k}: {t}" for k, t in varianten)
-    return (f' data-k="{e(nr or name)}" data-n="{e(("Nr. " + nr + " ") if nr else "")}{e(name)}" data-d="{e(desc)}"'
+    return (f' data-k="{e(nr or name)}" data-n="{e(("Nr. " + anz(nr) + " ") if nr else "")}{e(name)}" data-d="{e(desc)}"'
             f' data-p="{cent}" data-g="{e("|".join(groessen or []))}" data-t="{typ}" data-v="{e(v)}" data-ne="{e(ne)}" data-dn="{e(EN.text(desc))}"')
 
 
@@ -185,7 +191,7 @@ FISCH_ICON = (' <svg class="veg" viewBox="0 0 24 24" role="img" aria-label="mit 
 def gericht_html(g, gruppe, abschnitt, groessen):
     nr, name, desc, preise = g[:4]
     varianten = g[4] if len(g) > 4 else []
-    suchtext = " ".join([nr, name, desc, abschnitt, gruppe] + [v for _, v in varianten]
+    suchtext = " ".join([anz(nr), name, desc, abschnitt, gruppe] + [v for _, v in varianten]
                         + [EN.name(name), EN.text(desc), EN.titel(abschnitt), EN.titel(gruppe)] + [EN.text(v) for _, v in varianten])
     beliebt = nr in BELIEBT and nr not in NUR_DIAET
     empfohlen = nr in EMPFEHLUNG and nr not in NUR_DIAET
@@ -193,7 +199,7 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     fisch = (nr or name) in FISCH
     waehlbar = nr in VEG_WAEHLBAR
     teile = [f'<li class="gericht{" ist-beliebt" if beliebt or empfohlen else ""}"{f' id="nr-{nr}"' if nr else ""} data-s="{e(suchtext)}{" beliebt" if beliebt else ""}{" empfehlung" if empfohlen else ""}{" vegetarisch vegetarian" if veg else ""}{" pescetarisch pescetarian fisch fish" if fisch else ""}"{" data-veg" if veg or waehlbar else ""}{" data-fisch" if fisch else ""}{zettel_daten(nr, name, desc, preise, groessen, gericht_typ(nr, gruppe, abschnitt), varianten)}>']
-    teile.append(f'<span class="nr">{chr(60) + "span class=" + chr(34) + "sr-only" + chr(34) + ">Nr. </span>" + e(nr) if nr else ""}</span>')
+    teile.append(f'<span class="nr">{chr(60) + "span class=" + chr(34) + "sr-only" + chr(34) + ">Nr. </span>" + e(anz(nr)) if nr else ""}</span>')
     teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{VEG_ICON if veg and gruppe != "Getränke" else ""}{FISCH_ICON if fisch else ""}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
     if groessen:
         for i, p in enumerate(preise):
@@ -276,7 +282,7 @@ def beliebt_karte(nr, gross=False, koch=True):
     zusatz = f" ({ab['groessen'][0]})" if ab.get("groessen") else ""
     veg = nr in VEGETARISCH or nr in VEG_WAEHLBAR or "vegetarisch" in name.lower()
     return (f'<li class="tipp{" tipp-gross" if gross else ""}{" ohne-koch" if gross and not koch else ""}"{" data-veg" if veg else ""}{" data-fisch" if nr in FISCH else ""}{" data-nur-diaet hidden" if nr in NUR_DIAET else ""}{zettel_daten(nr, name, desc, preise, ab.get("groessen"), gericht_typ(nr, gr["titel"], ab["titel"]), g[4] if len(g) > 4 else ())}><a href="#nr-{nr}">'
-            f'<span class="tipp-nr"><span data-en="No.">Nr.</span> {nr}</span><b class="tipp-name" data-en="{e(EN.name(name))}">{e(name)}</b>'
+            f'<span class="tipp-nr"><span data-en="No.">Nr.</span> {e(anz(nr))}</span><b class="tipp-name" data-en="{e(EN.name(name))}">{e(name)}</b>'
             f'<span class="tipp-info" data-en="{e(EN.text(desc))}">{e(desc)}</span>'
             f'<span class="tipp-preis">{t("ab ", "from ") if zusatz else ""}{preis(preise[0])}</span>'
             + (f'<img class="tipp-koch" src="{maskottchen("saray-koch.svg", "image/svg+xml")}" width="430" height="470" alt="">' if gross and koch else "")

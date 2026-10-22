@@ -285,3 +285,27 @@ def aktionen(liste, gruppen, warnen):
                 warnen(f"Aktion {a['name']!r}: Uhrzeit {za!r}–{zb!r} ungültig – gilt ganztags")
         ok.append(sauber)
     return ok
+
+
+def nummern(gruppen, anp, warnen):
+    """Andere Nummer für ein Gericht (nur Anzeige): {"gerichte": {"12": {"nr": "12a"}}} -> {"12": "12a"}.
+    Intern bleibt die alte Nummer der Schlüssel (Varianten, Sperren, Aktionen hängen daran)."""
+    aendern = anp.get("gerichte") if isinstance(anp.get("gerichte"), dict) else {}
+    alle = [g[0] for gr in gruppen for ab in gr["abschnitte"] for g in ab["gerichte"] if g[0]]
+    neu = {}
+    for k, a in aendern.items():
+        if not (isinstance(a, dict) and "nr" in a) or k not in alle:
+            continue
+        n = str(a["nr"]).strip()
+        if n == k:
+            continue
+        if not re.match(r"^[0-9A-Za-z]{1,5}$", n):
+            warnen(f"Gericht {k}: Nummer {n!r} ungültig – bleibt {k}")
+            continue
+        neu[k] = n
+    angezeigt = [neu.get(n, n) for n in alle]
+    for k, n in list(neu.items()):
+        if angezeigt.count(n) > 1:
+            warnen(f"Gericht {k}: Nummer {n} doppelt – bleibt {k}")
+            del neu[k]
+    return neu

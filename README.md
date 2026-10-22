@@ -79,7 +79,7 @@ Feste Regeln, die immer gelten, können stattdessen in `VERFUEGBARKEIT` in `buil
 Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für Suchmaschinen gesperrt. Große Schaltflächen, fürs Handy gemacht:
 
 - **Heute:** Hähnchen, Nuggets, Falafel, Pizza, Baguette … für heute aus, ab Uhrzeit (heute oder jeden Tag) oder dauerhaft aus – für beide Läden oder nur einen.
-- **Karte:** Preise, Namen und Beschreibungen ändern, Gerichte löschen (und wieder anzeigen), neue Gerichte anlegen.
+- **Karte:** Nummer (nur die angezeigte; intern bleibt die alte Nummer der Schlüssel für Varianten, Sperren, Aktionen), Preise, Namen und Beschreibungen ändern, Gerichte löschen (und wieder anzeigen), neue Gerichte anlegen.
 - **Heute → Zutaten:** einzelne Zutaten (Soßen, Salat/Gemüse, Beilagen Pommes/Reis, Käse, Fleisch/Fisch/Ei) aus, bis sie wieder eingeschaltet werden – je Laden oder für beide. Pommes/Reis aus: Gerichte gibt es ohne diese Beilage, je 0,50 € günstiger (`BEILAGE_RABATT`), nur die reinen Pommes sind nicht zu haben. Kräuter aus: keine Soße vorausgewählt. Auf der Seite sind sie dann beim Anpassen ausgegraut („nicht verfügbar“) und werden aus schon gewählten Wünschen entfernt. Liste: `ZUTATEN_SCHALTER` in `chef_app.py`; Regel `{"was": "z:Ananas"}`.
 - **Heute → Wartezeit:** bei viel Betrieb +15/+30/+45 Minuten je Laden, nur für heute. Die früheste Abholzeit verschiebt sich, die Schilder zeigen „Wartezeit ca. … Min.“.
 - **Zeiten:** Öffnungszeiten je Laden und Wochentag, auch „geschlossen“. Darunter **Besondere Tage** (Heiligabend, Feiertag, Urlaub): an einem Datum geschlossen oder andere Zeiten. Die Seite zeigt sie beim Laden an, Status und Abholzeiten richten sich danach; vergangene Tage verschwinden von selbst.

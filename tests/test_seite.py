@@ -1025,6 +1025,35 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
 
 
 @test
+def chef_app_nummer_aendern(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.click('nav.tabs [data-tab="karte"]')
+    p.click('.liste-gericht[data-k="12"]')
+    p.fill("#b-nr", "11")
+    p.click(".blatt >> text=Übernehmen")
+    assert "schon vergeben" in p.text_content(".blatt .fehler")
+    p.fill("#b-nr", "12a")
+    p.click(".blatt >> text=Übernehmen")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert d["gerichte"] == {"12": {"nr": "12a"}}, d
+    assert not fehler, fehler
+    ctx.close()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit(d, tmp)
+        s = Seite(b, u)
+        assert s.p.text_content("#nr-12 .nr").endswith("12a")
+        s.p.click("#nr-12 .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click('[data-laden="freital"]')
+        assert "Nr. 12a Falafel-Döner" in s.wa_text()
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):
