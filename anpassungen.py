@@ -13,7 +13,10 @@ Aufbau (alle Teile optional):
   "verfuegbarkeit": [{"was": "huhn", "datum": "2026-10-21"}],          # wie VERFUEGBARKEIT in build.py
   "hinweise":  [{"text": "...", "en": "...", "von": "2026-12-20", "bis": "2026-12-24"}],
   "sonderzeiten": {"2026-12-24": {"freital": ["10:00", "16:00"], "altenberg": null}},   # einzelne Tage; null = geschlossen
-  "wartezeit": {"freital": {"datum": "2026-10-22", "min": 30}}                      # gilt nur an diesem Tag
+  "wartezeit": {"freital": {"datum": "2026-10-22", "min": 30}},                     # gilt nur an diesem Tag
+  "aktionen":  [{"name": "Mittagstisch", "art": "mittag", ...}],                     # art "mittag": eigener Kasten oben
+  "winter":    "auto",                                                               # Wintersaison Altenberg: auto/an/aus
+  "gutscheine": [{"nr": "G26-001", "h": "<sha256>", "wert": 2000, ...}]            # nur Chef-App; Seite liest sie nicht
 }
 Schlüssel eines Gerichts: seine Nummer, bei Gerichten ohne Nummer "<gruppe>|<abschnitt>|<name>".
 """
@@ -273,6 +276,8 @@ def aktionen(liste, gruppen, warnen):
             warnen(f"Aktion {a['name']!r}: keine gültigen Gerichte")
             continue
         sauber = {"name": a["name"].strip(), "von": a["von"], "bis": a["bis"], "preise": preise}
+        if a.get("art") == "mittag":
+            sauber["art"] = "mittag"
         if isinstance(a.get("tage"), list) and a["tage"] and all(isinstance(x, int) and 0 <= x <= 6 for x in a["tage"]):
             sauber["tage"] = sorted(set(a["tage"]))
         if a.get("laden") in LAEDEN:
@@ -309,3 +314,14 @@ def nummern(gruppen, anp, warnen):
             warnen(f"Gericht {k}: Nummer {n} doppelt – bleibt {k}")
             del neu[k]
     return neu
+
+
+WINTER_STANDARD = ("12-01", "03-15")   # Wintersaison Altenberg (Monat-Tag), gilt bei "auto"
+
+
+def winter(wert, warnen):
+    """Wintersaison Altenberg: "auto" (Standard, nach Datum), "an" oder "aus"."""
+    if wert in (None, "auto", "an", "aus"):
+        return wert or "auto"
+    warnen(f"Wintersaison {wert!r} ungültig – automatisch")
+    return "auto"

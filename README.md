@@ -16,6 +16,7 @@ Statische Seite ohne Framework, ohne externe Anfragen und ohne Cookies. Was im B
 | `qr.py` / `aufsteller.py` | QR-Codes / Druckvorlagen für die Theke |
 | `tests/` | automatische Browser-Tests |
 | `englisch.py` | Englische Namen und Beschreibungen |
+| `laden_seiten.py` | Bildschirm im Laden (`docs/tv/`) und Küchenansicht (`docs/kueche/`) |
 | `sprachen/*.json`, `sprachen_daten.py` | Wörterbücher Englisch → Tschechisch/Türkisch/Russisch/Arabisch; `python3 sprachen_daten.py` zeigt, was fehlt |
 | `build.py` | Standorte, Öffnungszeiten, Hinweis-Band, Vorlage, CSS und JS; baut die Seite |
 | `maskottchen.py` | Zeichnet das Koch-Maskottchen als SVG (`maskottchen/`) |
@@ -97,6 +98,13 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Mehr → Google-Unternehmensprofil:** Name, Adresse, Telefon, Website, Bestell-Link, Öffnungszeiten, Zahlungsart, Beschreibung und Merkmale je Laden zum Kopieren.
 - **Für Firmen, Vereine und Feiern:** eigener Abschnitt vor den Öffnungszeiten (gemeinsam bestellen, mittags oder abends abholen) und A5-Flyer `flyer-gruppen.pdf` unter „Drucken“. Vorlauf für große Bestellungen steht als Frage in der Checkliste.
 - **Bestellung:** Jede WhatsApp-Nachricht hat eine kurze Bestellnummer (z. B. K47); nach dem Senden kann der Gast die Abholung in seinen Kalender eintragen (.ics, Erinnerung 15 Minuten vorher).
+- **Karte → + Mittagstisch:** Aktion mit Art „Mittagstisch“ (Mo–Fr 11–14 Uhr vorbelegt). Auf der Seite ein eigener Kasten „🍽 Mittagstisch“ über den Empfehlungen, nur an den gewählten Tagen bis Ende der Uhrzeit; Marke „Mittag 8,50 €“ am Gericht.
+- **Zeiten → Wintersaison Altenberg:** Kasten oben „Nach der Piste in Altenberg“ mit „In Altenberg vorbestellen“ und „Skikurs oder Gruppe“. Automatisch 1.12.–15.3. (`WINTER_STANDARD` in `anpassungen.py`), per Chef-App auch „Jetzt an“ oder „Aus“.
+- **Zug ab Altenberg:** Wer in Altenberg abholt, bekommt Abholzeiten passend zu den Abfahrten Richtung Heidenau/Dresden („Zug 17:18 → abholen 17:00“, 15 Minuten Puffer); die Nachricht nennt „(Zug 17:18)“. Fahrplan `ZUG` in `build.py`, gültig bis 12.12.2026 – danach blendet sich der Vorschlag aus, bis der neue Fahrplan eingetragen ist.
+- **Küchenansicht (`docs/kueche/`):** Jede WhatsApp-Nachricht endet mit „Für die Küche: <Link>“. Der Link enthält die Bestellung selbst (kein Server). Im Laden geöffnet: große Karte je Bestellung, Gerichte abhaken, sortiert nach Abholzeit, rot bei „bald fällig“, „Fertig ✓“, Bon-Druck (80-mm-Bondrucker oder A4). Gespeichert nur auf dem Gerät, nach 3 Tagen gelöscht.
+- **Bildschirm im Laden (`docs/tv/?laden=freital`):** Speisekarte für einen Fernseher (Fire-TV-Stick o. Ä.), Seitenwechsel alle 14 s (`sek=`), Auswahl einzelner Gruppen mit `seiten=doener,pizza`. Erste Seite „Heute bei Saray“ mit Aktionen, Mittagstisch und Empfehlungen. Aktionspreise, „heute aus“ und Zutaten-Sperren (Band „Heute leider ohne …“) aus denselben Daten; holt `status.json` jede Minute und lädt sich nach jedem Bauen neu (`version.json`). Schrift passt sich an, damit nichts abgeschnitten wird.
+- **Mehr → Geschenkgutscheine:** Wert, Anzahl und Laden wählen, „Erstellen und drucken“ druckt 4 Gutscheine je A4 (Nummer G26-001 und 6-stelliger Code, gültig 3 Jahre bis Jahresende). Im Repo steht nur ein SHA-256-Prüfwert aus Nummer und Code, nie der Code. Einlösen: Nummer und Code eingeben, „Prüfen“, „Als eingelöst markieren“, speichern. Gutscheine bleiben bei „Standard wiederherstellen“ erhalten.
+- **Chef-App auf Türkisch:** Knopf „TR“/„DE“ oben rechts (Türkisch auch automatisch bei türkischer Gerätesprache). Übersetzt wird die Anzeige (`sprachen/chef_tr.json`, Schlüssel = deutscher Text; Teilstücke mit Leerzeichen am Rand werden auch innerhalb längerer Texte ersetzt). Gerichtsnamen, gespeicherte Daten, Google-Texte und Gutscheine bleiben deutsch.
 - **Mehr → Gefahrenbereich:** „Alles auf Standard zurücksetzen“ und „Auf diesem Gerät abmelden“, rot gekennzeichnet.
 - **Mehr:** Hinweis oben auf der Seite (Text mit Zeitraum), „Letzte Änderung rückgängig“ (holt den Stand vor dem letzten Speichern zurück), „Alles auf Standard zurücksetzen“, Abmelden.
 

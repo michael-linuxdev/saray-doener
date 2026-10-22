@@ -50,6 +50,24 @@ STANDORTE = [
 ]
 
 
+# Zug ab Altenberg (Müglitztalbahn RB 72 / RE 19 Richtung Heidenau–Dresden): Abholung passend zur Abfahrt.
+# Quelle: DB-Kursbuch 246, gültig 14.12.2025–12.12.2026 (Stand 24.10.2025). Nach "gueltig_bis" blendet sich der
+# Vorschlag von selbst aus, bis der neue Fahrplan hier eingetragen ist. Feiertage = Tage in "werktags_nicht".
+ZUG = {
+    "laden": "altenberg", "gueltig_bis": "2026-12-12", "puffer": 15,
+    "taeglich": ["06:18", "08:18", "10:18", "12:18", "18:18", "20:18"],
+    "werktags": ["04:18", "05:18", "07:18", "09:18", "11:18", "13:18", "14:18", "15:18", "16:18", "17:18", "19:18", "21:18"],
+    "werktags_nicht": ["2025-12-25", "2025-12-26", "2026-01-01", "2026-04-03", "2026-04-06", "2026-05-01", "2026-05-14",
+                       "2026-05-25", "2026-11-18"],
+    "extra": [  # RE 19 nur am Wochenende in diesen Zeiträumen, dazu an einzelnen Tagen
+        {"zeit": "15:18", "wochenende": [["2025-12-14", "2026-02-22"], ["2026-11-07", "2026-12-12"]],
+         "auch": ["2025-12-25", "2025-12-26", "2026-01-01", "2026-11-18"]},
+        {"zeit": "17:18", "wochenende": [["2026-02-28", "2026-11-01"]],
+         "auch": ["2026-04-03", "2026-04-06", "2026-05-01", "2026-05-14", "2026-05-25"]},
+    ],
+}
+
+
 def minuten(spanne):
     a, b = spanne.replace(" Uhr", "").split("–")
     return int(a) * 60, int(b) * 60
@@ -72,6 +90,7 @@ import datetime as _dt0, zoneinfo as _zi0
 HEUTE_ISO = os.environ.get("SARAY_HEUTE") or _dt0.datetime.now(_zi0.ZoneInfo("Europe/Berlin")).date().isoformat()  # Tests setzen das Datum fest
 SONDER = ANP.sonderzeiten(ANPASSUNGEN.get("sonderzeiten"), WARNUNGEN.append, HEUTE_ISO)
 WARTE = ANP.wartezeit(ANPASSUNGEN.get("wartezeit"), WARNUNGEN.append)
+WINTER = {"modus": ANP.winter(ANPASSUNGEN.get("winter"), WARNUNGEN.append), "von": ANP.WINTER_STANDARD[0], "bis": ANP.WINTER_STANDARD[1]}
 
 for s in STANDORTE:
     std = {}
@@ -601,6 +620,7 @@ p{margin:0}
 .marke-beliebt{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;
   font:700 .7rem/1.5 var(--text);letter-spacing:.01em;white-space:nowrap}
 .beliebt{margin-bottom:40px;min-width:0;max-width:100vw}
+.mittag{margin-bottom:28px;min-width:0;max-width:100vw}.mittag-zeit{margin:-6px 0 10px;color:var(--tinte-weich);font-weight:700}body.sucht .mittag{display:none}
 .karte-inhalt{min-width:0}
 .tipps{width:calc(100% + 2 * var(--rand));position:relative}
 .beliebt-titel{font-size:1.35rem;margin-bottom:12px}
@@ -881,7 +901,9 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .abholung select,.abholung input{width:100%;min-height:44px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:400 1rem var(--text);color:var(--tinte);background:#fff}
 .knopf-whatsapp{background:#1E7B3C;color:#fff}
 .knopf-whatsapp:hover{background:#17652F}
-.abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
+.abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}
+.winter{margin-top:16px;padding:14px 16px;border:2px solid var(--tinte);border-radius:18px;background:#EAF4FB;color:var(--tinte)}.winter p{margin:0 0 10px}.winter-titel{font:700 1.2rem var(--slab)}.winter-knoepfe{display:flex;flex-wrap:wrap;gap:8px}.winter-knoepfe .knopf{flex:1 1 200px}
+.zug-wahl{margin:12px 0 2px}.zug-titel{margin:0 0 6px;font-weight:700;font-size:.92rem}.zug-chips{display:flex;flex-wrap:wrap;gap:6px}.zug-chips .chip{font-size:.9rem}.zug-quelle{font-size:.78rem;color:var(--tinte-weich);margin:6px 0 0}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
 .wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
 .zettel-knoepfe{display:grid;gap:10px}
@@ -1356,6 +1378,40 @@ ZETTEL_JS = r'''
     for(var m=start;m<=h[1]-15;m+=15)res.push(m);
     return res;
   }
+  /* Zug ab Altenberg: Abfahrten (Minuten) an einem Tag (ISO-Datum) */
+  var ZUG=%%ZUG%%;
+  function zuege(iso){
+    if(!ZUG||iso>ZUG.gueltig_bis)return [];
+    var wt=new Date(iso+'T12:00:00Z').getUTCDay(),fei=ZUG.werktags_nicht.indexOf(iso)>-1,z=ZUG.taeglich.slice();
+    if(wt>=1&&wt<=5&&!fei)z=z.concat(ZUG.werktags);
+    ZUG.extra.forEach(function(x){var we=(wt===0||wt===6)&&x.wochenende.some(function(r){return iso>=r[0]&&iso<=r[1];});
+      if(we||x.auch.indexOf(iso)>-1)z.push(x.zeit);});
+    return z.map(minAus).sort(function(a,b){return a-b;}).filter(function(m,i,l){return l.indexOf(m)===i;});
+  }
+  var zugBox=document.getElementById('zug-wahl');
+  function zugZeigen(off,sl){
+    if(!zugBox)return;zugBox.textContent='';
+    var vor=off===0?'heute':off===1?'morgen, '+tagLang(1):tagLang(off),en=SP!=='de';
+    if(abh.laden!==ZUG.laden){zugBox.hidden=true;return;}
+    var paare=[];zuege(isoTag(off)).forEach(function(d){var s=sl.filter(function(m){return m<=d-ZUG.puffer&&m>=d-45;});if(s.length)paare.push([d,s[s.length-1]]);});
+    paare=paare.slice(0,6);zugBox.hidden=!paare.length;if(!paare.length)return;
+    zugBox.appendChild(el('p','zug-titel',L('🚆 Mit dem Zug zurück? Abholung passend zur Abfahrt:','🚆 Taking the train? Pickup matched to your departure:')));
+    var reihe=el('div','zug-chips');
+    paare.forEach(function(p){var v=vor+', '+zeitText(p[1]),dz=zeitText(p[0],true),az=zeitText(p[1],true);
+      var b=el('button','chip',L('Zug '+dz+' → abholen '+az,'Train '+dz+' → pickup '+az));b.type='button';
+      b.setAttribute('aria-pressed',String(abh.zug===dz&&abh.zeit===v));
+      b.addEventListener('click',function(){abh.zeit=v;abh.zug=dz;selZeit.value=v;abhSpeichern();zugZeigen(off,sl);zeichnen();waAktualisieren();});
+      reihe.appendChild(b);});
+    zugBox.appendChild(reihe);
+    zugBox.appendChild(el('p','zug-quelle',L('Fahrplan ohne Gewähr, Richtung Heidenau/Dresden.','Timetable without guarantee, towards Heidenau/Dresden.')));
+  }
+  /* Wintersaison Altenberg: Kasten oben; automatisch nach Datum oder per Chef-App an/aus */
+  var WINTER=%%WINTER%%;
+  function winterAktiv(){if(WINTER.modus==='an')return true;if(WINTER.modus==='aus')return false;var md=isoTag(0).slice(5);
+    return WINTER.von<=WINTER.bis?(md>=WINTER.von&&md<=WINTER.bis):(md>=WINTER.von||md<=WINTER.bis);}
+  setTimeout(function(){var w=document.getElementById('winter');if(!w)return;try{w.hidden=!winterAktiv();}catch(e){}
+    var b=document.getElementById('winter-bestellen');if(b)b.addEventListener('click',function(){abh.laden='altenberg';abhSpeichern();ladenZeigen();oeffnen();});
+    var g=document.getElementById('winter-gruppe');if(g)g.addEventListener('click',function(){abh.laden='altenberg';abhSpeichern();var s=document.querySelector('[data-sammel-start]');if(s)s.click();});},0);
   function zeitenFuellen(){
     selZeit.textContent='';selTag.textContent='';hinweisZ.hidden=true;ZINFO={};
     if(!abh.laden){[selTag,selZeit].forEach(function(s){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';s.appendChild(o);s.disabled=true;});return;}
@@ -1380,6 +1436,8 @@ ZETTEL_JS = r'''
     slots(off).forEach(function(m){var v=vor+', '+zeitText(m);optionen.push({v:v,t:zeitText(m,en)});ZINFO[v]={off:off,min:m};});
     optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
+    if(abh.zug&&!ZINFO[abh.zeit])abh.zug='';
+    zugZeigen(off,slots(off));
     abhSpeichern();zeichnenSpaeter();
   }
   var zsp=false;function zeichnenSpaeter(){if(zsp)return;zsp=true;setTimeout(function(){zsp=false;zeichnen();waAktualisieren();},0);}
@@ -1393,7 +1451,7 @@ ZETTEL_JS = r'''
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
     if(kf||sammel)nr=null;
     waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!!kf||!Object.keys(WA).length;
-    if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText());
+    if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText(true));
   }
   function ladenZeigen(){
     document.querySelectorAll('[data-laden]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.laden===abh.laden));});
@@ -1401,7 +1459,7 @@ ZETTEL_JS = r'''
     zeitenFuellen();waAktualisieren();
   }
   document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();verfZeigen();});});
-  selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();zeichnen();waAktualisieren();});
+  selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abh.zug='';try{zeitenFuellen();}catch(e){}abhSpeichern();zeichnen();waAktualisieren();});
   selTag.addEventListener('change',function(){abh.tag=selTag.value;abh.zeit='';abhSpeichern();zeitenFuellen();waAktualisieren();});
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
   ladenZeigen();
@@ -1471,16 +1529,29 @@ ZETTEL_JS = r'''
     zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
-  function zettelText(){
+  /* Küchenansicht: Bestellung als Link (Daten stehen im Link selbst, kein Server) */
+  function b64url(t){return btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  function kuecheLink(){
+    if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
+    var zi=ZINFO[abh.zeit],t='';
+    if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
+    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),zug:abh.zug||'',
+      test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
+      p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];})};
+    return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
+  }
+  function zettelText(mitKueche){
     var test=document.body.classList.contains('vorschau')?['*TEST – Entwurf, keine echte Bestellung*','']:[];
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     z.push('Bestellnummer: '+BNR);
-    if(abh.zeit)z.push('Abholung: '+abh.zeit);
+    if(abh.zeit)z.push('Abholung: '+abh.zeit+(abh.zug&&abh.laden===ZUG.laden?' (Zug '+abh.zug+')':''));
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
     zettel.forEach(function(x){z.push(zeileText(x));});
-    z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
+    z.push('Summe: '+euro(summe()));
+    var kl=mitKueche?kuecheLink():'';if(kl){z.push('');z.push('Für die Küche: '+kl);}
+    return test.concat(z).join('\n');
   }
   function zeileText(x){var w=x.t||fehlend(x).length?wuensche(x):'';
     return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(aktionZ(x)?' (Aktion)':'')+(x.notiz?'\n   Wunsch: '+x.notiz:'');}
@@ -1671,7 +1742,9 @@ JS = r"""
   function euroK(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   /* Speisekarte: heute laufende Aktionen markieren (alter Preis durchgestrichen, Aktionspreis als Marke) */
   function aktionenZeigen(){
-    var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay();
+    var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay(),jm=jetzt().min;
+    document.querySelectorAll('[data-mittag]').forEach(function(sec){var a=AKTIONEN[+sec.dataset.mittag];
+      sec.hidden=!a||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.zb!=null&&jm>=a.zb);});
     document.querySelectorAll('.marke-aktion').forEach(function(m){m.remove();});
     document.querySelectorAll('.preis-alt').forEach(function(m){m.classList.remove('preis-alt');});
     AKTIONEN.forEach(function(a){
@@ -1685,7 +1758,7 @@ JS = r"""
           var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
           var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
           var uz=a.za!=null?' '+uhr(a.za).replace(' Uhr','')+'–'+uhr(a.zb):'';
-          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?(SP==='de'?' (nur'+ort+')':' '+fuell(T('({ort} only)'),{ort:ort.trim()})):'');
+          m.textContent=(a.m?L('Mittag ','Lunch '):L('Aktion ','Offer '))+a.p[k].map(euroK).join(' / ')+uz+(ort?(SP==='de'?' (nur'+ort+')':' '+fuell(T('({ort} only)'),{ort:ort.trim()})):'');
           ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
           li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
         });
@@ -1841,6 +1914,7 @@ JS = r"""
     treffer.hidden=!(teile.length||veg)||n===0;
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
+    document.body.classList.toggle('sucht',teile.length>0);
     var bl=document.querySelector('.beliebt');if(bl){bl.hidden=teile.length>0;
       bl.querySelectorAll('.tipp').forEach(function(t){t.hidden=DIAET?!(t.hasAttribute('data-veg')||(DIAET==='pesc'&&t.hasAttribute('data-fisch'))):t.hasAttribute('data-nur-diaet');});
       bl.querySelectorAll('ul.tipps').forEach(function(u){var leer=!u.querySelector('.tipp:not([hidden])');u.hidden=leer;
@@ -1966,6 +2040,12 @@ SEITE = r"""<!doctype html>
       <ul class="schilder" aria-label="Unsere Läden">
 %%SCHILDER%%
       </ul>
+      <aside class="winter" id="winter" hidden aria-label="Wintersaison Altenberg">
+        <p class="winter-titel"><span aria-hidden="true">❄️ </span><span data-en="After the slopes in Altenberg">Nach der Piste in Altenberg</span></p>
+        <p data-en="Pre-order and pick up hot – right by the station. Taking the train back? We time your pickup to the departure.">Vorbestellen und warm abholen – direkt am Bahnhof. Mit dem Zug zurück? Wir richten die Abholung nach der Abfahrt.</p>
+        <div class="winter-knoepfe"><button type="button" class="knopf knopf-dunkel" id="winter-bestellen" data-en="Pre-order in Altenberg">In Altenberg vorbestellen</button>
+        <button type="button" class="knopf knopf-linie" id="winter-gruppe" data-en="👥 Ski class or group">👥 Skikurs oder Gruppe</button></div>
+      </aside>
     </div>
     <div class="bilder">
       <figure class="foto"><img src="%%IMG_LADEN%%" srcset="%%IMG_LADEN_480%% 480w, %%IMG_LADEN%% 894w" sizes="(min-width: 900px) 440px, 100vw" width="894" height="700" decoding="async"
@@ -2030,6 +2110,7 @@ SEITE = r"""<!doctype html>
       <p><b data-en="Larger orders">Größere Bestellungen</b> <span data-en="Please pre-order in good time or give us a quick call:">bitte rechtzeitig vorbestellen oder kurz anrufen:</span></p>
       %%GRUPPEN_TEL%%
       %%GRUPPEN_BAR%%
+      <p class="gutschein-hinweis"><span aria-hidden="true">🎁 </span><b data-en="Gift vouchers">Geschenkgutscheine</b> <span data-en="for birthdays, Christmas or as a thank-you – available at the counter in both shops.">zum Geburtstag, zu Weihnachten oder als Dankeschön – an der Theke in beiden Läden.</span></p>
     </aside>
   </div>
 </section>
@@ -2098,6 +2179,7 @@ SEITE = r"""<!doctype html>
         <label for="abhol-zeit" data-en="Time">Uhrzeit</label>
         <select id="abhol-zeit"></select>
         <p class="abhol-hinweis" id="abhol-hinweis" hidden></p>
+        <div class="zug-wahl" id="zug-wahl" hidden></div>
         <label for="abhol-name" data-en="Name for the order">Name für die Bestellung</label>
         <input id="abhol-name" type="text" autocomplete="given-name" placeholder="z. B. Michael" data-en-ph="e.g. Michael">
       </fieldset>
@@ -2145,12 +2227,38 @@ for _a in AKTIONEN:
         _tage_en += f" {_a['zeit_ab']}–{_a['zeit_bis']}"
     _laden = next((f" – nur in {s['name']}" for s in STANDORTE if s["id"] == _a.get("laden")), "")
     _laden_en = next((f" – {s['name']} only" for s in STANDORTE if s["id"] == _a.get("laden")), "")
-    HINWEISE.append({"text": f"Aktion: {_a['name']}{_tage} – bis {_bis}{_laden}",
-                     "en": f"Special offer: {_a['name']}{_tage_en} – until {_bis}{_laden_en}",
+    _m = _a.get("art") == "mittag"
+    HINWEISE.append({"text": f"{'' if _m else 'Aktion: '}{_a['name']}{_tage} – bis {_bis}{_laden}",
+                     "en": f"{'Lunch special' if _m else 'Special offer'}: {_a['name']}{_tage_en} – until {_bis}{_laden_en}",
                      "von": _a["von"], "bis": _a["bis"], "aktion": True})
-JS_AKTIONEN = json.dumps([{"n": a["name"], "von": a["von"], "bis": a["bis"], "tage": a.get("tage"), "laden": a.get("laden"),
+JS_AKTIONEN = json.dumps([{"n": a["name"], "m": 1 if a.get("art") == "mittag" else 0, "von": a["von"], "bis": a["bis"], "tage": a.get("tage"), "laden": a.get("laden"),
                            "za": ANP._min(a["zeit_ab"]) if a.get("zeit_ab") else None, "zb": ANP._min(a["zeit_bis"]) if a.get("zeit_bis") else None,
                            "p": {k: [int(x.replace(",", "")) for x in v] for k, v in a["preise"].items()}} for a in AKTIONEN], ensure_ascii=False)
+
+
+# Mittagstisch: Aktionen mit "art": "mittag" bekommen oben einen eigenen Kasten (sichtbar nur an ihren Tagen bis Ende der Uhrzeit)
+def mittag_html():
+    teile = []
+    for i, a in enumerate(AKTIONEN):
+        if a.get("art") != "mittag":
+            continue
+        nrs = [k for k in a["preise"] if k in GERICHT]
+        if not nrs:
+            continue
+        zeit = f'{ANP.uhr(ANP._min(a["zeit_ab"]))}–{ANP.uhr(ANP._min(a["zeit_bis"]))} Uhr' if a.get("zeit_ab") else ""
+        zeit_en = f'{a["zeit_ab"]}–{a["zeit_bis"]}' if a.get("zeit_ab") else ""
+        tage = ", ".join(ANP.KURZ[t] for t in a["tage"]) if a.get("tage") else ""
+        ort = next((s_["name"] for s_ in STANDORTE if s_["id"] == a.get("laden")), "")
+        unter = " · ".join(x for x in (tage, zeit, ("nur " + ort) if ort else "") if x)
+        unter_en = " · ".join(x for x in (", ".join(TAGE_EN[t][:3] for t in a["tage"]) if a.get("tage") else "", zeit_en, (ort + " only") if ort else "") if x)
+        teile.append(f'<section class="mittag" data-mittag="{i}" hidden aria-label="Mittagstisch">'
+                     f'<h3 class="beliebt-titel"><span aria-hidden="true">🍽 </span>{e(a["name"])}</h3>'
+                     f'<p class="mittag-zeit" data-en="{e(unter_en)}">{e(unter)}</p>'
+                     '<ul class="tipps">' + "".join(beliebt_karte(n) for n in nrs) + '</ul></section>')
+    return "".join(teile)
+
+
+MITTAG_HTML = mittag_html()
 
 
 # Verfügbarkeit: feste Regeln, die immer gelten (tagesaktuelle Änderungen: docs/status.json).
@@ -2290,7 +2398,7 @@ self.addEventListener('install',function(e){e.waitUntil(caches.open(V).then(func
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==V&&k.indexOf('saray-')===0;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
 self.addEventListener('fetch',function(e){
   var r=e.request,u=new URL(r.url);
-  if(r.method!=='GET'||u.origin!==location.origin||u.pathname.indexOf('/chef/')>-1||u.pathname.indexOf('/druck/')>-1)return;
+  if(r.method!=='GET'||u.origin!==location.origin||u.pathname.indexOf('/chef/')>-1||u.pathname.indexOf('/druck/')>-1||u.pathname.indexOf('/kueche/')>-1||u.pathname.indexOf('/tv/')>-1)return;
   var seite=r.mode==='navigate',schluessel=seite?'./':r;
   if(seite||/status\.json$/.test(u.pathname)){
     e.respondWith(fetch(r).then(function(res){if(res.ok){var k=res.clone();caches.open(V).then(function(c){c.put(schluessel,k);});}return res;})
@@ -2315,7 +2423,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             .replace("%%ADR%%", json.dumps({st["id"]: f'Saray Döner, {st["strasse"]}, {st["plz"]} {st["ort"]}' for st in STANDORTE}, ensure_ascii=False))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
-            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE))
+            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%WINTER%%", json.dumps(WINTER))
             .replace("%%SPRACHEN%%", json.dumps(SP.LISTE, ensure_ascii=False))
             .replace("%%DICTS%%", json.dumps(SP.woerterbuecher(), ensure_ascii=False) if einzeln else "{}")
             .replace("%%BEILAGEN%%", json.dumps(BEILAGEN)).replace("%%BEILAGE_RABATT%%", str(BEILAGE_RABATT))
@@ -2334,7 +2442,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%SUCH_ICON%%": SUCH_ICON,
         "%%NAV%%": NAV,
         "%%KARTE%%": KARTE,
-        "%%BELIEBT%%": BELIEBT_HTML,
+        "%%BELIEBT%%": MITTAG_HTML + BELIEBT_HTML,
         "%%ORTE%%": ORTE,
         "%%GRUPPEN_TEL%%": "".join(f'<a class="knopf knopf-linie" href="tel:{st["tel_href"]}">{TEL_ICON}{e(st["name"])}: {e(st["tel"])}</a>' for st in STANDORTE),
         "%%GRUPPEN_BAR%%": ('<p class="bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
@@ -2416,9 +2524,32 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
     (aus / "status.json").write_text(status or '{\n  "regeln": []\n}\n')
     if CNAME:
         (aus / "CNAME").write_text(CNAME + "\n")
-    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\n"))
+    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\nDisallow: /kueche/\nDisallow: /tv/\n"))
     import chef_app
     chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS)
+    # Bildschirm im Laden (tv/) und Küchenansicht (kueche/)
+    import laden_seiten
+    tv_gruppen = [{"id": g["id"], "titel": g["titel"], "abschnitte": [{
+        "titel": ab["titel"], "groessen": ab.get("groessen") or [],
+        "gerichte": [{"k": x[0] or x[1], "nr": anz(x[0]) if x[0] else "", "name": x[1], "desc": x[2].rstrip(":").rstrip(),
+                      "p": [int(p.replace(",", "")) for p in x[3]]} for x in ab["gerichte"]]} for ab in g["abschnitte"]]} for g in GRUPPEN]
+    tv_index = {x["k"]: x for g in tv_gruppen for ab in g["abschnitte"] for x in ab["gerichte"]}
+    (aus / "img" / "gerichte").mkdir(parents=True, exist_ok=True)
+    for nr in FOTOS:
+        if (FOTO_CACHE / f"nr-{nr}-800.webp").exists():
+            shutil.copyfile(FOTO_CACHE / f"nr-{nr}-800.webp", aus / "img" / "gerichte" / f"nr-{nr}-800.webp")
+    tv = {
+        "gruppen": tv_gruppen, "index": tv_index,
+        "empf": [n for n in EMPFEHLUNG if n in GERICHT and n not in NUR_DIAET],
+        "fotos": {nr: f"../img/gerichte/nr-{nr}-800.webp" for nr in FOTOS},
+        "aktionen": json.loads(JS_AKTIONEN), "sperr": SPERRGRUPPEN, "regeln": VERFUEGBARKEIT,
+        "beilagen": sorted({b for v in BEILAGEN.values() for b in v}), "rabatt": BEILAGE_RABATT,
+        "laeden": {st["id"]: {"name": st["name"], "zeiten": json.loads(JS_ZEITEN)[st["id"]], "sonder": json.loads(JS_SONDER)[st["id"]],
+                              "warte": WARTE.get(st["id"])} for st in STANDORTE},
+    }
+    version = hashlib.sha1((ohne_stand + css + js + json.dumps(tv, sort_keys=True)).encode()).hexdigest()[:10]
+    tv["version"] = version
+    laden_seiten.schreiben(aus, tv, {st["id"]: st["name"] for st in STANDORTE}, DOMAIN if not VORSCHAU else f"https://{CNAME}/", version)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())
     for w in WARNUNGEN:
         print("WARNUNG:", w)

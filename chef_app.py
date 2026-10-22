@@ -9,6 +9,7 @@ Zugang: ein GitHub-Token (fine-grained, nur dieses Repo, „Contents: Read and w
 wird nur auf dem Gerät gespeichert (localStorage) und sofort aus der Adresse entfernt.
 """
 import json
+import pathlib
 
 SEITE = r"""<!doctype html>
 <html lang="de">
@@ -34,6 +35,7 @@ header{position:sticky;top:0;z-index:20;background:var(--tinte);color:#fff;paddi
   display:flex;align-items:center;gap:10px}
 header img{width:38px;height:38px}
 header h1{margin:0;font-size:1.15rem}
+.sprache-knopf{min-width:48px;min-height:40px;border-radius:999px;border:2px solid var(--gelb);background:none;color:var(--gelb);font-weight:700;cursor:pointer}
 header small{display:block;opacity:.75;font-size:.8rem}
 main{max-width:720px;margin:0 auto;padding:14px 14px 0}
 h2{font-size:1.3rem;margin:18px 4px 10px}
@@ -64,6 +66,23 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .karte > .reihe{margin-top:12px}
 .hinweis{font-size:.9rem;opacity:.8;margin:6px 4px}
 .fehler{color:var(--paprika);font-weight:700}
+.ok{color:var(--gruen);font-weight:700}
+#gs-druck{display:none}
+@media print{
+  body.gs-drucken>*:not(#gs-druck){display:none!important}
+  body.gs-drucken{padding:0;background:#fff}
+  body.gs-drucken #gs-druck{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:148mm;width:210mm}
+  #gs-druck .gs{position:relative;overflow:hidden;border:1px dashed #999;padding:12mm 10mm;background:#FFD21F;color:#3A1531;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2mm;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
+  #gs-druck img{width:38mm;height:auto}
+  #gs-druck p{margin:0}
+  #gs-druck .gs-titel{font:700 15pt Georgia,serif;text-transform:uppercase;letter-spacing:.08em}
+  #gs-druck .gs-wert{font:700 44pt Georgia,serif;line-height:1}
+  #gs-druck .gs-ort{font-weight:700;font-size:11pt}
+  #gs-druck .gs-nr{font:700 12pt ui-monospace,Menlo,monospace;background:#fff;padding:1.5mm 3mm;border-radius:2mm;margin-top:2mm}
+  #gs-druck .gs-klein{font-size:8pt;max-width:70mm}
+  @page{size:A4;margin:0}
+}
 .liste-gericht{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--linie);
   padding:12px 6px;min-height:56px;cursor:pointer}
 .liste-gericht .nr{width:42px;flex:none;font-weight:700;opacity:.7}
@@ -119,7 +138,7 @@ a.knopf{color:inherit}
 </style>
 </head>
 <body>
-<header><img src="../img/saray-koch-kopf.svg" alt=""><div><h1>Saray Chef</h1><small id="stand">Lädt …</small></div></header>
+<header><img src="../img/saray-koch-kopf.svg" alt=""><div style="flex:1"><h1>Saray Chef</h1><small id="stand">Lädt …</small></div><button class="sprache-knopf" id="sprache" type="button" aria-label="Sprache / Dil">TR</button></header>
 <main id="app"></main>
 <div class="speichern" id="speichern" hidden><p id="speichern-text"></p>
   <button class="knopf klein" id="verwerfen">Verwerfen</button><button class="knopf voll" id="speichern-knopf">Speichern</button></div>
@@ -136,6 +155,38 @@ a.knopf{color:inherit}
 var REPO=%%REPO%%, DATEI='daten/anpassungen.json', API='https://api.github.com/repos/'+REPO;
 var TK='saray-chef-token', STD=null, ANP={}, ALT='{}', SHA=null, TAB='heute', LADEN='alle', SUCHE='';
 var app=document.getElementById('app');
+/* Sprache der Chef-App: Deutsch oder Türkisch. Übersetzt wird die fertige Anzeige (Texte, Platzhalter, Beschriftungen);
+   gespeicherte Daten, Gerichtsnamen und alles, was auf der Website oder dem Gutschein erscheint, bleiben deutsch. */
+var UE=%%CHEF_TR%%,UE_SP='';try{UE_SP=localStorage.getItem('saray-chef-sprache')||'';}catch(e){}
+if(UE_SP!=='tr'&&UE_SP!=='de')UE_SP=/^tr/i.test(navigator.language||'')?'tr':'de';
+var UE_FR=Object.keys(UE).filter(function(k){return /^[\s)“,.·(]|[\s„(,]$/.test(k)&&k.trim().length>=2;}).sort(function(a,b){return b.length-a.length;});
+function ue(t){
+  if(UE_SP!=='tr'||!t)return t;var k=t.trim();if(!k)return t;
+  if(UE[k]!=null)return t.replace(k,UE[k]);
+  var z=[],nk=k.replace(/\d+(?:[.,:]\d+)*/g,function(m){z.push(m);return '{n}';});
+  if(z.length&&UE[nk]!=null){var i=0;return t.replace(k,UE[nk].replace(/\{n\}/g,function(){return z[i++];}));}
+  var tg=/^(Mo|Di|Mi|Do|Fr|Sa|So)([ ,])(.*)$/.exec(k);   /* „Mi, 18.11. Feiertag“, „Mo von“ */
+  if(tg&&UE[tg[1]])return t.replace(k,UE[tg[1]]+tg[2]+ue(tg[3]));
+  var pd=/^(.*\d\.\s)(.+)$/.exec(k);if(pd&&UE[pd[2]]!=null)return t.replace(k,pd[1]+UE[pd[2]]);
+  for(var i2=0;i2<UE_FR.length;i2++){var f=UE_FR[i2];if(/\s$/.test(f)&&k.indexOf(f)===0&&UE[k.slice(f.length)]!=null)return t.replace(k,UE[f]+UE[k.slice(f.length)]);}
+  var r=t;UE_FR.forEach(function(f){if(r.indexOf(f)>-1)r=r.split(f).join(UE[f]);});return r;
+}
+function ueAus(n){for(var x=n.nodeType===1?n:n.parentNode;x&&x.nodeType===1;x=x.parentNode){var tn=x.tagName;
+  if(tn==='TEXTAREA'||tn==='SCRIPT'||tn==='STYLE'||x.id==='gs-druck'||x.hasAttribute('data-kein-ue'))return true;}return false;}
+function ueKnoten(n){
+  if(n.nodeType===3){if(n._ue===n.data||ueAus(n))return;var t=ue(n.data);n._ue=t;if(t!==n.data)n.data=t;return;}
+  if(n.nodeType!==1||ueAus(n))return;
+  ['placeholder','aria-label','title'].forEach(function(a){var v=n.getAttribute(a);if(v==null)return;n._uea=n._uea||{};if(n._uea[a]===v)return;var t=ue(v);n._uea[a]=t;if(t!==v)n.setAttribute(a,t);});
+  for(var c=n.firstChild;c;c=c.nextSibling)ueKnoten(c);
+}
+if(UE_SP==='tr'){document.documentElement.lang='tr';
+  new MutationObserver(function(ms){ms.forEach(function(m){if(m.type==='characterData')ueKnoten(m.target);else if(m.type==='attributes')ueKnoten(m.target);
+    else m.addedNodes.forEach(ueKnoten);});}).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','title']});
+  ueKnoten(document.body);}
+(function(){var b=document.getElementById('sprache');b.textContent=UE_SP==='tr'?'DE':'TR';
+  b.setAttribute('title',UE_SP==='tr'?'Deutsch':'Türkçe');
+  b.addEventListener('click',function(){if(STD&&geaendert()){status('Bitte zuerst speichern oder verwerfen.','rot',3000);return;}
+    try{localStorage.setItem('saray-chef-sprache',UE_SP==='tr'?'de':'tr');}catch(e){}location.reload();});})();
 
 /* ---------- Hilfen ---------- */
 function el(tag,attrs,kinder){var e=document.createElement(tag);attrs=attrs||{};
@@ -196,7 +247,8 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
   ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
-  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
+  if((a.winter||'')!==(b.winter||''))n++;
+  ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok','gutscheine'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
 function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
   document.getElementById('speichern-text').textContent=(n===1?'1 Änderung':n+' Änderungen')+' – noch nicht gespeichert';}
@@ -307,7 +359,7 @@ function hinweisKarte(){ /* Hinweis-Band */
 }
 function zutatenKarte(){ /* einzelne Zutaten ausschalten – auf der Seite dann nicht wählbar */
   var t=heute();app.appendChild(el('h2',{text:'Zutaten'}));
-  var k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Antippen = aus'+(LADEN==='alle'?' (beide Läden)':' in '+(LADEN==='freital'?'Freital':'Altenberg'))+', bis Sie es wieder einschalten. Ausgeschaltetes kann auf der Seite nicht gewählt werden. Pommes/Reis aus: Gerichte gibt es ohne diese Beilage, je 0,50 € günstiger. Noch einmal antippen = wieder da.'})]);
+  var k=el('div',{class:'karte'},[el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Antippen = aus '+(LADEN==='alle'?'(beide Läden)':'in '+(LADEN==='freital'?'Freital':'Altenberg'))+', bis Sie es wieder einschalten. Ausgeschaltetes kann auf der Seite nicht gewählt werden. Pommes/Reis aus: Gerichte gibt es ohne diese Beilage, je 0,50 € günstiger. Noch einmal antippen = wieder da.'})]);
   STD.zutaten.forEach(function(gr){
     k.appendChild(el('p',{class:'abschnitt',style:'margin:10px 0 6px',text:gr[0]}));
     k.appendChild(el('div',{class:'reihe'},gr[1].map(function(z){
@@ -336,14 +388,15 @@ function slug(name,von){ /* gleiche Regel wie druck.py */
 function aktionText(a){var t=a.name+' · '+datumDE(a.von)+'–'+datumDE(a.bis);
   if(a.tage&&a.tage.length)t+=' · '+a.tage.map(function(d){return TAGE[d];}).join(', ');
   if(a.zeit_ab)t+=' · '+a.zeit_ab+'–'+a.zeit_bis+' Uhr';
-  if(a.laden)t+=' · nur '+(a.laden==='freital'?'Freital':'Altenberg');return t;}
+  if(a.laden)t+=' · nur '+(a.laden==='freital'?'Freital':'Altenberg');if(a.art==='mittag')t='🍽 '+t;return t;}
 function karteTab(){
   app.appendChild(el('h2',{text:'Sonderaktionen'}));
   var ak=el('div',{class:'karte'}),t=heute();
   (ANP.aktionen||[]).forEach(function(a,i){if(a.bis<t)return;
     ak.appendChild(el('p',{},[el('button',{class:'chip',style:'cursor:pointer;padding-right:12px','data-aktion':i,onclick:function(){aktionBearbeiten(i);}},[aktionText(a)])]));});
   if(!(ANP.aktionen||[]).some(function(a){return a.bis>=t;}))ak.appendChild(el('p',{class:'hinweis',style:'margin:0 0 8px',text:'Z. B. „Döner 5 €, Dürüm 6 €“ für eine Woche oder jeden Mittwoch. Die Seite zeigt den alten Preis durchgestrichen und rechnet mit dem Aktionspreis.'}));
-  ak.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'+ Neue Aktion',onclick:function(){aktionBearbeiten(null);}})]));
+  ak.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'+ Neue Aktion',onclick:function(){aktionBearbeiten(null);}}),
+    el('button',{class:'knopf',text:'+ Mittagstisch',onclick:function(){aktionBearbeiten(null,{name:'Mittagstisch',art:'mittag',von:heute(),bis:heute(27),tage:[1,2,3,4,5],zeit_ab:'11:00',zeit_bis:'14:00',preise:{}});}})]));
   app.appendChild(ak);
   app.appendChild(el('h2',{text:'Speisekarte'}));
   var such=el('input',{type:'search',placeholder:'Name oder Nummer suchen',value:SUCHE,'aria-label':'Suchen',oninput:function(){SUCHE=such.value;liste();}});
@@ -446,8 +499,8 @@ function fotoBereich(nr,name){
 fotoBereich.neu={};
 
 var TAGE=['So','Mo','Di','Mi','Do','Fr','Sa'],WOCHE=[1,2,3,4,5,6,0];
-function aktionBearbeiten(index){
-  var alt=index==null?{name:'',von:heute(),bis:heute(6),preise:{}}:kopie(ANP.aktionen[index]),a=kopie(alt);
+function aktionBearbeiten(index,vorlage){
+  var alt=index==null?(vorlage||{name:'',von:heute(),bis:heute(6),preise:{}}):kopie(ANP.aktionen[index]),a=kopie(alt);
   var alle=gerichte().filter(function(x){return !x.geloescht;}),nach={};alle.forEach(function(x){nach[schl(x)]=x;});
   var b=el('div',{class:'blatt'}),inhalt=el('div');b.appendChild(inhalt);document.body.appendChild(b);
   var name=el('input',{type:'text',id:'a-name',maxlength:'60',value:a.name,placeholder:'z. B. Döner 5 €, Dürüm 6 €'});
@@ -463,6 +516,9 @@ function aktionBearbeiten(index){
     tageBox.appendChild(el('button',{'aria-pressed':String(!ts.length),text:'Jeden Tag',onclick:function(){delete a.tage;tageZeichnen();}}));
     WOCHE.forEach(function(d){tageBox.appendChild(el('button',{'aria-pressed':String(ts.indexOf(d)>-1),text:TAGE[d],onclick:function(){
       var n=(a.tage||[]).slice(),i=n.indexOf(d);if(i>-1)n.splice(i,1);else n.push(d);if(n.length)a.tage=n;else delete a.tage;tageZeichnen();}}));});}
+  var artBox=el('div',{class:'wahl'});
+  function artZeichnen(){artBox.textContent='';[['','Als Aktion'],['mittag','Als Mittagstisch (eigener Kasten oben)']].forEach(function(o){
+    artBox.appendChild(el('button',{'aria-pressed':String((a.art||'')===o[0]),text:o[1],onclick:function(){if(o[0])a.art=o[0];else delete a.art;artZeichnen();}}));});}
   function ladenZeichnen(){ladenBox.textContent='';[['','Beide'],['freital','Freital'],['altenberg','Altenberg']].forEach(function(o){
     ladenBox.appendChild(el('button',{'aria-pressed':String((a.laden||'')===o[0]),text:o[1],onclick:function(){if(o[0])a.laden=o[0];else delete a.laden;ladenZeichnen();}}));});}
   function listeZeichnen(){liste.textContent='';Object.keys(a.preise).forEach(function(k){var x=nach[k];if(!x)return;
@@ -486,11 +542,11 @@ function aktionBearbeiten(index){
   var knoepfe=[el('button',{class:'knopf',text:'Abbrechen',onclick:function(){b.remove();}})];
   if(index!=null)knoepfe.push(el('button',{class:'knopf rot',text:'Aktion löschen',onclick:function(){ANP.aktionen.splice(index,1);b.remove();zeichnen();}}));
   knoepfe.push(el('button',{class:'knopf voll',text:'Übernehmen',onclick:speichernA}));
-  [el('h3',{text:index==null?'Neue Sonderaktion':'Sonderaktion ändern'}),el('label',{for:'a-name',text:'Name (steht oben auf der Seite)'}),name,
+  [el('h3',{text:index==null?(a.art==='mittag'?'Neuer Mittagstisch':'Neue Sonderaktion'):'Sonderaktion ändern'}),el('label',{for:'a-name',text:'Name (steht oben auf der Seite)'}),name,
    el('div',{class:'reihe'},[el('div',{style:'flex:1'},[el('label',{for:'a-von',text:'von'}),von]),el('div',{style:'flex:1'},[el('label',{for:'a-bis',text:'bis'}),bis])]),
-   el('label',{text:'An welchen Tagen?'}),tageBox,el('label',{text:'Uhrzeit (z. B. Mittagsangebot)'}),zeitBox,zeitReihe,el('label',{text:'Welcher Laden?'}),ladenBox,
+   el('label',{text:'An welchen Tagen?'}),tageBox,el('label',{text:'Uhrzeit (z. B. Mittagsangebot)'}),zeitBox,zeitReihe,el('label',{text:'Welcher Laden?'}),ladenBox,el('label',{text:'Anzeige auf der Seite'}),artBox,
    el('label',{text:'Gerichte und Aktionspreise'}),liste,such,treffer,fehler,el('div',{class:'reihe'},knoepfe)].forEach(function(n){inhalt.appendChild(n);});
-  tageZeichnen();ladenZeichnen();zeitZeichnen();listeZeichnen();name.focus();
+  tageZeichnen();ladenZeichnen();zeitZeichnen();artZeichnen();listeZeichnen();name.focus();
 }
 function zeitenTab(){
   app.appendChild(el('h2',{text:'Öffnungszeiten'}));
@@ -516,6 +572,7 @@ function zeitenTab(){
   });
   app.appendChild(el('p',{class:'hinweis',text:'Gelb markierte Tage weichen vom Standard ab.'}));
   sonderKarte();
+  winterKarte();
 }
 /* Feiertage in Sachsen (plus Heiligabend und Silvester) für die nächsten Tage */
 function iso(d){return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);}
@@ -654,12 +711,83 @@ function googleKarte(){ /* Angaben fürs Google-Unternehmensprofil – zum Abgle
   d.appendChild(el('p',{class:'hinweis',text:'Außerdem: Kategorie „Döner-Restaurant“, Fotos vom Laden und von Gerichten hochladen, auf Bewertungen antworten. Halal nur angeben, wenn es bestätigt ist.'}));
   app.appendChild(d);
 }
+function winterKarte(){
+  var k=el('div',{class:'karte'},[el('h3',{text:'❄️ Wintersaison Altenberg'}),
+    el('p',{class:'hinweis',text:'Kasten oben auf der Seite: „Nach der Piste – vorbestellen und warm abholen“, mit Knopf für Skikurse und Gruppen. Automatisch vom 1. Dezember bis 15. März.'})]),w=el('div',{class:'wahl'});
+  [['auto','Automatisch'],['an','Jetzt an'],['aus','Aus']].forEach(function(o){w.appendChild(el('button',{'aria-pressed':String((ANP.winter||'auto')===o[0]),'data-winter':o[0],text:o[1],
+    onclick:function(){if(o[0]==='auto')delete ANP.winter;else ANP.winter=o[0];zeichnen();}}));});
+  k.appendChild(w);app.appendChild(k);
+}
+/* ---------- Bildschirm im Laden und Küchenansicht ---------- */
+function ladenSeitenKarte(){
+  var k=el('div',{class:'karte'},[el('h3',{text:'📺 Bildschirm im Laden'}),
+    el('p',{class:'hinweis',text:'Speisekarte für einen Fernseher: wechselt alle 14 Sekunden die Seite, zeigt Aktionen, Mittagstisch und „heute aus“ von selbst. Adresse im Browser des Fernsehers (z. B. Fire-TV-Stick, App „Silk“) als Startseite speichern.'}),
+    el('div',{class:'reihe'},STD.laeden.map(function(l){return el('a',{class:'knopf',href:'../tv/?laden='+l.id,target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Bildschirm '+l.name});}))]);
+  app.appendChild(k);
+  app.appendChild(el('div',{class:'karte'},[el('h3',{text:'🧾 Küchenansicht'}),
+    el('p',{class:'hinweis',text:'In jeder WhatsApp-Bestellung steht unten ein Link „Für die Küche“. Antippen öffnet die Bestellung groß zum Abhaken, sortiert nach Abholzeit, mit Bon-Druck. Gespeichert wird nur auf dem Gerät im Laden.'}),
+    el('div',{class:'reihe'},[el('a',{class:'knopf',href:'../kueche/',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Küchenansicht öffnen'})])]));
+}
+/* ---------- Geschenkgutscheine: Nummer + Code; im Repo steht nur ein Prüfwert (SHA-256), nie der Code ---------- */
+var GS_ZEICHEN='ACDEFGHJKLMNPQRTUVWXYZ2346789';
+function gsCode(){var a=new Uint32Array(6),c='';crypto.getRandomValues(a);for(var i=0;i<6;i++)c+=GS_ZEICHEN.charAt(a[i]%GS_ZEICHEN.length);return c;}
+function gsHash(nr,code){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(nr.toUpperCase()+'|'+code.toUpperCase().replace(/[^A-Z0-9]/g,''))).then(function(b){
+  return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});}
+function gsDatum(iso){var p=iso.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
+function gsEuro(c){return (c/100).toFixed(2).replace('.',',').replace(',00','')+' €';}
+function gsDrucken(liste){
+  var alt=document.getElementById('gs-druck');if(alt)alt.remove();
+  var d=el('div',{id:'gs-druck',lang:'de'});
+  liste.forEach(function(g){var ort=g.laden?'Saray Döner '+(g.laden==='freital'?'Freital':'Altenberg'):'Saray Döner Freital und Altenberg';
+    d.appendChild(el('div',{class:'gs'},[el('img',{src:'../img/saray-koch.svg',alt:''}),el('p',{class:'gs-titel',text:'Geschenkgutschein'}),el('p',{class:'gs-wert',text:gsEuro(g.wert)}),
+      el('p',{class:'gs-ort',text:ort}),el('p',{class:'gs-nr',text:'Nr. '+g.nr+' · Code '+g.code}),
+      el('p',{class:'gs-klein',text:'Gültig bis '+gsDatum(g.bis)+'. Einlösbar bei Abholung, nicht in bar auszahlbar. Ausgestellt am '+gsDatum(g.am)+'.'})]));});
+  document.body.appendChild(d);document.body.classList.add('gs-drucken');
+  function weg(){document.body.classList.remove('gs-drucken');window.removeEventListener('afterprint',weg);}
+  window.addEventListener('afterprint',weg);setTimeout(function(){window.print();},300);
+}
+function gutscheinKarte(){
+  var gs=ANP.gutscheine||[],wert=2000,anzahl=4,laden='',k=el('div',{class:'karte'});
+  var offen=gs.filter(function(g){return !g.eingeloest&&g.bis>=heute();}),summe=offen.reduce(function(s,g){return s+g.wert;},0);
+  k.appendChild(el('h3',{text:'🎁 Geschenkgutscheine'}));
+  k.appendChild(el('p',{class:'hinweis',text:'Gutscheine mit Nummer und Code drucken (4 pro A4-Blatt). Bezahlt wird bar an der Theke. Danach unten speichern, sonst gelten sie nicht. Ausgegeben: '+gs.length+' · offen: '+offen.length+' ('+gsEuro(summe)+')'}));
+  var wb=el('div',{class:'wahl'}),ab=el('div',{class:'wahl'}),lb=el('div',{class:'wahl'});
+  function z(){wb.textContent='';ab.textContent='';lb.textContent='';
+    [1000,1500,2000,2500,5000].forEach(function(w){wb.appendChild(el('button',{'aria-pressed':String(wert===w),'data-gs-wert':w,text:gsEuro(w),onclick:function(){wert=w;z();}}));});
+    [1,2,4,8].forEach(function(n){ab.appendChild(el('button',{'aria-pressed':String(anzahl===n),'data-gs-anzahl':n,text:n+' Stück',onclick:function(){anzahl=n;z();}}));});
+    [['','Beide Läden'],['freital','Freital'],['altenberg','Altenberg']].forEach(function(o){lb.appendChild(el('button',{'aria-pressed':String(laden===o[0]),text:o[1],onclick:function(){laden=o[0];z();}}));});}
+  z();
+  k.appendChild(el('label',{text:'Wert'}));k.appendChild(wb);k.appendChild(el('label',{text:'Anzahl'}));k.appendChild(ab);k.appendChild(el('label',{text:'Gültig in'}));k.appendChild(lb);
+  k.appendChild(el('div',{class:'reihe',style:'margin-top:12px'},[el('button',{class:'knopf voll',id:'gs-erstellen',text:'Erstellen und drucken',onclick:function(){
+    var j=heute().slice(2,4),max=0;(ANP.gutscheine||[]).forEach(function(g){var m=/^G(\d\d)-(\d+)$/.exec(g.nr);if(m&&m[1]===j)max=Math.max(max,+m[2]);});
+    var neu=[],bis=(+heute().slice(0,4)+3)+'-12-31';
+    for(var i=1;i<=anzahl;i++)neu.push({nr:'G'+j+'-'+('00'+(max+i)).slice(-3),code:gsCode(),wert:wert,am:heute(),bis:bis,laden:laden});
+    Promise.all(neu.map(function(g){return gsHash(g.nr,g.code);})).then(function(h){
+      ANP.gutscheine=(ANP.gutscheine||[]).concat(neu.map(function(g,i){var x={nr:g.nr,h:h[i],wert:g.wert,am:g.am,bis:g.bis};if(g.laden)x.laden=g.laden;return x;}));
+      gsDrucken(neu);zeichnen();status('Gutscheine erstellt – jetzt speichern!','ok',5000);});}})]));
+  /* Einlösen */
+  var nr=el('input',{type:'text',id:'gs-nr',placeholder:'Nr., z. B. G26-001',autocapitalize:'characters'}),code=el('input',{type:'text',id:'gs-code',placeholder:'Code',autocapitalize:'characters'}),erg=el('div',{id:'gs-ergebnis'});
+  k.appendChild(el('label',{for:'gs-nr',text:'Gutschein einlösen'}));
+  k.appendChild(el('div',{class:'reihe'},[el('div',{style:'flex:1 1 140px'},[nr]),el('div',{style:'flex:1 1 140px'},[code]),el('button',{class:'knopf',id:'gs-pruefen',text:'Prüfen',onclick:function(){
+    var n=nr.value.trim().toUpperCase(),g=(ANP.gutscheine||[]).filter(function(x){return x.nr===n;})[0];erg.textContent='';
+    if(!g){erg.appendChild(el('p',{class:'fehler',text:'✗ Diese Nummer gibt es nicht.'}));return;}
+    gsHash(n,code.value).then(function(h){
+      if(h!==g.h){erg.appendChild(el('p',{class:'fehler',text:'✗ Code passt nicht zur Nummer.'}));return;}
+      if(g.eingeloest){erg.appendChild(el('p',{class:'fehler',text:'✗ Schon eingelöst am '+gsDatum(g.eingeloest)+'.'}));return;}
+      if(g.bis<heute()){erg.appendChild(el('p',{class:'fehler',text:'✗ Abgelaufen am '+gsDatum(g.bis)+'.'}));return;}
+      erg.appendChild(el('p',{class:'ok',text:'✓ Gültig: '+gsEuro(g.wert)+(g.laden?' (nur '+(g.laden==='freital'?'Freital':'Altenberg')+')':'')+', bis '+gsDatum(g.bis)}));
+      erg.appendChild(el('button',{class:'knopf voll',id:'gs-einloesen',text:'Als eingelöst markieren',onclick:function(){g.eingeloest=heute();zeichnen();status('Eingelöst – bitte speichern.','ok',4000);}}));});}})]));
+  k.appendChild(erg);
+  app.appendChild(k);
+}
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
   checklisteKarte();
   hinweisKarte();
   zahlenKarte();
   googleKarte();
+  gutscheinKarte();
+  ladenSeitenKarte();
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
   /* Preis-Stände */
@@ -693,10 +821,10 @@ function mehrTab(){
   app.appendChild(el('div',{class:'karte gefahr'},[
     el('p',{class:'hinweis',style:'margin:0 0 6px',text:'Nur benutzen, wenn Sie sicher sind.'}),
     el('h3',{text:'Standard wiederherstellen'}),
-    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“ bleibt erhalten.'}),
+    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“ und die Gutscheine bleiben erhalten.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot voll',text:'Alles auf Standard zurücksetzen',onclick:function(){
       frage('Wirklich alle Änderungen löschen und den Standard wiederherstellen?','Ja, zurücksetzen').then(function(j){if(!j)return;
-        var cl=ANP.checkliste;ANP=cl?{checkliste:cl}:{};speichern('Chef-App: Standard wiederhergestellt');});}})]),
+        var cl=ANP.checkliste,gs=ANP.gutscheine;ANP={};if(cl)ANP.checkliste=cl;if(gs)ANP.gutscheine=gs;speichern('Chef-App: Standard wiederhergestellt');});}})]),
     el('h3',{style:'margin-top:18px',text:'Zugang auf diesem Gerät'}),
     el('p',{class:'hinweis',text:'Der Zugang ist nur auf diesem Gerät gespeichert. Nach dem Abmelden braucht es einen neuen Zugangslink von Michael.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot',text:'Auf diesem Gerät abmelden',onclick:function(){frage('Zugang auf diesem Gerät löschen?','Abmelden').then(function(j){if(j){try{localStorage.removeItem(TK);}catch(e){}location.reload();}});}})])]));
@@ -792,19 +920,18 @@ CHECKLISTE = [
         ["wa-wer", "Wer bestätigt die Bestellungen?", "Wer schaut während der Öffnungszeiten aufs Handy und antwortet?", 1],
         ["impressum", "Impressum Altenberg (Ahmet)", "Anschrift (Bahnhof 3 oder Dresdner Str. 23?), Firmenform, USt-IdNr. (falls vorhanden), E-Mail. Mehr als 10 Beschäftigte? Dann Hinweis zur Verbraucherschlichtung (§ 36 VSBG) nötig.", 1],
         ["impressum-freital", "Impressum Freital (Khan)", "Vollständiger Name, Anschrift, E-Mail, Firmenform, USt-IdNr. (falls vorhanden), Beschäftigtenzahl (§ 36 VSBG).", 1],
-        ["betreiber", "Wer betreibt die Website?", "Beide gemeinsam (dann Vereinbarung als gemeinsam Verantwortliche, Art. 26 DSGVO) oder jeder für seinen Laden? Wer erteilt Michael den Auftrag und bezahlt?", 1],
+        ["betreiber", "Wer betreibt die Website?", "Beide gemeinsam (dann Vereinbarung als gemeinsam Verantwortliche, Art. 26 DSGVO) oder jeder für seinen Laden?", 1],
         ["uebersetzungen", "Übersetzungen gegenlesen lassen", "Tschechisch, Türkisch, Russisch und Arabisch sind maschinennah übersetzt. Je eine Person mit der Muttersprache kurz drüberschauen lassen (Seite → Sprache wählen).", 0],
         ["allergene", "Allergene ergänzen und bestätigen", "Neu: h = Fisch (Nr. 71, 87, 97, 136, 154) und i = Ei in der Soße. Es fehlen noch Angaben für Extra-Portion, Fladenbrot und die Milchgetränke (Kaffee mit Milch, Kakao).", 1],
         ["goatcounter-av", "Besucherzählung: Auftragsverarbeitung", "Mit GoatCounter einen Vertrag zur Auftragsverarbeitung klären (oder Zählung abschalten).", 0],
         ["zeiten-altenberg", "Öffnungszeiten Altenberg samstags", "Ab 10 oder ab 11 Uhr? Google zeigt 11 Uhr.", 0],
         ["feiertage", "Feiertage", "Freital 11–22 Uhr, Altenberg? Reformationstag 31.10., Buß- und Bettag 18.11.", 0],
         ["preise", "Preise der Karte", "Gilt die Karte vom 01.02.2024 noch? In beiden Läden gleich?", 0],
-        ["datenschutz", "Datenschutzerklärung", "Entwurf steht – wer prüft sie?", 0],
+        ["datenschutz", "Datenschutzerklärung vom Anwalt prüfen lassen", "Entwurf steht. Vor dem Freischalten von einem Anwalt prüfen lassen – mit Impressum und gemeinsamer Verantwortung beider Inhaber.", 1],
         ["logo", "Echtes Logo", "Original-Logo von Saray Döner als Datei (am besten SVG oder PDF, sonst großes PNG) – auch für Flyer und Aufsteller", 1],
         ["maskottchen", "Original-Maskottchen", "Den echten Saray-Koch als Datei; ersetzt die nachgezeichnete Figur auf Seite, App-Symbol und Druck", 1],
     ]],
     ["Chef-App und Abläufe", [
-        ["chef-wer", "Wer bedient die Chef-App, auf welchen Handys?", "Pro Person ein eigener Zugang.", 0],
         ["einweisung", "Einweisung", "Heute aus, Zutaten, Wartezeit, besondere Tage, Aktionen, Hinweis, Drucken, Rückgängig", 0],
         ["gruppen-vorlauf", "Größere Bestellungen", "Ab wie vielen Portionen wie viel Vorlauf? Zum Beispiel „ab 10 Portionen am Vortag bestellen“. Kommt auf die Seite und den Gruppen-Flyer.", 0],
         ["vorbestellung", "Vorbestellung", "Bis 14 Tage im Voraus, frühestens 20 Minuten nach der Bestellung – passt das?", 0],
@@ -812,6 +939,10 @@ CHECKLISTE = [
         ["zahlung", "Nur Barzahlung", "Kommt irgendwann Kartenzahlung dazu?", 0],
         ["aktion", "Erste Sonderaktion", "Zum Beispiel Mittagsangebot oder „Döner 5 €“", 0],
         ["druck", "Flyer und Aufsteller", "Probedruck ansehen, Anzahl, selbst drucken oder Druckerei?", 0],
+        ["bildschirm", "Bildschirm im Laden", "Fernseher mit HDMI und Fire-TV-Stick (ca. 40 €), Adresse unter Mehr → Bildschirm im Laden als Startseite einstellen.", 0],
+        ["kueche", "Küchenansicht", "Auf welchem Gerät im Laden öffnen wir die Bestellungen? Bondrucker gewünscht (ca. 40 €)?", 0],
+        ["gutscheine", "Geschenkgutscheine", "Welche Werte? Restbetrag als neuer Gutschein? Gültig 3 Jahre bis Jahresende (gesetzlich).", 0],
+        ["fahrplan", "Zugzeiten Altenberg", "Die Abfahrten gelten bis 12.12.2026. Danach trägt Michael den neuen Fahrplan ein.", 0],
     ]],
     ["Google und Fotos", [
         ["google", "Google-Unternehmensprofil", "Verwaltungszugriff, Link zur Seite, Zeiten angleichen, Barzahlung eintragen", 0],
@@ -851,7 +982,8 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="",
     }
     (ordner / "standard.json").write_text(json.dumps(standard, ensure_ascii=False) + "\n", encoding="utf-8")
     (ordner / "index.html").write_text(SEITE.replace("%%REPO%%", json.dumps(repo))
-                                        .replace("%%CHECKLISTE%%", json.dumps(CHECKLISTE, ensure_ascii=False)), encoding="utf-8")
+                                        .replace("%%CHECKLISTE%%", json.dumps(CHECKLISTE, ensure_ascii=False))
+                                        .replace("%%CHEF_TR%%", (pathlib.Path(__file__).parent / "sprachen" / "chef_tr.json").read_text(encoding="utf-8")), encoding="utf-8")
     (ordner / "manifest.webmanifest").write_text(json.dumps({
         "name": "Saray Chef", "short_name": "Chef", "lang": "de", "start_url": "./", "scope": "./", "display": "standalone",
         "background_color": "#3A1531", "theme_color": "#3A1531",

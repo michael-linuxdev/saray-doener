@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Saray Döner – Küche</title>
+<link rel="icon" href="../img/favicon-96.png">
+<style>
+@font-face{font-family:"Saray Slab";src:url(../fonts/Roboto-Slab-Bold.sub.woff) format("woff");font-weight:700}
+@font-face{font-family:"Saray Text";src:url(../fonts/lato-normal.sub.woff) format("woff");font-weight:400}
+@font-face{font-family:"Saray Text";src:url(../fonts/lato-bold.sub.woff) format("woff");font-weight:700}
+:root{--gelb:#FFD21F;--gelb-blass:#FFF1B8;--tinte:#3A1531;--tinte-weich:#6B4A63;--paprika:#C8381E;--gruen:#2E7D32;--linie:#E7DCC0}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Saray Text",system-ui,sans-serif;color:var(--tinte);background:#FFFBEF}
+h1,h2,h3{font-family:"Saray Slab",Georgia,serif;margin:0}
+button{font:inherit}
+
+body{padding:0 0 40px}
+.kopf{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;background:var(--tinte);color:var(--gelb)}
+.kopf h1{font-size:1.4rem;flex:1}
+.chips{display:flex;gap:6px}
+.chip{min-height:40px;padding:0 14px;border-radius:99px;border:2px solid var(--gelb);background:none;color:var(--gelb);font-weight:700;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--gelb);color:var(--tinte)}
+.leer{max-width:640px;margin:24px auto;padding:0 16px;font-size:1.1rem;line-height:1.5}
+.liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:16px;align-items:start}
+.bon{background:#fff;border:3px solid var(--tinte);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.bon.bald{border-color:var(--paprika);box-shadow:0 0 0 3px var(--paprika)}
+.bon.spaet{background:#FFE9E3}
+.bon.neu{animation:neu 1.2s ease 3}
+@keyframes neu{50%{box-shadow:0 0 0 8px var(--gelb)}}
+.bon-kopf{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bnr{font:700 2.2rem "Saray Slab",serif;line-height:1}
+.zeit{font:700 1.5rem "Saray Slab",serif;text-align:right}
+.zeit small{display:block;font:700 .95rem "Saray Text";color:var(--tinte-weich)}
+.bon.spaet .zeit small,.bon.bald .zeit small{color:var(--paprika)}
+.meta{font-weight:700;color:var(--tinte-weich)}
+.test{display:inline-block;background:var(--paprika);color:#fff;border-radius:99px;padding:1px 8px;font-size:.8rem;margin-left:6px}
+.pos{list-style:none;margin:0;padding:0;border-top:2px dashed var(--linie)}
+.pos li{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--linie);cursor:pointer;font-size:1.15rem;line-height:1.3}
+.pos li .m{font:700 1.4rem "Saray Slab",serif;min-width:2.2em}
+.pos li .w{display:block;font-size:.95rem;color:var(--tinte-weich)}
+.pos li .n{display:block;font-size:.95rem;font-weight:700;color:var(--paprika)}
+.pos li.ok{opacity:.4;text-decoration:line-through}
+.pos li .hk{margin-left:auto;width:30px;height:30px;flex:none;border:3px solid var(--tinte);border-radius:8px;display:grid;place-items:center;font-weight:700}
+.pos li.ok .hk::after{content:"✓"}
+.summe{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem}
+.knoepfe{display:flex;gap:8px}
+.knopf{flex:1;min-height:48px;border-radius:12px;border:2px solid var(--tinte);background:#fff;color:var(--tinte);font-weight:700;cursor:pointer}
+.knopf.voll{background:var(--tinte);color:var(--gelb)}
+details.erledigt{margin:8px 16px}
+details.erledigt summary{cursor:pointer;font-weight:700;padding:10px 0}
+details.erledigt .liste{padding:8px 0}
+details.erledigt .bon{opacity:.6}
+@media print{
+  body{background:#fff;padding:0}
+  .kopf,.leer,details.erledigt,.knoepfe,.bon:not(.druck){display:none!important}
+  .liste{display:block;padding:0}
+  .bon.druck{border:0;box-shadow:none;width:72mm;padding:0;font-size:12pt;break-after:page}
+  .pos li.ok{opacity:1;text-decoration:none}.pos li .hk{display:none}
+  @page{size:80mm auto;margin:4mm}
+}
+</style>
+</head>
+<body>
+<header class="kopf"><h1>Küche · Saray Döner</h1><div class="chips" id="filter"></div></header>
+<p class="leer" id="leer" hidden>Noch keine offenen Bestellungen. Sie erscheinen hier, wenn Sie in der WhatsApp-Nachricht eines Gastes auf den Link
+„Für die Küche“ tippen. Die Bestellungen bleiben auf diesem Gerät gespeichert, sortiert nach Abholzeit. Antippen hakt ein Gericht ab.</p>
+<div class="liste" id="offen"></div>
+<details class="erledigt" id="erledigt-box" hidden><summary id="erledigt-titel">Erledigt</summary><div class="liste" id="erledigt"></div></details>
+<script>
+(function(){
+'use strict';
+var LAEDEN={"freital": "Freital", "altenberg": "Altenberg"},K='saray-kueche',F='saray-kueche-filter',liste=[],filter='';
+try{liste=JSON.parse(localStorage.getItem(K)||'[]');if(!Array.isArray(liste))liste=[];}catch(e){liste=[];}
+try{filter=localStorage.getItem(F)||'';}catch(e){}
+function speichern(){try{localStorage.setItem(K,JSON.stringify(liste));}catch(e){}}
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+function euro(c){return (c/100).toFixed(2).replace('.',',')+' €';}
+function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').replace(/_/g,'/'))));var o=JSON.parse(t);
+  if(!o||typeof o.nr!=='string'||!Array.isArray(o.p))return null;
+  o.p=o.p.filter(Array.isArray).slice(0,60).map(function(x){return {q:Math.max(1,Math.min(99,+x[0]||1)),n:String(x[1]||'').slice(0,120),w:String(x[2]||'').slice(0,300),f:String(x[3]||'').slice(0,40),x:String(x[4]||'').slice(0,200),c:+x[5]||0,ok:false};});
+  return {id:o.nr+'-'+(+o.a||0),nr:o.nr.slice(0,8),l:LAEDEN[o.l]?o.l:'',z:String(o.z||'').slice(0,60),t:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(o.t||'')?o.t:'',
+    m:String(o.m||'').slice(0,40),s:+o.s||0,p:o.p,zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
+/* Link aus WhatsApp: Bestellung übernehmen (doppelt geöffnet = einmal gespeichert) */
+var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
+if(m){var o=lesen(m[1]);if(o&&!liste.some(function(x){return x.id===o.id;}))liste.push(o);speichern();history.replaceState(null,'',location.pathname+location.search);}
+/* alte Bestellungen (älter als 3 Tage) aufräumen */
+liste=liste.filter(function(x){return x&&Array.isArray(x.p)&&Date.now()-x.a<3*864e5;});speichern();
+function zeitpunkt(x){return x.t?new Date(x.t+':00').getTime():x.a+20*60000;}
+function rest(x){return Math.round((zeitpunkt(x)-Date.now())/60000);}
+function filterZeigen(){var f=document.getElementById('filter');f.textContent='';[['','Alle']].concat(Object.keys(LAEDEN).map(function(k){return [k,LAEDEN[k]];})).forEach(function(o){
+  var b=el('button','chip',o[1]);b.type='button';b.setAttribute('aria-pressed',String(filter===o[0]));
+  b.addEventListener('click',function(){filter=o[0];try{localStorage.setItem(F,filter);}catch(e){}filterZeigen();zeichnen();});f.appendChild(b);});}
+function bon(x){
+  var b=el('article','bon'),r=rest(x);if(!x.fertig){if(r<0)b.classList.add('spaet');else if(r<=15)b.classList.add('bald');}if(x.neu)b.classList.add('neu');
+  b.dataset.id=x.id;
+  var k=el('div','bon-kopf'),nr=el('span','bnr',x.nr);if(x.test)nr.appendChild(el('span','test','TEST'));k.appendChild(nr);
+  var z=el('span','zeit',x.t?x.t.slice(11):'sofort');
+  z.appendChild(el('small',null,x.fertig?'erledigt':r<0?'seit '+(-r)+' Min. fällig':r===0?'jetzt':'in '+(r>=120?Math.round(r/60)+' Std.':r+' Min.')));k.appendChild(z);b.appendChild(k);
+  b.appendChild(el('div','meta',[x.m||'ohne Name',LAEDEN[x.l]||'',x.zug?'Zug '+x.zug:'',x.z].filter(Boolean).join(' · ')));
+  var ul=el('ul','pos');x.p.forEach(function(p){var li=el('li',p.ok?'ok':'');li.appendChild(el('span','m',p.q+'×'));
+    var t=el('span',null,p.n);if(p.w)t.appendChild(el('span','w',p.w));if(p.f)t.appendChild(el('span','w','für '+p.f));if(p.x)t.appendChild(el('span','n','Wunsch: '+p.x));li.appendChild(t);
+    li.appendChild(el('span','hk'));li.setAttribute('role','checkbox');li.setAttribute('aria-checked',String(p.ok));li.tabIndex=0;
+    function um(){p.ok=!p.ok;x.neu=0;speichern();zeichnen();}
+    li.addEventListener('click',um);li.addEventListener('keydown',function(ev){if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();um();}});ul.appendChild(li);});
+  b.appendChild(ul);
+  var s=el('div','summe');s.appendChild(el('span',null,'Summe (bar)'));s.appendChild(el('span',null,euro(x.s)));b.appendChild(s);
+  var kn=el('div','knoepfe'),dr=el('button','knopf','Bon drucken'),fe=el('button','knopf voll',x.fertig?'Zurückholen':'Fertig ✓');dr.type=fe.type='button';
+  dr.addEventListener('click',function(){document.querySelectorAll('.bon.druck').forEach(function(y){y.classList.remove('druck');});b.classList.add('druck');window.print();});
+  fe.addEventListener('click',function(){x.fertig=x.fertig?0:Date.now();x.neu=0;speichern();zeichnen();});
+  kn.appendChild(dr);kn.appendChild(fe);b.appendChild(kn);return b;}
+function zeichnen(){
+  var sicht=liste.filter(function(x){return !filter||x.l===filter;}),offen=sicht.filter(function(x){return !x.fertig;}).sort(function(a,b){return zeitpunkt(a)-zeitpunkt(b);}),
+    fertig=sicht.filter(function(x){return x.fertig;}).sort(function(a,b){return b.fertig-a.fertig;});
+  var o=document.getElementById('offen');o.textContent='';offen.forEach(function(x){o.appendChild(bon(x));});
+  document.getElementById('leer').hidden=offen.length>0;
+  var e=document.getElementById('erledigt');e.textContent='';fertig.forEach(function(x){e.appendChild(bon(x));});
+  document.getElementById('erledigt-box').hidden=!fertig.length;document.getElementById('erledigt-titel').textContent='Erledigt ('+fertig.length+')';
+  document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';}
+window.addEventListener('storage',function(ev){if(ev.key===K){try{liste=JSON.parse(ev.newValue||'[]');}catch(e){}zeichnen();}});
+window.addEventListener('hashchange',function(){var m2=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m2)return;var o2=lesen(m2[1]);
+  if(o2&&!liste.some(function(x){return x.id===o2.id;}))liste.push(o2);speichern();history.replaceState(null,'',location.pathname+location.search);zeichnen();});
+setInterval(zeichnen,30000);
+setTimeout(function(){var neu=liste.some(function(x){return x.neu;});liste.forEach(function(x){x.neu=0;});if(neu)speichern();},4000);
+filterZeigen();zeichnen();
+})();
+</script>
+</body>
+</html>

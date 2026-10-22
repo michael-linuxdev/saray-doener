@@ -74,7 +74,9 @@
   function euroK(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   /* Speisekarte: heute laufende Aktionen markieren (alter Preis durchgestrichen, Aktionspreis als Marke) */
   function aktionenZeigen(){
-    var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay();
+    var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay(),jm=jetzt().min;
+    document.querySelectorAll('[data-mittag]').forEach(function(sec){var a=AKTIONEN[+sec.dataset.mittag];
+      sec.hidden=!a||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.zb!=null&&jm>=a.zb);});
     document.querySelectorAll('.marke-aktion').forEach(function(m){m.remove();});
     document.querySelectorAll('.preis-alt').forEach(function(m){m.classList.remove('preis-alt');});
     AKTIONEN.forEach(function(a){
@@ -88,7 +90,7 @@
           var m=document.createElement('span');m.className='marke-beliebt marke-aktion';
           var ort=a.laden?(a.laden==='freital'?' Freital':' Altenberg'):'';
           var uz=a.za!=null?' '+uhr(a.za).replace(' Uhr','')+'–'+uhr(a.zb):'';
-          m.textContent=L('Aktion ','Offer ')+a.p[k].map(euroK).join(' / ')+uz+(ort?(SP==='de'?' (nur'+ort+')':' '+fuell(T('({ort} only)'),{ort:ort.trim()})):'');
+          m.textContent=(a.m?L('Mittag ','Lunch '):L('Aktion ','Offer '))+a.p[k].map(euroK).join(' / ')+uz+(ort?(SP==='de'?' (nur'+ort+')':' '+fuell(T('({ort} only)'),{ort:ort.trim()})):'');
           ziel.appendChild(document.createTextNode(' '));ziel.appendChild(m);
           li.querySelectorAll('.preis, .tipp-preis').forEach(function(p){p.classList.add('preis-alt');});
         });
@@ -244,6 +246,7 @@
     treffer.hidden=!(teile.length||veg)||n===0;
     treffer.textContent=n===1?L('1 Gericht gefunden','1 dish found'):n+L(' Gerichte gefunden',' dishes found');
     nichts.hidden=!(teile.length&&n===0);if(wort)wort.textContent=roh;
+    document.body.classList.toggle('sucht',teile.length>0);
     var bl=document.querySelector('.beliebt');if(bl){bl.hidden=teile.length>0;
       bl.querySelectorAll('.tipp').forEach(function(t){t.hidden=DIAET?!(t.hasAttribute('data-veg')||(DIAET==='pesc'&&t.hasAttribute('data-fisch'))):t.hasAttribute('data-nur-diaet');});
       bl.querySelectorAll('ul.tipps').forEach(function(u){var leer=!u.querySelector('.tipp:not([hidden])');u.hidden=leer;
@@ -645,6 +648,40 @@
     for(var m=start;m<=h[1]-15;m+=15)res.push(m);
     return res;
   }
+  /* Zug ab Altenberg: Abfahrten (Minuten) an einem Tag (ISO-Datum) */
+  var ZUG={"laden": "altenberg", "gueltig_bis": "2026-12-12", "puffer": 15, "taeglich": ["06:18", "08:18", "10:18", "12:18", "18:18", "20:18"], "werktags": ["04:18", "05:18", "07:18", "09:18", "11:18", "13:18", "14:18", "15:18", "16:18", "17:18", "19:18", "21:18"], "werktags_nicht": ["2025-12-25", "2025-12-26", "2026-01-01", "2026-04-03", "2026-04-06", "2026-05-01", "2026-05-14", "2026-05-25", "2026-11-18"], "extra": [{"zeit": "15:18", "wochenende": [["2025-12-14", "2026-02-22"], ["2026-11-07", "2026-12-12"]], "auch": ["2025-12-25", "2025-12-26", "2026-01-01", "2026-11-18"]}, {"zeit": "17:18", "wochenende": [["2026-02-28", "2026-11-01"]], "auch": ["2026-04-03", "2026-04-06", "2026-05-01", "2026-05-14", "2026-05-25"]}]};
+  function zuege(iso){
+    if(!ZUG||iso>ZUG.gueltig_bis)return [];
+    var wt=new Date(iso+'T12:00:00Z').getUTCDay(),fei=ZUG.werktags_nicht.indexOf(iso)>-1,z=ZUG.taeglich.slice();
+    if(wt>=1&&wt<=5&&!fei)z=z.concat(ZUG.werktags);
+    ZUG.extra.forEach(function(x){var we=(wt===0||wt===6)&&x.wochenende.some(function(r){return iso>=r[0]&&iso<=r[1];});
+      if(we||x.auch.indexOf(iso)>-1)z.push(x.zeit);});
+    return z.map(minAus).sort(function(a,b){return a-b;}).filter(function(m,i,l){return l.indexOf(m)===i;});
+  }
+  var zugBox=document.getElementById('zug-wahl');
+  function zugZeigen(off,sl){
+    if(!zugBox)return;zugBox.textContent='';
+    var vor=off===0?'heute':off===1?'morgen, '+tagLang(1):tagLang(off),en=SP!=='de';
+    if(abh.laden!==ZUG.laden){zugBox.hidden=true;return;}
+    var paare=[];zuege(isoTag(off)).forEach(function(d){var s=sl.filter(function(m){return m<=d-ZUG.puffer&&m>=d-45;});if(s.length)paare.push([d,s[s.length-1]]);});
+    paare=paare.slice(0,6);zugBox.hidden=!paare.length;if(!paare.length)return;
+    zugBox.appendChild(el('p','zug-titel',L('🚆 Mit dem Zug zurück? Abholung passend zur Abfahrt:','🚆 Taking the train? Pickup matched to your departure:')));
+    var reihe=el('div','zug-chips');
+    paare.forEach(function(p){var v=vor+', '+zeitText(p[1]),dz=zeitText(p[0],true),az=zeitText(p[1],true);
+      var b=el('button','chip',L('Zug '+dz+' → abholen '+az,'Train '+dz+' → pickup '+az));b.type='button';
+      b.setAttribute('aria-pressed',String(abh.zug===dz&&abh.zeit===v));
+      b.addEventListener('click',function(){abh.zeit=v;abh.zug=dz;selZeit.value=v;abhSpeichern();zugZeigen(off,sl);zeichnen();waAktualisieren();});
+      reihe.appendChild(b);});
+    zugBox.appendChild(reihe);
+    zugBox.appendChild(el('p','zug-quelle',L('Fahrplan ohne Gewähr, Richtung Heidenau/Dresden.','Timetable without guarantee, towards Heidenau/Dresden.')));
+  }
+  /* Wintersaison Altenberg: Kasten oben; automatisch nach Datum oder per Chef-App an/aus */
+  var WINTER={"modus": "auto", "von": "12-01", "bis": "03-15"};
+  function winterAktiv(){if(WINTER.modus==='an')return true;if(WINTER.modus==='aus')return false;var md=isoTag(0).slice(5);
+    return WINTER.von<=WINTER.bis?(md>=WINTER.von&&md<=WINTER.bis):(md>=WINTER.von||md<=WINTER.bis);}
+  setTimeout(function(){var w=document.getElementById('winter');if(!w)return;try{w.hidden=!winterAktiv();}catch(e){}
+    var b=document.getElementById('winter-bestellen');if(b)b.addEventListener('click',function(){abh.laden='altenberg';abhSpeichern();ladenZeigen();oeffnen();});
+    var g=document.getElementById('winter-gruppe');if(g)g.addEventListener('click',function(){abh.laden='altenberg';abhSpeichern();var s=document.querySelector('[data-sammel-start]');if(s)s.click();});},0);
   function zeitenFuellen(){
     selZeit.textContent='';selTag.textContent='';hinweisZ.hidden=true;ZINFO={};
     if(!abh.laden){[selTag,selZeit].forEach(function(s){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';s.appendChild(o);s.disabled=true;});return;}
@@ -669,6 +706,8 @@
     slots(off).forEach(function(m){var v=vor+', '+zeitText(m);optionen.push({v:v,t:zeitText(m,en)});ZINFO[v]={off:off,min:m};});
     optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
     if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
+    if(abh.zug&&!ZINFO[abh.zeit])abh.zug='';
+    zugZeigen(off,slots(off));
     abhSpeichern();zeichnenSpaeter();
   }
   var zsp=false;function zeichnenSpaeter(){if(zsp)return;zsp=true;setTimeout(function(){zsp=false;zeichnen();waAktualisieren();},0);}
@@ -682,7 +721,7 @@
       :L(kf+' Gerichte sind zur gewählten Zeit nicht zu haben. Bitte oben ändern.',kf+' dishes are not available at the chosen time. Please change them above.');
     if(kf||sammel)nr=null;
     waKnopf.hidden=!nr;waHinweis.hidden=!!nr||!!kf||!Object.keys(WA).length;
-    if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText());
+    if(nr)waKnopf.href='https://wa.me/'+nr+'?text='+encodeURIComponent(zettelText(true));
   }
   function ladenZeigen(){
     document.querySelectorAll('[data-laden]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.laden===abh.laden));});
@@ -690,7 +729,7 @@
     zeitenFuellen();waAktualisieren();
   }
   document.querySelectorAll('[data-laden]').forEach(function(b){b.addEventListener('click',function(){abh.laden=b.dataset.laden;abhSpeichern();ladenZeigen();verfZeigen();});});
-  selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abhSpeichern();zeichnen();waAktualisieren();});
+  selZeit.addEventListener('change',function(){abh.zeit=selZeit.value;abh.zug='';try{zeitenFuellen();}catch(e){}abhSpeichern();zeichnen();waAktualisieren();});
   selTag.addEventListener('change',function(){abh.tag=selTag.value;abh.zeit='';abhSpeichern();zeitenFuellen();waAktualisieren();});
   eName.value=abh.name||'';eName.addEventListener('input',function(){abh.name=eName.value;abhSpeichern();waAktualisieren();});
   ladenZeigen();
@@ -760,16 +799,29 @@
     zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
   });
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
-  function zettelText(){
+  /* Küchenansicht: Bestellung als Link (Daten stehen im Link selbst, kein Server) */
+  function b64url(t){return btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  function kuecheLink(){
+    if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
+    var zi=ZINFO[abh.zeit],t='';
+    if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
+    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),zug:abh.zug||'',
+      test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
+      p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];})};
+    return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
+  }
+  function zettelText(mitKueche){
     var test=document.body.classList.contains('vorschau')?['*TEST – Entwurf, keine echte Bestellung*','']:[];
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     z.push('Bestellnummer: '+BNR);
-    if(abh.zeit)z.push('Abholung: '+abh.zeit);
+    if(abh.zeit)z.push('Abholung: '+abh.zeit+(abh.zug&&abh.laden===ZUG.laden?' (Zug '+abh.zug+')':''));
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
     zettel.forEach(function(x){z.push(zeileText(x));});
-    z.push('Summe: '+euro(summe()));return test.concat(z).join('\n');
+    z.push('Summe: '+euro(summe()));
+    var kl=mitKueche?kuecheLink():'';if(kl){z.push('');z.push('Für die Küche: '+kl);}
+    return test.concat(z).join('\n');
   }
   function zeileText(x){var w=x.t||fehlend(x).length?wuensche(x):'';
     return x.q+'× '+x.n+(x.g?' ('+x.g+')':'')+(w?', '+w:'')+(x.fuer?' (für '+x.fuer+')':'')+': '+euro(stueck(x)*x.q)+(aktionZ(x)?' (Aktion)':'')+(x.notiz?'\n   Wunsch: '+x.notiz:'');}

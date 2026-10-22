@@ -1049,7 +1049,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 28 offen" in p.text_content(".checkliste summary")
+    assert "von 31 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1200,6 +1200,211 @@ def gruppen_abschnitt(b, url):
     s.p.click("#gruppen [data-sammel-start]")
     assert not s.js("document.getElementById('sammel-dialog').hidden")
     s.schliessen()
+
+
+
+@test
+def mittagstisch(b, url):
+    mittag = {"name": "Mittagstisch", "art": "mittag", "von": "2026-10-19", "bis": "2026-10-30", "tage": [1, 2, 3, 4, 5],
+              "zeit_ab": "11:00", "zeit_bis": "14:00", "preise": {"23": ["8,50"]}}
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"aktionen": [mittag]}, tmp)
+        s = Seite(b, u, zeit=datetime.datetime.fromisoformat("2026-10-21T12:00:00+02:00"))
+        assert s.js("!document.querySelector('[data-mittag]').hidden"), "Mittagstisch-Kasten fehlt mittags"
+        assert "Mo, Di, Mi, Do, Fr · 11–14 Uhr" in s.p.text_content(".mittag-zeit")
+        assert "Mittag 8,50 €" in s.p.text_content("#nr-23 .marke-aktion")
+        baender = s.js("[...document.querySelectorAll('.hinweis-band:not([hidden])')].map(x=>x.textContent)")
+        assert any(x.startswith("Mittagstisch") for x in baender) and not any("Aktion: Mittagstisch" in x for x in baender), baender
+        s.p.click(".mittag .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click("[data-laden=freital]")
+        text = s.wa_text()
+        assert "Döner-Teller" in text and "8,50 € (Aktion)" in text, text
+        s.schliessen()
+        s = Seite(b, u)   # 17:45 Uhr: vorbei
+        assert s.js("document.querySelector('[data-mittag]').hidden"), "Mittagstisch nach 14 Uhr noch sichtbar"
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
+def zug_ab_altenberg(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    assert s.js("document.getElementById('zug-wahl').hidden"), "Zugvorschlag in Freital"
+    s.p.click("[data-laden=altenberg]")
+    chips = s.js("[...document.querySelectorAll('#zug-wahl .chip')].map(c=>c.textContent)")
+    assert chips and chips[0] == "Zug 19:18 → abholen 19:00", chips   # 18:18 ist zu knapp (frühestens 18:15)
+    s.p.click("#zug-wahl .chip >> nth=0")
+    assert s.p.input_value("#abhol-zeit") == "heute, 19:00 Uhr"
+    assert "Abholung: heute, 19:00 Uhr (Zug 19:18)" in s.wa_text()
+    s.p.select_option("#abhol-zeit", "heute, 19:15 Uhr")
+    assert "(Zug" not in s.wa_text()
+    s.p.select_option("#abhol-tag", "2026-10-24")   # Samstag: RE 19 um 17:18, keine Werktagszüge
+    chips = s.js("[...document.querySelectorAll('#zug-wahl .chip')].map(c=>c.textContent.split(' ')[1])")
+    assert "17:18" in chips and "18:18" in chips and "19:18" not in chips and "13:18" not in chips, chips
+    s.schliessen()
+    s = Seite(b, url, zeit=datetime.datetime.fromisoformat("2026-11-17T12:00:00+01:00"))
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=altenberg]")
+    s.p.select_option("#abhol-tag", "2026-11-18")   # Buß- und Bettag: wie Feiertag, RE 19 um 15:18
+    chips = s.js("[...document.querySelectorAll('#zug-wahl .chip')].map(c=>c.textContent.split(' ')[1])")
+    assert "15:18" in chips and "11:18" not in chips, chips
+    s.schliessen()
+
+
+@test
+def kuechenansicht(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#nr-50 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    s.p.fill("#abhol-name", "Jana")
+    s.p.press("#abhol-name", "Tab")
+    text = s.wa_text()
+    nr = [z for z in text.split("\n") if z.startswith("Bestellnummer: ")][0].split(": ")[1]
+    link = [z for z in text.split("\n") if z.startswith("Für die Küche: ")][0].split(": ", 1)[1]
+    assert "/kueche/#b=" in link, link
+    k = s.ctx.new_page()
+    k.goto(link)
+    k.wait_for_selector("#offen .bon")
+    assert "#b=" not in k.url
+    assert k.text_content("#offen .bon .bnr").startswith(nr)
+    inhalt = k.text_content("#offen .bon")
+    assert "Döner Kebap" in inhalt and "Dürüm" in inhalt and "Jana" in inhalt and "Freital" in inhalt and "15,00 €" in inhalt, inhalt
+    k.click("#offen .bon .pos li >> nth=0")
+    assert k.get_attribute("#offen .bon .pos li >> nth=0", "aria-checked") == "true"
+    k.goto(link)   # derselbe Link noch einmal: nicht doppelt
+    k.wait_for_selector("#offen .bon")
+    assert k.locator("#offen .bon").count() == 1
+    k.click("#offen .bon >> text=Fertig ✓")
+    assert k.locator("#offen .bon").count() == 0 and not k.is_hidden("#leer")
+    assert k.text_content("#erledigt-titel") == "Erledigt (1)"
+    k.close()
+    s.schliessen()
+
+
+@test
+def bildschirm_im_laden(b, url):
+    ctx = b.new_context(viewport={"width": 1920, "height": 1080}, locale="de-DE", timezone_id="Europe/Berlin")
+    p = ctx.new_page()
+    fehler = []
+    p.on("pageerror", lambda e: fehler.append(str(e)))
+    p.clock.set_fixed_time(ZEIT)
+    p.route("**/status.json", lambda r: r.fulfill(status=200, content_type="application/json",
+                                                 body=json.dumps({"regeln": [{"was": "huhn", "datum": "2026-10-21"}, {"was": "z:Pommes", "datum": "2026-10-21"}]})))
+    p.goto(url + "tv/")
+    assert p.locator(".wahl a").count() == 2   # ohne Laden: Auswahl
+    p.goto(url + "tv/?laden=freital&sek=999")
+    p.wait_for_function("window.TV && TV.seiten() >= 5")
+    p.wait_for_timeout(500)
+    assert p.text_content("#status") == "Geöffnet bis 22 Uhr"
+    assert "Heute leider ohne: Pommes – Gerichte mit Pommes 0,50 € günstiger" in p.text_content("#baender")
+    aus = p.evaluate("[...document.querySelectorAll('.g.aus .nm')].map(x=>x.firstChild.textContent)")
+    assert "Hähnchen-Döner" in aus and "Döner Kebap" not in aus, aus
+    # nichts abgeschnitten: jedes Gericht liegt innerhalb seiner Seite
+    raus = p.evaluate("""[...document.querySelectorAll('.seite')].flatMap(s=>{s.classList.add('an');const sp=s.querySelector('.spalten');if(!sp){s.classList.remove('an');return [];}
+      const r=sp.getBoundingClientRect(),x=[...sp.querySelectorAll('.g')].filter(g=>{const q=g.getBoundingClientRect();return q.right>r.right+2||q.bottom>r.bottom+2}).map(g=>g.textContent);
+      s.classList.remove('an');return x;})""")
+    assert not raus, raus
+    alle = p.evaluate("document.querySelectorAll('.spalten .g').length")
+    assert alle == 140, alle
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
+def wintersaison(b, url):
+    s = Seite(b, url)
+    assert s.js("document.getElementById('winter').hidden"), "Wintersaison im Oktober sichtbar"
+    s.schliessen()
+    s = Seite(b, url, zeit=datetime.datetime.fromisoformat("2027-01-09T12:00:00+01:00"))
+    assert not s.js("document.getElementById('winter').hidden"), "Wintersaison im Januar unsichtbar"
+    s.p.click("#winter-bestellen")
+    assert s.js("!document.getElementById('zettel').hidden || !document.querySelector('.zettel-huelle, #zettel-huelle')?.hidden")
+    assert s.p.get_attribute("[data-laden=altenberg]", "aria-pressed") == "true"
+    s.schliessen()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"winter": "aus"}, tmp)
+        s = Seite(b, u, zeit=datetime.datetime.fromisoformat("2027-01-09T12:00:00+01:00"))
+        assert s.js("document.getElementById('winter').hidden"), "Wintersaison trotz „aus“ sichtbar"
+        s.schliessen()
+        srv.shutdown()
+
+
+@test
+def chef_app_gutscheine_mittag_winter(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.evaluate("window.print=()=>{window._gedruckt=(window._gedruckt||0)+1}")
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click("[data-gs-wert='2500']")
+    p.click("[data-gs-anzahl='2']")
+    p.click("#gs-erstellen")
+    p.wait_for_function("window._gedruckt===1")
+    karten = p.evaluate("[...document.querySelectorAll('#gs-druck .gs-nr')].map(x=>x.textContent)")
+    assert len(karten) == 2 and karten[0].startswith("Nr. G26-001 · Code "), karten
+    code = karten[0].split("Code ")[1]
+    assert "25 €" in p.text_content("#gs-druck .gs-wert")
+    p.fill("#gs-nr", "g26-001")
+    p.fill("#gs-code", "XXXXXX")
+    p.click("#gs-pruefen")
+    p.wait_for_selector("#gs-ergebnis .fehler")
+    assert "Code passt nicht" in p.text_content("#gs-ergebnis")
+    p.fill("#gs-code", code.lower())
+    p.click("#gs-pruefen")
+    p.wait_for_selector("#gs-einloesen")
+    assert "Gültig: 25 €" in p.text_content("#gs-ergebnis")
+    p.click("#gs-einloesen")
+    p.click('nav.tabs [data-tab="zeiten"]')
+    p.click("[data-winter='an']")
+    p.click('nav.tabs [data-tab="karte"]')
+    p.click("text=+ Mittagstisch")
+    assert p.input_value("#a-name") == "Mittagstisch"
+    p.fill("#a-such", "23")
+    p.locator(".blatt .liste-gericht", has_text="Döner-Teller").first.click()
+    p.fill("[data-ak='23']", "8,5")
+    p.click(".blatt >> text=Übernehmen")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    gs = d["gutscheine"]
+    assert len(gs) == 2 and gs[0]["nr"] == "G26-001" and gs[0]["wert"] == 2500 and gs[0]["bis"] == "2029-12-31", gs
+    assert gs[0]["eingeloest"] == "2026-10-21" and "eingeloest" not in gs[1], gs
+    assert all("code" not in g and len(g["h"]) == 64 for g in gs), gs
+    assert d["winter"] == "an", d
+    assert d["aktionen"] == [{"name": "Mittagstisch", "art": "mittag", "von": "2026-10-21", "bis": "2026-11-17", "tage": [1, 2, 3, 4, 5],
+                              "zeit_ab": "11:00", "zeit_bis": "14:00", "preise": {"23": ["8,50"]}}], d["aktionen"]
+    assert not fehler, fehler
+    ctx.close()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit(d, tmp)
+        srv.shutdown()
+
+
+
+@test
+def chef_app_tuerkisch(b, url):
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
+    assert p.text_content("#sprache") == "TR"
+    p.click("#sprache")
+    p.wait_for_selector("nav.tabs:not([hidden])")
+    assert p.text_content("#sprache") == "DE"
+    assert "Bugün" in p.text_content("nav.tabs") and "Diğer" in p.text_content("nav.tabs")
+    assert "Bugün ne yok?" in p.text_content("#app")
+    p.click('nav.tabs [data-tab="karte"]')
+    assert "Pizza Margherita" in p.text_content("#app"), "Gerichtsnamen bleiben deutsch"
+    p.click('nav.tabs [data-tab="mehr"]')
+    assert "Hediye çekleri" in p.text_content("#app") and "31 / 31 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    p.click("#sprache")
+    p.wait_for_selector("nav.tabs:not([hidden])")
+    assert "Heute" in p.text_content("nav.tabs")
+    assert not fehler, fehler
+    ctx.close()
 
 
 @test
