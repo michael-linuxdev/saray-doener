@@ -1096,6 +1096,29 @@ def gemeinsam_dialog_oben_und_ruhig(b, url):
 
 
 @test
+def bestellnummer_und_kalender(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click('[data-laden="freital"]')
+    text = s.wa_text()
+    import re as _re
+    nr = _re.search(r"Bestellnummer: ([A-Z][0-9]{2})", text).group(1)
+    assert s.p.text_content(".wa-nr b") == nr
+    s.js("window.__ics=null;URL.createObjectURL=function(b){b.text().then(t=>window.__ics=t);return 'blob:x'};0")
+    s.p.click("#wa-kalender")
+    s.p.wait_for_timeout(200)
+    ics = s.js("window.__ics")
+    assert "BEGIN:VEVENT" in ics and "DTSTART;TZID=Europe/Berlin:20261021T" in ics and nr in ics and "Dresdner Str. 87" in ics, ics
+    assert "TRIGGER:-PT15M" in ics
+    # gleiche Nummer bei erneutem Senden ohne Änderung, neue Nummer nach Änderung
+    assert ("Bestellnummer: " + nr) in s.wa_text()
+    s.p.click(".z-eintrag [data-a=plus]")
+    assert ("Bestellnummer: " + nr) not in s.wa_text()
+    s.schliessen()
+
+
+@test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
     for vp, mobil in ((HANDY, True), (DESKTOP, False)):

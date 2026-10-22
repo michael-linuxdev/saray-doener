@@ -406,7 +406,8 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 .abholung select,.abholung input{width:100%;min-height:44px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:400 1rem var(--text);color:var(--tinte);background:#fff}
 .knopf-whatsapp{background:#1E7B3C;color:#fff}
 .knopf-whatsapp:hover{background:#17652F}
-.abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}.wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
+.abhol-hinweis{font-size:.88rem;color:var(--paprika);font-weight:700}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
+.wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
 .zettel-knoepfe{display:grid;gap:10px}
 .zettel-knoepfe .knopf{width:100%}

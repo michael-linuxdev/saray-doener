@@ -357,7 +357,10 @@
   function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"]');}
   try{zettel=JSON.parse(localStorage.getItem(ZK)||'[]');if(!Array.isArray(zettel))zettel=[];}catch(e){zettel=[];}
   zettel.forEach(function(x){x.u=uidZ++;if(x.o&&!Array.isArray(x.o.s))x.o.s=x.o.s?[x.o.s]:[];});
-  function speichern(){try{localStorage.setItem(ZK,JSON.stringify(zettel.map(function(x){var y=Object.assign({},x);delete y.u;return y;})));}catch(e){}}
+  /* Bestellnummer: kurz, gut vorzulesen; neu, sobald nach dem Senden etwas geändert wird */
+  function neueNr(){var b='ACDEFHKLMNPRTUVWXY';return b.charAt(Math.floor(Math.random()*b.length))+(10+Math.floor(Math.random()*90));}
+  var BNR=neueNr(),bnrGesendet=false;
+  function speichern(){if(bnrGesendet){BNR=neueNr();bnrGesendet=false;}try{localStorage.setItem(ZK,JSON.stringify(zettel.map(function(x){var y=Object.assign({},x);delete y.u;return y;})));}catch(e){}}
   function euro(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   function grund(t){return {s:(t==='D'||t==='SA')?['Kräuter']:[],ohne:[],ex:[],wahl:[],va:''};}
   function exPreis(o){return (o.ex||[]).reduce(function(a,e){return a+(GEMUESE.indexOf(e)>-1?150:200);},0);}
@@ -674,9 +677,33 @@
   var TEL={"freital": ["0351 27676660", "+4935127676660"], "altenberg": ["035056 23674", "+493505623674"]},waGesendet=document.getElementById('wa-gesendet');
   waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
     try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now()}));}catch(e){}
-    if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';
+    if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';bnrGesendet=true;
+    var nrP=el('p','wa-nr');nrP.appendChild(document.createTextNode(L('Ihre Bestellnummer: ','Your order number: ')));nrP.appendChild(el('b',null,BNR));waGesendet.appendChild(nrP);
     waGesendet.appendChild(document.createTextNode(L('Gesendet? Der Laden bestätigt Ihre Bestellung per WhatsApp. Ohne Antwort bitte anrufen: ','Sent? The shop confirms your order via WhatsApp. No reply? Please call: ')));
-    var a=el('a',null,tl[0]);a.href='tel:'+tl[1];waGesendet.appendChild(a);waGesendet.hidden=false;});
+    var a=el('a',null,tl[0]);a.href='tel:'+tl[1];waGesendet.appendChild(a);
+    var zi=ZINFO[abh.zeit];
+    if(zi){var kb=knopf(L('📅 Abholung in den Kalender','📅 Add pickup to calendar'),{'class':'knopf knopf-linie wa-kalender','id':'wa-kalender'});
+      var ics=icsText(zi,BNR);kb.addEventListener('click',function(){icsLaden(ics,'saray-abholung-'+BNR+'.ics');});waGesendet.appendChild(kb);}
+    waGesendet.hidden=false;});
+  /* Kalendereintrag (.ics) für die Abholung, mit Erinnerung 15 Minuten vorher */
+  var ADR={"freital": "Saray Döner, Dresdner Str. 87, 01705 Freital", "altenberg": "Saray Döner, Dresdner Str. 23, 01773 Altenberg"};
+  function icsText(zi,nr){
+    var d=tagDatum(zi.off,{year:'numeric',month:'2-digit',day:'2-digit'},'en-CA').replace(/-/g,''),
+        z=function(m){return ('0'+Math.floor(m/60)).slice(-2)+('0'+m%60).slice(-2)+'00';},
+        esc=function(t){return String(t).replace(/[\\;,]/g,function(c){return '\\'+c;}).replace(/\n/g,'\\n');},
+        jetztZ=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+    return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Saray Doener//Bestellung//DE','BEGIN:VEVENT',
+      'UID:'+nr+'-'+d+'-'+zi.min+'@saray-doener','DTSTAMP:'+jetztZ,
+      'DTSTART;TZID=Europe/Berlin:'+d+'T'+z(zi.min),'DTEND;TZID=Europe/Berlin:'+d+'T'+z(zi.min+15),
+      'SUMMARY:'+esc('Saray Döner abholen ('+nr+')'),'LOCATION:'+esc(ADR[abh.laden]||''),
+      'DESCRIPTION:'+esc(zettel.map(function(x){return x.q+'× '+x.n;}).join('\n')+'\nSumme: '+euro(summe())+' (nur Barzahlung)'),
+      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc('Saray Döner abholen'),'TRIGGER:-PT15M','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  }
+  function icsLaden(text,name){
+    var url=URL.createObjectURL(new Blob([text],{type:'text/calendar;charset=utf-8'})),a=document.createElement('a');
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},4000);
+  }
   /* „Wie letztes Mal“: Zettel merken, sobald er abgeschickt, kopiert oder vorgelesen wird */
   var LK='saray-letzte',letzte=null,boxL=document.getElementById('letzte');
   try{letzte=JSON.parse(localStorage.getItem(LK)||'null');}catch(e){letzte=null;}
@@ -716,6 +743,7 @@
     var test=document.body.classList.contains('vorschau')?['*TEST – Entwurf, keine echte Bestellung*','']:[];
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
+    z.push('Bestellnummer: '+BNR);
     if(abh.zeit)z.push('Abholung: '+abh.zeit);
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
