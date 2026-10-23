@@ -2200,8 +2200,7 @@ def chef_app_einfuehrung_und_antworten(b, url):
     assert "1 / 11" in p.text_content(".tour-karte") and "Willkommen" in p.text_content(".tour-karte")
     p.click("#tour-weiter")
     assert "Laden heute spontan zu" in p.text_content(".tour-karte")
-    p.wait_for_timeout(400)
-    assert p.evaluate("getComputedStyle(document.querySelector('.tour-loch')).width") != "0px", "nichts hervorgehoben"
+    p.wait_for_function("parseFloat(getComputedStyle(document.querySelector('.tour-loch')).width)>100")  # hervorgehoben
     for _ in range(6):
         p.click("#tour-weiter")
     assert "Speichern" in p.text_content(".tour-karte") and p.is_visible("#speichern")
