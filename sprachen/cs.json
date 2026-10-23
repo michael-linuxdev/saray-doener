@@ -497,5 +497,14 @@
 "Applied as usual.": "Nastaveno jako obvykle.",
 "No": "Ne",
 "🔍 Large text": "🔍 Velké písmo",
-"🔍 Normal text": "🔍 Normální písmo"
+"🔍 Normal text": "🔍 Normální písmo",
+"Fully booked on this day. Please choose another day or call us.": "Tento den je vše obsazeno. Vyberte prosím jiný den nebo nám zavolejte.",
+"Off": "Vypnout",
+"You have already ordered {n} times at Saray Döner {ort} – thank you!": "U Saray Döner {ort} jste už objednali {n}× – děkujeme!",
+"fully booked": "obsazeno",
+"{a} is fully booked – we picked {b} for you.": "{a} je už obsazeno – vybrali jsme pro vás {b}.",
+"✓ The kitchen has seen order {nr}. You will hear a sound when it is ready.": "✓ Kuchyně vaši objednávku {nr} viděla. Až bude hotová, uslyšíte zvuk.",
+"🎉 Your order {nr} is ready! See you soon.": "🎉 Vaše objednávka {nr} je hotová! Brzy na viděnou.",
+"🔔 Order {nr}: you will hear a sound when it is ready. Please keep this page open.": "🔔 Objednávka {nr}: až bude hotová, uslyšíte zvuk. Nechte prosím tuto stránku otevřenou.",
+"🔔 Sound when the order is ready": "🔔 Zvuk, až bude objednávka hotová"
 }

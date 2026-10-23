@@ -541,7 +541,7 @@ def chef_app_aenderungen(b, url):
     p.check("#ab-immer")
     p.click("text=Übernehmen")
     # Hinweis (unter „Mehr“)
-    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('nav.tabs [data-tab="heute"]')
     p.fill("#h-text", "Heute Lieferung ab 18 Uhr")
     p.click("text=Hinweis hinzufügen")
     # Karte: Preis Nr. 1 ändern, Nr. 8 löschen, neues Gericht
@@ -605,10 +605,11 @@ def chef_app_standard_wiederherstellen(b, url):
     assert "9,99" in p.text_content('.liste-gericht[data-k="1"]')
     assert "gelöscht" in p.text_content('.liste-gericht[data-k="8"]')
     p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="gefahr"]')
     p.click("text=Alles auf Standard zurücksetzen")
     p.click(".blatt >> text=Ja, zurücksetzen")
     p.wait_for_selector(".status.ok")
-    assert gespeichert == [{}], gespeichert
+    assert list(gespeichert[0]) == ["preisverlauf"] and gespeichert[0]["preisverlauf"][0]["neu"] == ["7,00"], gespeichert  # Zurücksetzen landet im Preis-Verlauf
     assert not fehler, fehler
     ctx.close()
 
@@ -704,6 +705,7 @@ def chef_app_wartezeit_tage_rueckgaengig(b, url):
                                  "2026-12-25": {"freital": None, "altenberg": None}}, d
     # Rückgängig: holt den Stand vor der letzten Speicherung
     p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="rueckgaengig"]')
     p.click("text=Rückgängig machen …")
     p.click(".blatt >> text=Ja, rückgängig")
     p.wait_for_selector(".status.ok >> text=Online")
@@ -747,7 +749,7 @@ def sonderaktion_auf_der_seite(b, url):
 def chef_app_aktion_und_preisstaende(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"gerichte": {"1": {"preise": ["7,50"]}}}, gespeichert=gespeichert)
-    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('nav.tabs [data-tab="preise"]')
     p.click("text=Heutige Preise als Stand festlegen")
     assert "Stand 21.10.2026" in p.text_content("#app")
     p.click('nav.tabs [data-tab="karte"]')
@@ -806,17 +808,22 @@ def bewertung_nach_bestellung(b, url):
     s.wa_text()
     assert s.js("JSON.parse(localStorage.getItem('saray-bewertung')).l") == "altenberg"
     s.schliessen()
-    # nächster Besuch drei Stunden später: einmal fragen; danach nicht mehr
+    # nächster Besuch drei Stunden später: erst ab der 3. Bestellung einmal fragen; danach nicht mehr
     ms = int(ZEIT.timestamp() * 1000) - 3 * 3600 * 1000
-    for fertig in (False, True):
+    for n, fertig in ((2, False), (3, False), (3, True)):
         ctx = b.new_context(viewport=HANDY, locale="de-DE", timezone_id="Europe/Berlin", reduced_motion="reduce", is_mobile=True, has_touch=True)
         p = ctx.new_page()
         p.clock.set_fixed_time(ZEIT)
         wert = json.dumps({"l": "freital", "t": ms, **({"fertig": 1} if fertig else {})})
-        p.add_init_script(f"try{{localStorage.setItem('saray-hand-gefragt','1');localStorage.setItem('saray-bewertung',{json.dumps(wert)})}}catch(e){{}}")
+        gast = json.dumps({"id": "ABCDEFGH", "n": n, "letzte": "X11"})
+        p.add_init_script(f"try{{localStorage.setItem('saray-hand-gefragt','1');localStorage.setItem('saray-bewertung',{json.dumps(wert)});localStorage.setItem('saray-gast',{json.dumps(gast)})}}catch(e){{}}")
         p.goto(url)
         p.wait_for_timeout(1900)
-        if not fertig:
+        if n < 3:
+            assert p.evaluate("document.getElementById('hand-tipp').hidden"), "Bewertung erst ab der 3. Bestellung"
+            assert '"fertig"' not in p.evaluate("localStorage.getItem('saray-bewertung')")
+        elif not fertig:
+            assert "schon 3-mal" in p.text_content("#hand-tipp"), p.text_content("#hand-tipp")
             assert not p.evaluate("document.getElementById('hand-tipp').hidden"), "Bewertungs-Hinweis fehlt"
             assert "Hat alles gepasst?" in p.text_content("#hand-tipp") and "Freital" in p.text_content("#hand-tipp")
             assert '"fertig":1' in p.evaluate("localStorage.getItem('saray-bewertung')")
@@ -867,6 +874,7 @@ def chef_app_zahlen(b, url):
             {"path": "anrufen-altenberg", "count": 2 * f, "event": True}]})
     p.route("https://saraymicana.goatcounter.com/**", gc)
     p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="zahlen"]')
     p.fill("#gc-schl", " GCKEY ")
     p.click(".karte:has(#gc-schl) >> text=Speichern")
     p.wait_for_selector("table.zahlen", timeout=30000)
@@ -1075,15 +1083,18 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 37 offen" in p.text_content(".checkliste summary")
+    p.click('[data-seite="checkliste"]')
+    assert "von 39 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
     assert "GitHub Pro" in p.text_content(".checkliste")
-    assert "Gefahrenbereich" in p.text_content("#app")
     p.click("#speichern-knopf")
     p.wait_for_selector(".status.ok >> text=Online")
     assert gespeichert[-1]["checkliste"] == {"domain": {"ok": True}, "wa-altenberg": {"notiz": "0151 1234567"}}, gespeichert[-1]
+    p.click("#zurueck")
+    assert "Gefahrenbereich" in p.text_content("#app")
+    p.click('[data-seite="gefahr"]')
     p.click("text=Alles auf Standard zurücksetzen")
     p.click(".blatt >> text=Ja, zurücksetzen")
     p.wait_for_timeout(500)
@@ -1212,6 +1223,7 @@ def chef_app_feiertage_und_google(b, url):
     assert d["sonderzeiten"] == {"2026-10-31": {"freital": ["11:00", "22:00"], "altenberg": ["11:00", "21:00"]}}, d
     assert d["feiertage_ok"] == ["2026-11-18"], d
     p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="google"]')
     p.click("text=Google-Unternehmensprofil")
     txt = p.evaluate("[...document.querySelectorAll('.gp-zeile textarea, .gp-zeile input')].map(x=>x.value).join('|')")
     assert "Dresdner Str. 87, 01705 Freital" in txt and "Mo: 10:00–22:00" in txt and "Nur Barzahlung" in txt, txt
@@ -1383,7 +1395,7 @@ def chef_app_gutscheine_mittag_winter(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
     p.evaluate("window.print=()=>{window._gedruckt=(window._gedruckt||0)+1}")
-    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('nav.tabs [data-tab="preise"]')
     p.click("[data-gs-wert='2500']")
     p.click("[data-gs-anzahl='2']")
     p.click("#gs-erstellen")
@@ -1440,8 +1452,11 @@ def chef_app_tuerkisch(b, url):
     assert "Bugün ne yok?" in p.text_content("#app")
     p.click('nav.tabs [data-tab="karte"]')
     assert "Pizza Margherita" in p.text_content("#app"), "Gerichtsnamen bleiben deutsch"
+    p.click('nav.tabs [data-tab="preise"]')
+    assert "Hediye çekleri" in p.text_content("#app")
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "Hediye çekleri" in p.text_content("#app") and "37 / 37 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    p.click('[data-seite="checkliste"]')
+    assert "39 / 39 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
     p.click("#sprache")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
@@ -1506,7 +1521,7 @@ def chef_app_codes_und_viel_los(b, url):
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
     p.click("#viel-los")
     assert "wieder aus" in p.text_content("#viel-los")
-    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('nav.tabs [data-tab="preise"]')
     p.fill("#c-firma", "Elbtal GmbH")
     assert p.input_value("#c-code") == "ELBTALGM10"
     p.click("#c-anlegen")
@@ -1563,7 +1578,7 @@ def firmen_codes_standardmaessig_aus(b, url):
     assert s.js("!document.getElementById('code-box')"), "Firmen-Code-Feld sichtbar, obwohl abgeschaltet"
     s.schliessen()
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
-    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('nav.tabs [data-tab="preise"]')
     assert p.locator("h3", has_text="Firmen-Codes").count() == 0 and p.locator("#c-anlegen").count() == 0
     ctx.close()
 
@@ -1603,7 +1618,8 @@ def rueckmeldung_zuerst_an_den_laden(b, url):
     p = ctx.new_page()
     p.clock.set_fixed_time(ZEIT)
     wert = json.dumps({"l": "freital", "t": int(ZEIT.timestamp() * 1000) - 3 * 3600 * 1000, "nr": "K47"})
-    p.add_init_script(f"try{{localStorage.setItem('saray-hand-gefragt','1');localStorage.setItem('saray-bewertung',{json.dumps(wert)})}}catch(e){{}}window.open=function(u){{window._offen=decodeURIComponent(u)}}")
+    gast = json.dumps({"id": "ABCDEFGH", "n": 4, "letzte": "X11"})
+    p.add_init_script(f"try{{localStorage.setItem('saray-hand-gefragt','1');localStorage.setItem('saray-bewertung',{json.dumps(wert)});localStorage.setItem('saray-gast',{json.dumps(gast)})}}catch(e){{}}window.open=function(u){{window._offen=decodeURIComponent(u)}}")
     p.goto(url)
     p.wait_for_timeout(1900)
     p.click("#hand-tipp >> text=👎 Nicht ganz")
@@ -1805,10 +1821,12 @@ def chef_app_zu_preise_google(b, url):
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
     p.click("[data-zu='freital']")
     assert "Freital doch geöffnet" in p.text_content("[data-zu='freital']")
-    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('nav.tabs [data-tab="preise"]')
     p.click("[data-preis-gruppe='getraenke']")
     p.click("#preise-erhoehen")
     p.click(".blatt >> text=Ja, übernehmen")
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="google"]')
     p.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)")
     google = p.evaluate("[...document.querySelectorAll('textarea')].map(t=>t.value).filter(v=>v.indexOf('Döner Kebap')>-1)[0]")
     assert "1 Döner Kebap (Fladenbrot, Fleisch, Salat): 7,00 €" in google and "80 Pizza Margherita (Tomate, Käse): 24 cm 6,50 € / 30 cm 7,50 €" in google, google[:400]
@@ -2011,6 +2029,150 @@ def standard_bauen(ziel):
         print(out.stdout + out.stderr)
         raise SystemExit("Standard-Seite ließ sich nicht bauen")
     return pathlib.Path(ziel) / "docs"
+
+
+@test
+def chef_app_navigation_verlauf_slots(b, url):
+    gespeichert = []
+    anp = {"gerichte": {"1": {"preise": ["7,50"]}}, "voll": {"freital": {"2026-10-21": ["18:00"], "2026-10-01": ["12:00"]}},
+           "preisverlauf": [{"d": "2026-10-20", "s": 1, "k": "1", "n": "1 Döner Kebap", "alt": ["7,00"], "neu": ["7,50"]}]}
+    ctx, p, fehler = chef_oeffnen(b, url, anp, gespeichert)
+    assert p.evaluate("[...document.querySelectorAll('nav.tabs button')].map(b=>b.dataset.tab).join()") == "heute,karte,preise,zeiten,mehr"
+    assert "punkt" in p.get_attribute('nav.tabs [data-tab="mehr"]', "class"), "Punkt für offene Pflicht-Fragen fehlt"
+    assert p.locator("#a-hinweis").count() == 1, "Hinweis gehört jetzt unter Heute"
+    # Mehr: Menü, Unterseite, zurück; zweiter Tipp auf „Mehr“ zeigt wieder das Menü
+    p.click('nav.tabs [data-tab="mehr"]')
+    assert p.locator(".menue-punkt[data-seite]").count() == 8
+    p.click('[data-seite="drucken"]')
+    assert "aushang-fenster.pdf" in p.inner_html("#app")
+    p.click('nav.tabs [data-tab="heute"]')
+    p.click('nav.tabs [data-tab="mehr"]')
+    assert p.locator("#zurueck").count() == 1, "Unterseite nicht gemerkt"
+    p.click('nav.tabs [data-tab="mehr"]')
+    assert p.locator("#mehr-suche").count() == 1
+    # Suche führt in andere Reiter
+    p.fill("#mehr-suche", "urlaub")
+    p.click(".such-treffer .menue-punkt")
+    assert p.get_attribute('nav.tabs [data-tab="zeiten"]', "aria-current") == "page"
+    assert p.evaluate("Math.abs(document.getElementById('a-urlaub').getBoundingClientRect().top)<200")
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.fill("#mehr-suche", "gutschein")
+    assert "Geschenkgutscheine" in p.text_content(".such-treffer")
+    p.fill("#mehr-suche", "xyzxyz")
+    assert "Nichts gefunden" in p.text_content(".such-treffer")
+    # Zeiten: Sprungleiste, Viertelstunden-Grenze, ausgebuchte Zeit freigeben
+    p.click('nav.tabs [data-tab="zeiten"]')
+    assert p.locator('.sprung [data-sprung="a-slots"]').count() == 1
+    assert "Heute 18:00 Uhr ausgebucht" in p.text_content("#slot-karte") and "12:00" not in p.text_content("#slot-karte")
+    p.click('[data-slot="freital-3"]')
+    p.click("#slot-karte >> text=Freigeben")
+    # Preise: Verlauf, einzeln zurück
+    p.click('nav.tabs [data-tab="preise"]')
+    assert "1 Döner Kebap: 7,00 → 7,50 €" in p.text_content("#verlauf-karte")
+    p.click('[data-zurueck="1"]')
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert "gerichte" not in d, d.get("gerichte")
+    assert d["slot_max"] == {"freital": 3} and "voll" not in d, d
+    v = d["preisverlauf"]
+    assert len(v) == 2 and v[-1]["k"] == "1" and v[-1]["alt"] == ["7,50"] and v[-1]["neu"] == ["7,00"] and v[-1]["d"] == "2026-10-21", v
+    assert p.is_disabled('[data-zurueck="1"] >> nth=0') or p.locator('[data-zurueck="1"]').count() == 2
+    assert not fehler, fehler
+    ctx.close()
+
+
+@test
+def slots_ausgebucht_seite_und_kueche(b, url):
+    import base64
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"voll": {"freital": {"2026-10-21": ["18:30"]}}}, tmp)
+        s = Seite(b, u)
+        s.p.add_init_script("try{localStorage.setItem('saray-abholung',JSON.stringify({laden:'freital',tag:'2026-10-21',zeit:'heute, 18:30 Uhr',name:''}))}catch(e){}")
+        s.p.reload()
+        s.p.wait_for_timeout(300)
+        s.p.click("#nr-1 .plus")
+        s.p.click("#zettel-leiste")
+        opt = s.p.locator("#abhol-zeit option[value='heute, 18:30 Uhr']")
+        assert opt.is_disabled() and "ausgebucht" in opt.text_content()
+        assert s.p.input_value("#abhol-zeit") == "heute, 18:45 Uhr", s.p.input_value("#abhol-zeit")
+        assert "18:30 Uhr ist schon ausgebucht" in s.p.text_content("#abhol-hinweis")
+        assert "18:45" in s.wa_text()
+        s.schliessen()
+        srv.shutdown()
+    # Küche: 5 Vorbestellungen für 19:00 in Freital -> Zeit wird online gesperrt
+    gespeichert = []
+    ctx = b.new_context(viewport={"width": 1180, "height": 900}, locale="de-DE", timezone_id="Europe/Berlin")
+    k = ctx.new_page()
+    k.clock.set_fixed_time(ZEIT)
+    def github(route):
+        r = route.request
+        if r.method == "PUT":
+            body = json.loads(r.post_data)
+            gespeichert.append((body["message"], json.loads(base64.b64decode(body["content"]).decode())))
+            route.fulfill(status=200, json={"content": {"sha": "neu"}})
+        else:
+            route.fulfill(status=200, json={"sha": "alt", "content": base64.b64encode(json.dumps({"voll": {"freital": {"2026-10-01": ["12:00"]}}}).encode()).decode()})
+    k.route("https://api.github.com/**", github)
+    k.add_init_script("localStorage.setItem('saray-chef-token','TESTTOKEN')")
+    for i in range(5):
+        o = {"v": 1, "nr": f"F{i}", "l": "freital", "z": "heute, 19:00 Uhr", "t": "2026-10-21T19:0" + str(i), "m": "X", "s": 700, "a": 1792600000000 + i, "p": [[1, "Nr. 1 Döner Kebap", "", "", "", 700]]}
+        k.goto(url + "kueche/#b=" + base64.urlsafe_b64encode(json.dumps(o).encode()).decode().rstrip("="))
+        k.wait_for_function(f"document.querySelectorAll('#offen .bon').length==={i + 1}")
+        if i == 3:
+            k.wait_for_timeout(300)
+            assert not gespeichert, "zu früh gesperrt"
+    k.wait_for_selector("#slot-info:not([hidden])")
+    msg, anp = gespeichert[-1]
+    assert msg == "Küche: ausgebucht freital 2026-10-21 19:00" and anp["voll"] == {"freital": {"2026-10-21": ["19:00"]}}, gespeichert
+    assert "Online ausgebucht: Freital 19:00" in k.text_content("#slot-info")
+    k.reload()
+    k.wait_for_timeout(500)
+    assert len(gespeichert) == 1, "doppelt gesperrt"
+    ctx.close()
+
+
+@test
+def abholbereit_per_ton(b, url):
+    import base64
+    s = Seite(b, url)
+    gesendet = []
+    def ntfy(route):
+        r = route.request
+        if r.method == "POST":
+            gesendet.append((r.url, r.post_data))
+            route.fulfill(status=200, json={"id": "x"})
+        else:
+            gesendet.append((r.url, "GET"))
+            route.fulfill(status=200, headers={"Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*"},
+                          body='event: open\ndata: {"event":"open"}\n\ndata: {"id":"1","event":"message","message":"ok"}\n\ndata: {"id":"2","event":"message","message":"fertig"}\n\nretry: 600000\n\n')
+    s.ctx.route("https://ntfy.sh/**", ntfy)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    text = s.wa_text()
+    link = [z for z in text.split("\n") if z.startswith("Für die Küche: ")][0].split(": ", 1)[1]
+    roh = link.split("#b=")[1]
+    o = json.loads(base64.urlsafe_b64decode(roh + "=" * (-len(roh) % 4)).decode())
+    assert len(o["f"]) == 16, o
+    assert s.p.locator(".ton-box").count() == 0, "ohne Antippen keine Verbindung"
+    assert not gesendet
+    s.p.click("#wa-ton")
+    s.p.wait_for_selector(".ton-box.fertig")
+    assert "ist fertig" in s.p.text_content(".ton-box")
+    assert gesendet[0][0].startswith("https://ntfy.sh/saray-" + o["f"] + "/sse?since="), gesendet
+    assert s.js("JSON.parse(localStorage.getItem('saray-ton')).z") == "fertig"
+    s.p.click("#ton-aus")
+    assert s.js("localStorage.getItem('saray-ton')") is None
+    # Küche: „Fertig ✓“ meldet an den Dienst (nur das Stichwort und „fertig“)
+    k = s.ctx.new_page()
+    k.clock.set_fixed_time(ZEIT)
+    k.goto(link)
+    k.wait_for_selector("#offen .bon")
+    k.click("#offen .bon >> text=Fertig ✓")
+    k.wait_for_timeout(300)
+    assert ("https://ntfy.sh/saray-" + o["f"], "fertig") in gesendet, gesendet
+    s.schliessen()
 
 
 def main():

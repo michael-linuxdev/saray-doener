@@ -534,5 +534,14 @@
 "Applied as usual.": "تم التطبيق كالمعتاد.",
 "No": "لا",
 "🔍 Large text": "🔍 خط كبير",
-"🔍 Normal text": "🔍 خط عادي"
+"🔍 Normal text": "🔍 خط عادي",
+"Fully booked on this day. Please choose another day or call us.": "هذا اليوم محجوز بالكامل. يُرجى اختيار يوم آخر أو الاتصال بنا.",
+"Off": "إيقاف",
+"You have already ordered {n} times at Saray Döner {ort} – thank you!": "لقد طلبت من Saray Döner {ort} بالفعل {n} مرات – شكرًا لك!",
+"fully booked": "محجوز بالكامل",
+"{a} is fully booked – we picked {b} for you.": "{a} محجوز بالكامل – اخترنا لك {b}.",
+"✓ The kitchen has seen order {nr}. You will hear a sound when it is ready.": "✓ اطّلع المطبخ على الطلب {nr}. ستسمع صوتًا عندما يكون جاهزًا.",
+"🎉 Your order {nr} is ready! See you soon.": "🎉 طلبك {nr} جاهز! نراك قريبًا.",
+"🔔 Order {nr}: you will hear a sound when it is ready. Please keep this page open.": "🔔 الطلب {nr}: ستسمع صوتًا عندما يكون جاهزًا. يُرجى إبقاء هذه الصفحة مفتوحة.",
+"🔔 Sound when the order is ready": "🔔 تنبيه صوتي عندما يكون الطلب جاهزًا"
 }

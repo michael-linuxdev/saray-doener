@@ -534,5 +534,14 @@
 "Applied as usual.": "Сделано как обычно.",
 "No": "Нет",
 "🔍 Large text": "🔍 Крупный шрифт",
-"🔍 Normal text": "🔍 Обычный шрифт"
+"🔍 Normal text": "🔍 Обычный шрифт",
+"Fully booked on this day. Please choose another day or call us.": "На этот день всё занято. Пожалуйста, выберите другой день или позвоните нам.",
+"Off": "Выкл.",
+"You have already ordered {n} times at Saray Döner {ort} – thank you!": "Вы уже заказывали в Saray Döner {ort} {n} раз – спасибо!",
+"fully booked": "всё занято",
+"{a} is fully booked – we picked {b} for you.": "{a} уже занято – мы выбрали для вас {b}.",
+"✓ The kitchen has seen order {nr}. You will hear a sound when it is ready.": "✓ Кухня получила заказ {nr}. Когда он будет готов, вы услышите сигнал.",
+"🎉 Your order {nr} is ready! See you soon.": "🎉 Ваш заказ {nr} готов! До встречи.",
+"🔔 Order {nr}: you will hear a sound when it is ready. Please keep this page open.": "🔔 Заказ {nr}: когда он будет готов, вы услышите сигнал. Пожалуйста, не закрывайте эту страницу.",
+"🔔 Sound when the order is ready": "🔔 Сигнал, когда заказ будет готов"
 }

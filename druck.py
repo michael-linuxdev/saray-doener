@@ -340,6 +340,38 @@ ol li span{{flex:none;width:8mm;height:8mm;border-radius:50%;background:#3A1531;
 </style></head><body>{"".join(seiten)}</body></html>"""
 
 
+def fenster_html():
+    """A4 quer fürs Schaufenster: sehr großer QR-Code (15 cm, von draußen aus 1–2 m scannbar), kurz in 6 Sprachen.
+    Mit der bedruckten Seite nach außen von innen an die Scheibe kleben."""
+    kopf = uri("maskottchen", "saray-koch-kopf.svg")
+    qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "Q", "#3A1531", rand=2)
+    de = VORBESTELLEN[0]
+    schritte = "".join(f"<li><span>{i + 1}</span>{e(x)}</li>" for i, x in enumerate(de[2]))
+    zeilen = "".join(f'<li lang="{c}" dir="{"rtl" if c == "ar" else "ltr"}">{u.replace("<br>", " ")}</li>' for c, u, _, _ in VORBESTELLEN[1:])
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:297mm 210mm;margin:0}}*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{font-family:Text,"Noto Sans","DejaVu Sans",sans-serif;color:#3A1531;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.s{{width:297mm;height:210mm;background:#FFD21F;display:flex;align-items:center;gap:12mm;padding:10mm 14mm;overflow:hidden}}
+.qr{{flex:none;background:#fff;border-radius:6mm;padding:5mm;width:150mm;height:150mm}}.qr svg{{width:100%;height:100%;display:block}}
+.r{{flex:1;display:flex;flex-direction:column;height:100%}}
+.k{{display:flex;align-items:center;gap:3mm}}.k img{{width:16mm}}.k b{{font:700 10mm/1 Slab}}
+h1{{font:700 11mm/1.08 Slab;margin:6mm 0 0}}
+.pfeil{{font:700 6mm/1.2 Text;margin:4mm 0 0}}
+ol{{list-style:none;padding:0;margin:4mm 0 0}}
+ol li{{display:flex;align-items:center;gap:3mm;background:#fff;border-radius:3mm;padding:1.6mm 3.5mm;margin-bottom:1.8mm;font:700 5.2mm/1.2 Text}}
+ol li span{{flex:none;width:8.5mm;height:8.5mm;border-radius:50%;background:#3A1531;color:#FFD21F;display:grid;place-items:center;font:700 4.8mm Slab}}
+ul{{list-style:none;padding:0;margin:4mm 0 0;font:700 3.9mm/1.35 Text,"Noto Sans","DejaVu Sans",sans-serif}}
+ul li{{margin-bottom:.8mm}}
+.f{{margin-top:auto;font:700 5mm Text}}
+</style></head><body><section class="s"><div class="qr">{qr}</div><div class="r">
+<div class="k"><img src="{kopf}" alt=""><b>Saray Döner</b></div>
+<h1>{de[1]}</h1><p class="pfeil">← Mit der Handykamera scannen</p><ol>{schritte}</ol><ul>{zeilen}</ul>
+<p class="f">{e(build.CNAME)}</p></div></section></body></html>"""
+
+
 def allergenmappe_html():
     """Allergenmappe für die Theke: jedes Gericht mit Inhaltsstoffen und Allergenen (A4 hoch, mehrere Seiten)."""
     heute = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Berlin")).strftime("%d.%m.%Y")
@@ -543,6 +575,17 @@ async def main(ziel):
         await pg.pdf(path=str(ziel / "aushang-vorbestellen.pdf"), format="A5", print_background=True, prefer_css_page_size=True)
         if "--vorschau" in sys.argv:
             await pg.screenshot(path=str(HIER / "druck" / "vorbestellen-vorschau.png"), full_page=True)
+        await pg.close()
+        tmp.unlink()
+        # Fenster-Aushang A4 quer mit großem QR-Code
+        tmp = HIER / "_fenster.html"
+        tmp.write_text(fenster_html(), encoding="utf-8")
+        pg = await b.new_page(viewport={"width": 1123, "height": 794})
+        await pg.goto(tmp.as_uri())
+        await pg.wait_for_timeout(500)
+        await pg.pdf(path=str(ziel / "aushang-fenster.pdf"), width="297mm", height="210mm", print_background=True, prefer_css_page_size=True)
+        if "--vorschau" in sys.argv:
+            await pg.screenshot(path=str(HIER / "druck" / "fenster-vorschau.png"))
         await pg.close()
         tmp.unlink()
         # Aushang A3 mit der ganzen Karte

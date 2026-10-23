@@ -500,5 +500,14 @@
 "Applied as usual.": "Her zamanki gibi ayarlandı.",
 "No": "Hayır",
 "🔍 Large text": "🔍 Büyük yazı",
-"🔍 Normal text": "🔍 Normal yazı"
+"🔍 Normal text": "🔍 Normal yazı",
+"Fully booked on this day. Please choose another day or call us.": "Bu gün tamamen dolu. Lütfen başka bir gün seçin veya bizi arayın.",
+"Off": "Kapat",
+"You have already ordered {n} times at Saray Döner {ort} – thank you!": "Saray Döner {ort} şubemizden şimdiden {n} kez sipariş verdiniz – teşekkürler!",
+"fully booked": "dolu",
+"{a} is fully booked – we picked {b} for you.": "{a} dolu – sizin için {b} seçtik.",
+"✓ The kitchen has seen order {nr}. You will hear a sound when it is ready.": "✓ Mutfak {nr} numaralı siparişinizi gördü. Hazır olduğunda bir ses duyacaksınız.",
+"🎉 Your order {nr} is ready! See you soon.": "🎉 {nr} numaralı siparişiniz hazır! Görüşmek üzere.",
+"🔔 Order {nr}: you will hear a sound when it is ready. Please keep this page open.": "🔔 Sipariş {nr}: hazır olduğunda bir ses duyacaksınız. Lütfen bu sayfayı açık bırakın.",
+"🔔 Sound when the order is ready": "🔔 Sipariş hazır olunca sesli bildirim"
 }

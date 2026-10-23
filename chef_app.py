@@ -100,11 +100,21 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .tag .geschl{flex:1;opacity:.6;font-weight:700}
 .schalter{display:flex;align-items:center;gap:8px;font-weight:700}
 .schalter input{width:24px;height:24px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;
   border-top:1px solid var(--linie);padding-bottom:env(safe-area-inset-bottom)}
 nav.tabs button{min-height:60px;border:0;background:none;font-weight:700;font-size:.85rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 nav.tabs button span{font-size:1.35rem;line-height:1}
 nav.tabs button[aria-current=page]{color:var(--paprika)}
+nav.tabs button{position:relative}nav.tabs button.punkt::after{content:"";position:absolute;top:8px;left:calc(50% + 10px);width:10px;height:10px;border-radius:50%;background:var(--paprika);border:2px solid #fff}
+.anker{scroll-margin-top:84px}
+.sprung{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;margin:0 -2px;scrollbar-width:none}.sprung::-webkit-scrollbar{display:none}
+.sprung .chip{flex:none;cursor:pointer;min-height:40px;border:1px solid var(--linie);background:#fff;font-weight:700}
+.menue{padding:4px 0}.menue-punkt{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:8px 14px;border:0;border-bottom:1px solid var(--linie);background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.menue-punkt:last-child{border-bottom:0}.mp-symbol{font-size:1.5rem;width:32px;text-align:center;flex:none}.mp-text{flex:1;display:flex;flex-direction:column}
+.mp-text small{color:#6b5a66;font-size:.85rem}.mp-pfeil{font-size:1.5rem;opacity:.45}
+.such-karte input{width:100%;min-height:48px;font-size:1rem}.such-treffer .menue-punkt{min-height:52px;padding:6px 4px}
+.zurueck-zeile{margin:4px 0 10px}
+.karte.blitz{outline:3px solid var(--gelb);transition:outline-color .4s}
 .speichern{position:fixed;left:10px;right:10px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:31;display:flex;gap:10px;align-items:center;
   background:var(--gelb);border:2px solid var(--tinte);border-radius:16px;padding:8px 8px 8px 14px;box-shadow:0 10px 24px -10px rgba(58,21,49,.6)}
 .speichern p{margin:0;flex:1;font-weight:700;font-size:.95rem;line-height:1.25}
@@ -146,8 +156,9 @@ a.knopf{color:inherit}
 <nav class="tabs" id="tabs" hidden>
   <button data-tab="heute" aria-current="page"><span>☀️</span>Heute</button>
   <button data-tab="karte"><span>📋</span>Karte</button>
+  <button data-tab="preise"><span>💶</span>Preise</button>
   <button data-tab="zeiten"><span>🕑</span>Zeiten</button>
-  <button data-tab="mehr"><span>⚙️</span>Mehr</button>
+  <button data-tab="mehr"><span>☰</span>Mehr</button>
 </nav>
 <script>
 (function(){
@@ -242,6 +253,7 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
   if(o.aktionen)o.aktionen=o.aktionen.filter(function(a){return a.bis>=t;});
   if(o.feiertage_ok)o.feiertage_ok=o.feiertage_ok.filter(function(d){return d>=t;});
   if(o.sonderzeiten)Object.keys(o.sonderzeiten).forEach(function(d){if(d<t||!Object.keys(o.sonderzeiten[d]).length)delete o.sonderzeiten[d];});
+  if(o.voll)Object.keys(o.voll).forEach(function(l){var v=o.voll[l]||{};Object.keys(v).forEach(function(d){if(d<t||!(v[d]||[]).length)delete v[d];});if(!Object.keys(v).length)delete o.voll[l];});
   if(o.wartezeit)Object.keys(o.wartezeit).forEach(function(l){var w=o.wartezeit[l];if(!w||w.datum<t||!w.min)delete o.wartezeit[l];});
   Object.keys(o).forEach(function(k){var v=o[k];if(v==null||(Array.isArray(v)&&!v.length)||(typeof v==='object'&&!Array.isArray(v)&&!Object.keys(v).length))delete o[k];});
   if(o.zeiten)Object.keys(o.zeiten).forEach(function(l){if(!Object.keys(o.zeiten[l]).length)delete o.zeiten[l];});
@@ -250,11 +262,12 @@ function aufraeumen(o){ /* leere Teile und abgelaufene Tagesregeln entfernen */
 }
 function geaendert(){return JSON.stringify(aufraeumen(kopie(ANP)))!==ALT;}
 function zaehlen(){var a=aufraeumen(kopie(ANP)),b=JSON.parse(ALT),n=0;
-  ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste','pause'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
+  ['gerichte','zeiten','sonderzeiten','wartezeit','checkliste','pause','slot_max','voll'].forEach(function(k){var x=a[k]||{},y=b[k]||{};Object.keys(Object.assign({},x,y)).forEach(function(i){if(JSON.stringify(x[i])!==JSON.stringify(y[i]))n++;});});
   if((a.winter||'')!==(b.winter||''))n++;
   ['geloescht','neu','verfuegbarkeit','hinweise','aktionen','staende','feiertage_ok','gutscheine','codes','pakete'].forEach(function(k){var x=(a[k]||[]).map(JSON.stringify),y=(b[k]||[]).map(JSON.stringify);
     n+=x.filter(function(i){return y.indexOf(i)<0;}).length+y.filter(function(i){return x.indexOf(i)<0;}).length;});return n;}
-function leiste(){var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
+function leiste(){var mt=document.querySelector('nav.tabs [data-tab="mehr"]');if(mt&&STD){var o=clOffen(true);mt.classList.toggle('punkt',!!o);mt.title=o?o+' Pflicht-Fragen auf der Checkliste offen':'';}
+  var n=geaendert()?Math.max(1,zaehlen()):0;document.getElementById('speichern').hidden=!n;
   document.getElementById('speichern-text').textContent=(n===1?'1 Änderung':n+' Änderungen')+' – noch nicht gespeichert';}
 
 /* ---------- Laden & Speichern ---------- */
@@ -271,8 +284,19 @@ function laden(){
     document.getElementById('status').hidden=true;document.getElementById('tabs').hidden=false;
     document.getElementById('stand').textContent='Änderungen: '+(Object.keys(ANP).length?'vorhanden':'keine (Standard)');zeichnen();});
 }
+/* Preis-Verlauf: beim Speichern jede Preisänderung mit Datum festhalten (höchstens 300 Einträge, 2 Jahre) */
+function preisMap(a){var m={},ae=a.gerichte||{},weg=a.geloescht||[];
+  STD.gruppen.forEach(function(g){g.abschnitte.forEach(function(ab){
+    ab.gerichte.forEach(function(x){if(weg.indexOf(x.k)>-1)return;var o=ae[x.k]||{};m[x.k]={n:((o.nr!=null?o.nr:x.nr)?(o.nr!=null?o.nr:x.nr)+' ':'')+(o.name!=null?o.name:x.name),p:o.preise||x.preise};});
+    (a.neu||[]).forEach(function(n){if(n.gruppe===g.id&&n.abschnitt===ab.titel)m[n.nr||g.id+'|'+ab.titel+'|'+n.name]={n:(n.nr?n.nr+' ':'')+n.name,p:n.preise};});});});
+  return m;}
+function verlaufNachtragen(alt,neu){
+  var a=preisMap(alt),b=preisMap(neu),d=heute(),s=Date.now(),ein=[];
+  Object.keys(b).forEach(function(k){if(a[k]&&JSON.stringify(a[k].p)!==JSON.stringify(b[k].p))ein.push({d:d,s:s,k:k,n:b[k].n,alt:a[k].p.slice(),neu:b[k].p.slice()});});
+  if(!ein.length)return;var grenze=(+d.slice(0,4)-2)+d.slice(4);
+  neu.preisverlauf=(neu.preisverlauf||[]).filter(function(e){return e.d>=grenze;}).concat(ein).slice(-300);}
 function speichern(nachricht){
-  var neu=aufraeumen(kopie(ANP)),inhalt=JSON.stringify(neu,null,2)+'\n';
+  var neu=aufraeumen(kopie(ANP));verlaufNachtragen(JSON.parse(ALT),neu);var inhalt=JSON.stringify(neu,null,2)+'\n';
   status('Speichert …');
   var body={message:nachricht||('Chef-App: '+Math.max(1,zaehlen())+' Änderung(en)'),content:b64enc(inhalt),branch:'main'};if(SHA)body.sha=SHA;
   return api('/contents/'+DATEI,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){
@@ -303,7 +327,79 @@ function beobachten(sha){ /* Fortschritt des GitHub-Workflows anzeigen (braucht 
 }
 
 /* ---------- Ansichten ---------- */
-function zeichnen(){app.textContent='';({heute:heuteTab,karte:karteTab,zeiten:zeitenTab,mehr:mehrTab})[TAB]();leiste();}
+function zeichnen(){app.textContent='';({heute:heuteTab,karte:karteTab,preise:preiseTab,zeiten:zeitenTab,mehr:mehrTab})[TAB]();leiste();}
+/* Navigation: 5 Reiter unten; „Mehr“ ist ein Menü mit Unterseiten (‹ Mehr führt zurück). Die Unterseite bleibt gemerkt,
+   solange die App offen ist; ein zweiter Tipp auf „Mehr“ zeigt wieder das Menü. Start ist immer „Heute“. */
+var SEITE='';
+function zuTab(t,seite,ziel){TAB=t;if(seite!=null)SEITE=seite;
+  [].forEach.call(document.querySelectorAll('nav.tabs [data-tab]'),function(x){if(x.dataset.tab===t)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});
+  zeichnen();var a=ziel&&document.getElementById(ziel);
+  if(a){a.scrollIntoView();var k=a.nextElementSibling;if(k){k.classList.add('blitz');setTimeout(function(){k.classList.remove('blitz');},1600);}}else window.scrollTo(0,0);}
+function anker(id){app.appendChild(el('div',{id:id,class:'anker'}));}
+function sprung(liste){app.appendChild(el('nav',{class:'sprung','aria-label':'Springen zu'},liste.map(function(x){
+  return el('button',{class:'chip','data-sprung':x[1],text:x[0],onclick:function(){var a=document.getElementById(x[1]);if(a)a.scrollIntoView({behavior:'smooth'});}});})));}
+function clOffen(nurMuss){var cl=ANP.checkliste||{},n=0;CHECKLISTE.forEach(function(g){g[1].forEach(function(x){if((!nurMuss||x[3])&&!(cl[x[0]]&&cl[x[0]].ok))n++;});});return n;}
+var MEHR=[
+  ['Werbung & Druck',[
+    ['drucken','🖨️','Drucken','Flyer, Aufsteller, Aushänge, Status-Bilder',druckKarte],
+    ['google','🔎','Google-Unternehmensprofil','Öffnungszeiten und Speisekarte zum Kopieren',googleKarte],
+    ['laden','📺','Bildschirm, Schaufenster, Küche','Links für die Geräte im Laden, Testbestellung',ladenSeitenKarte]]],
+  ['Zahlen',[['zahlen','📊','Zahlen','Besucher und Bestellungen',zahlenKarte]]],
+  ['Einrichtung',[
+    ['checkliste','✅','Checkliste','Vor dem Freischalten',checklisteKarte],
+    ['website','🌐','Website ansehen','So sehen Gäste die Seite',seiteAnsehenKarte]]],
+  ['Notfall',[
+    ['rueckgaengig','↩️','Letzte Änderung rückgängig','Stand vor dem letzten Speichern',rueckKarte],
+    ['gefahr','⚠️','Gefahrenbereich','Standard wiederherstellen, abmelden',gefahrKarte]]]];
+/* Suche „Was möchten Sie tun?“: [Titel, Stichwörter (auch türkisch), Reiter, Unterseite, Sprungziel] */
+var ZIELE=[
+  ['Laden heute spontan zu','zu geschlossen spontan krank heute kapalı kapat','heute','','a-zu'],
+  ['Wartezeit, Bestell-Pause, viel los','wartezeit warten pause stopp viel los voll bekleme süre mola yoğun','heute','','a-warte'],
+  ['Hinweis oben auf der Seite','hinweis banner info nachricht text duyuru not','heute','','a-hinweis'],
+  ['Was gibt es heute nicht?','aus ausverkauft sperren nicht verfügbar alle huhn falafel döner pizza yok tükendi','heute','','a-nicht'],
+  ['Zutaten','zutat zutaten gemüse käse soße malzeme peynir sos','heute','','a-zutaten'],
+  ['Sonderaktionen und Mittagstisch','aktion angebot mittag mittagstisch rabatt günstiger kampanya indirim öğle','karte','','a-aktionen'],
+  ['Familien- und Party-Boxen','box boxen paket familie party feier kutu aile parti','karte','','a-boxen'],
+  ['Speisekarte: Gerichte, Namen, Fotos','gericht gerichte speisekarte neu name foto nummer löschen menü yemek fotoğraf','karte','','a-karte'],
+  ['Preise anpassen','preis preise erhöhen teurer prozent fiyat zam','preise','','a-anpassen'],
+  ['Preis-Verlauf','verlauf zurück früher alter preis rückgängig geçmiş eski fiyat','preise','','a-verlauf'],
+  ['Preis-Stände','stand stände preis-stände sichern fiyat durum','preise','','a-staende'],
+  ['Geschenkgutscheine','gutschein gutscheine geschenk einlösen hediye çeki kupon','preise','','a-gutscheine'],
+  ['Was kommt (4 Wochen)','woche vorschau kommt demnächst plan hafta önizleme','zeiten','','a-kommt'],
+  ['Öffnungszeiten','öffnungszeiten zeiten offen uhrzeit çalışma saatleri','zeiten','','a-oeffnung'],
+  ['Besondere Tage und Feiertage','besondere tage feiertag heiligabend silvester ostern özel gün bayram tatil günü','zeiten','','a-sonder'],
+  ['Urlaub / Betriebsferien','urlaub ferien betriebsurlaub zu geschlossen tatil izin','zeiten','','a-urlaub'],
+  ['Wintersaison Altenberg','winter saison ski altenberg kış sezon','zeiten','','a-winter'],
+  ['Vorbestellungen je Viertelstunde','viertelstunde slot slots ausgebucht voll vorbestellung grenze dolu ön sipariş','zeiten','','a-slots']];
+MEHR.forEach(function(g){g[1].forEach(function(x){ZIELE.push([x[2],x[2].toLowerCase()+' '+x[3].toLowerCase()+' '+({drucken:'flyer plakat aushang aufsteller status pdf yazdır afiş',google:'google maps profil harita',laden:'tv fernseher bildschirm schaufenster küche bon test ekran mutfak vitrin',
+  zahlen:'zahlen statistik besucher umsatz istatistik ziyaretçi',checkliste:'checkliste fragen offen freischalten liste kontrol',website:'website seite ansehen web site',rueckgaengig:'rückgängig zurück fehler geri al',gefahr:'standard zurücksetzen abmelden token sıfırla çıkış'}[x[0]]||''),'mehr',x[0],'']);});});
+function sucheMehr(){
+  var q=el('input',{type:'search',id:'mehr-suche',placeholder:'Suchen: Urlaub, Preis, Gutschein …','aria-label':'Was möchten Sie tun?',autocomplete:'off'}),erg=el('div',{class:'such-treffer'});
+  function zeigen(){erg.textContent='';var w=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!w.length)return;
+    var t=ZIELE.filter(function(z){var h=(z[0]+' '+z[1]+' '+ue(z[0])).toLowerCase();return w.every(function(x){return h.indexOf(x)>-1;});}).slice(0,8);
+    if(!t.length){erg.appendChild(el('p',{class:'hinweis',text:'Nichts gefunden. Anderes Wort versuchen.'}));return;}
+    t.forEach(function(z){erg.appendChild(el('button',{class:'menue-punkt','data-ziel':z[3]||z[4],onclick:function(){zuTab(z[2],z[3],z[4]);}},
+      [el('span',{class:'mp-text'},[el('b',{text:z[0]}),el('small',{text:{heute:'Heute',karte:'Karte',preise:'Preise',zeiten:'Zeiten',mehr:'Mehr'}[z[2]]})]),el('span',{class:'mp-pfeil',text:'›'})]));});}
+  q.addEventListener('input',zeigen);
+  app.appendChild(el('div',{class:'karte such-karte'},[q,erg]));
+}
+function mehrTab(){
+  var e=null;MEHR.forEach(function(g){g[1].forEach(function(x){if(x[0]===SEITE)e=x;});});
+  if(e){app.appendChild(el('div',{class:'zurueck-zeile'},[el('button',{class:'knopf klein',id:'zurueck',text:'‹ Mehr',onclick:function(){SEITE='';zeichnen();window.scrollTo(0,0);}})]));e[4]();return;}
+  app.appendChild(el('h2',{text:'Mehr'}));
+  sucheMehr();
+  MEHR.forEach(function(g){app.appendChild(el('p',{class:'abschnitt',text:g[0]}));var k=el('div',{class:'karte menue'});
+    g[1].forEach(function(x){var info=x[3];if(x[0]==='checkliste'){var o=clOffen();info=o?o+' Fragen offen':'alles erledigt ✓';}
+      k.appendChild(el('button',{class:'menue-punkt','data-seite':x[0],onclick:function(){SEITE=x[0];zeichnen();window.scrollTo(0,0);}},
+        [el('span',{class:'mp-symbol',text:x[1]}),el('span',{class:'mp-text'},[el('b',{text:x[2]}),el('small',{text:info})]),el('span',{class:'mp-pfeil',text:'›'})]));});
+    app.appendChild(k);});
+}
+function preiseTab(){
+  sprung([['Anpassen','a-anpassen'],['Verlauf','a-verlauf'],['Stände','a-staende'],['Gutscheine','a-gutscheine']].concat(STD.firmen_codes?[['Firmen-Codes','a-codes']]:[]));
+  app.appendChild(el('h2',{text:'Preise'}));
+  anker('a-anpassen');preisKarte();anker('a-verlauf');verlaufKarte();anker('a-staende');staendeKarte();anker('a-gutscheine');gutscheinKarte();
+  if(STD.firmen_codes){anker('a-codes');codeKarte();}
+}
 
 function regelText(r){var t=r.ab?'ab '+r.ab+' Uhr':r.bis?'bis '+r.bis+' Uhr':(r.datum?'aus':'dauerhaft aus');
   t+=r.datum?(r.datum===heute()?' (heute)':' ('+datumDE(r.datum)+')'):(r.ab||r.bis?' (jeden Tag)':'');
@@ -359,10 +455,11 @@ function heuteTab(){
   var bald=offeneFeiertage(14);
   if(bald.length)app.appendChild(el('div',{class:'karte feiertag'},[el('b',{text:'📅 '+bald.map(function(f){return datumDE(f[0])+' '+f[1];}).join(', ')}),
     el('p',{class:'hinweis',style:'margin:4px 0 8px',text:'Öffnungszeiten für diesen Tag noch nicht festgelegt.'}),
-    el('button',{class:'knopf klein voll',text:'Jetzt festlegen',onclick:function(){TAB='zeiten';[].forEach.call(document.querySelectorAll('[data-tab]'),function(x){if(x.dataset.tab==='zeiten')x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});zeichnen();window.scrollTo(0,0);}})]));
-  app.appendChild(zuKarte());
-  app.appendChild(wartezeitKarte());
-  app.appendChild(el('h2',{text:'Was gibt es heute nicht?'}));
+    el('button',{class:'knopf klein voll',text:'Jetzt festlegen',onclick:function(){zuTab('zeiten',null,'a-sonder');}})]));
+  anker('a-zu');app.appendChild(zuKarte());
+  anker('a-warte');app.appendChild(wartezeitKarte());
+  anker('a-hinweis');hinweisKarte();
+  anker('a-nicht');app.appendChild(el('h2',{text:'Was gibt es heute nicht?'}));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Für welchen Laden?'}),
     el('div',{class:'wahl'},[['alle','Beide'],['freital','Freital'],['altenberg','Altenberg']].map(function(x){
       return el('button',{'aria-pressed':String(LADEN===x[0]),text:x[1],onclick:function(){LADEN=x[0];zeichnen();}});}))]));
@@ -378,7 +475,7 @@ function heuteTab(){
         el('button',{class:'knopf klein',text:'Dauerhaft aus',onclick:function(){frage(g.name+' dauerhaft aus? (bis Sie es wieder entfernen)','Dauerhaft aus').then(function(j){if(j)regelNeu(g.id,'aus',null,true);});}})])]);
     app.appendChild(k);
   });
-  zutatenKarte();
+  anker('a-zutaten');zutatenKarte();
 }
 function hinweisKarte(){ /* Hinweis-Band */
   var t=heute();
@@ -428,7 +525,8 @@ function aktionText(a){var t=a.name+' · '+datumDE(a.von)+'–'+datumDE(a.bis);
   if(a.zeit_ab)t+=' · '+a.zeit_ab+'–'+a.zeit_bis+' Uhr';
   if(a.laden)t+=' · nur '+(a.laden==='freital'?'Freital':'Altenberg');if(a.art==='mittag')t='🍽 '+t;return t;}
 function karteTab(){
-  app.appendChild(el('h2',{text:'Sonderaktionen'}));
+  sprung([['Aktionen','a-aktionen'],['Boxen','a-boxen'],['Speisekarte','a-karte']]);
+  anker('a-aktionen');app.appendChild(el('h2',{text:'Sonderaktionen'}));
   var ak=el('div',{class:'karte'}),t=heute();
   (ANP.aktionen||[]).forEach(function(a,i){if(a.bis<t)return;
     ak.appendChild(el('p',{},[el('button',{class:'chip',style:'cursor:pointer;padding-right:12px','data-aktion':i,onclick:function(){aktionBearbeiten(i);}},[aktionText(a)])]));});
@@ -436,8 +534,8 @@ function karteTab(){
   ak.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf voll',text:'+ Neue Aktion',onclick:function(){aktionBearbeiten(null);}}),
     el('button',{class:'knopf',text:'+ Mittagstisch',onclick:function(){aktionBearbeiten(null,{name:'Mittagstisch',art:'mittag',von:heute(),bis:heute(27),tage:[1,2,3,4,5],zeit_ab:'11:00',zeit_bis:'14:00',preise:{}});}})]));
   app.appendChild(ak);
-  paketKarte();
-  app.appendChild(el('h2',{text:'Speisekarte'}));
+  anker('a-boxen');paketKarte();
+  anker('a-karte');app.appendChild(el('h2',{text:'Speisekarte'}));
   var such=el('input',{type:'search',placeholder:'Name oder Nummer suchen',value:SUCHE,'aria-label':'Suchen',oninput:function(){SUCHE=such.value;liste();}});
   app.appendChild(el('div',{class:'reihe'},[el('div',{style:'flex:1'},[such]),el('button',{class:'knopf voll',text:'+ Neues Gericht',onclick:function(){bearbeiten(null);}})]));
   var box=el('div');app.appendChild(box);
@@ -609,8 +707,9 @@ function wasKommtKarte(){
   app.appendChild(k);
 }
 function zeitenTab(){
-  wasKommtKarte();
-  app.appendChild(el('h2',{text:'Öffnungszeiten'}));
+  sprung([['Was kommt','a-kommt'],['Öffnungszeiten','a-oeffnung'],['Besondere Tage','a-sonder'],['Urlaub','a-urlaub'],['Winter','a-winter'],['Viertelstunde','a-slots']]);
+  anker('a-kommt');wasKommtKarte();
+  anker('a-oeffnung');app.appendChild(el('h2',{text:'Öffnungszeiten'}));
   var zeiten=zeitListe(6*60,24*60-30,30);
   STD.laeden.forEach(function(l){
     var anp=((ANP.zeiten||{})[l.id])||{},k=el('div',{class:'karte'},[el('h3',{text:l.name})]);
@@ -632,9 +731,27 @@ function zeitenTab(){
     app.appendChild(k);
   });
   app.appendChild(el('p',{class:'hinweis',text:'Gelb markierte Tage weichen vom Standard ab.'}));
-  sonderKarte();
-  urlaubKarte();
-  winterKarte();
+  anker('a-sonder');sonderKarte();
+  anker('a-urlaub');urlaubKarte();
+  anker('a-winter');winterKarte();
+  anker('a-slots');slotKarte();
+}
+/* Höchstzahl Vorbestellungen je Viertelstunde; ausgebuchte Zeiten (meldet die Küche) wieder freigeben */
+function slotKarte(){
+  var k=el('div',{class:'karte',id:'slot-karte'},[el('h3',{text:'🕒 Vorbestellungen je Viertelstunde'}),
+    el('p',{class:'hinweis',text:'Sind für eine Viertelstunde so viele Bestellungen da, sperrt die Küchenansicht diese Zeit online. Gäste bekommen dann automatisch die nächste freie Zeit vorgeschlagen.'})]);
+  STD.laeden.forEach(function(l){
+    var akt=(ANP.slot_max||{})[l.id];if(akt==null)akt=STD.slot_standard;
+    var w=el('div',{class:'wahl'});
+    [[0,'Keine Grenze'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[8,'8'],[10,'10']].forEach(function(o){w.appendChild(el('button',{'aria-pressed':String(akt===o[0]),'data-slot':l.id+'-'+o[0],text:o[1],onclick:function(){
+      ANP.slot_max=ANP.slot_max||{};if(o[0]===STD.slot_standard)delete ANP.slot_max[l.id];else ANP.slot_max[l.id]=o[0];zeichnen();}}));});
+    k.appendChild(el('label',{text:l.name}));k.appendChild(w);
+    var v=(ANP.voll||{})[l.id]||{},t=heute();
+    Object.keys(v).sort().filter(function(d){return d>=t;}).forEach(function(d){(v[d]||[]).forEach(function(z){
+      k.appendChild(el('div',{class:'tag'},[el('span',{style:'flex:1',text:'🔒 '+(d===t?'Heute':d.slice(8,10)+'.'+d.slice(5,7)+'.')+' '+z+' Uhr ausgebucht'}),
+        el('button',{class:'knopf klein',text:'Freigeben',onclick:function(){v[d]=v[d].filter(function(x){return x!==z;});if(!v[d].length)delete v[d];zeichnen();}})]));});});
+  });
+  app.appendChild(k);
 }
 /* Feiertage in Sachsen (plus Heiligabend und Silvester) für die nächsten Tage */
 function iso(d){return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);}
@@ -951,6 +1068,27 @@ function codeKarte(){
    .forEach(function(n){k.appendChild(n);});
   app.appendChild(k);
 }
+/* Preis-Verlauf: wann welcher Preis geändert wurde; einzeln oder alle einer Änderung zurücknehmen */
+function verlaufKarte(){
+  var v=ANP.preisverlauf||[],k=el('div',{class:'karte',id:'verlauf-karte'},[el('h3',{text:'🕘 Preis-Verlauf'})]);
+  if(!v.length){k.appendChild(el('p',{class:'hinweis',text:'Noch keine Preisänderungen. Ab jetzt steht hier jede Änderung mit Datum – mit „Zurück“ holen Sie den alten Preis wieder.'}));app.appendChild(k);return;}
+  k.appendChild(el('p',{class:'hinweis',text:'Jede gespeicherte Preisänderung mit Datum. „Zurück“ setzt den alten Preis wieder ein – danach speichern.'}));
+  var jetzt={};gerichte().forEach(function(x){if(!x.geloescht)jetzt[schl(x)]=x;});
+  function zurueck(e){var x=jetzt[e.k];if(x&&JSON.stringify(x.preise)===JSON.stringify(e.neu)&&e.alt.length===x.preise.length){preisSetzen(x,e.alt);return 1;}return 0;}
+  function moeglich(e){var x=jetzt[e.k];return !!(x&&JSON.stringify(x.preise)===JSON.stringify(e.neu)&&e.alt.length===x.preise.length);}
+  var gruppen=[],nach={};v.forEach(function(e){if(!nach[e.s]){nach[e.s]=[];gruppen.push(e.s);}nach[e.s].push(e);});
+  gruppen.reverse().slice(0,8).forEach(function(s){
+    var l=nach[s],d=l[0].d,ok=l.filter(moeglich);
+    var kopf=el('div',{class:'reihe',style:'align-items:center;margin-top:12px'},[el('b',{style:'flex:1',text:d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4)+' · '+(l.length===1?'1 Preis':l.length+' Preise')})]);
+    if(l.length>1)kopf.appendChild(el('button',{class:'knopf klein',text:'Alle zurück',disabled:!ok.length,onclick:function(){
+      frage(ok.length+' Preise auf den Stand vor dem '+d.slice(8,10)+'.'+d.slice(5,7)+'. zurücksetzen?','Ja, zurück').then(function(j){if(!j)return;var n=0;ok.forEach(function(e){n+=zurueck(e);});zeichnen();status(n+' Preise zurückgesetzt – bitte speichern.','ok',5000);});}}));
+    k.appendChild(kopf);
+    l.slice(0,6).forEach(function(e){k.appendChild(el('div',{class:'tag'},[el('span',{style:'flex:1',text:e.n+': '+e.alt.join(' / ')+' → '+e.neu.join(' / ')+' €'}),
+      el('button',{class:'knopf klein','data-zurueck':e.k,text:'↩ Zurück',disabled:!moeglich(e),title:moeglich(e)?'':'Preis wurde seitdem wieder geändert',onclick:function(){zurueck(e);zeichnen();status(e.n+': wieder '+e.alt.join(' / ')+' € – bitte speichern.','ok',5000);}})]));});
+    if(l.length>6)k.appendChild(el('p',{class:'hinweis',text:'… und '+(l.length-6)+' weitere'}));
+  });
+  app.appendChild(k);
+}
 /* Preiserhöhung mit Vorschau: Betrag oder Prozent, gerundet; vorher wird der heutige Stand gesichert */
 function preisKarte(){
   var k=el('div',{class:'karte'},[el('h3',{text:'📈 Preise anpassen'}),el('p',{class:'hinweis',text:'Alle Preise oder eine Kategorie auf einmal erhöhen. Vorher steht die Liste alt → neu da; der heutige Stand wird automatisch als Preis-Stand gesichert.'})]);
@@ -977,17 +1115,11 @@ function preisKarte(){
       zeichnen();status(l.length+' Preise geändert – bitte prüfen und speichern.','ok',5000);});}})])].forEach(function(n){k.appendChild(n);});
   app.appendChild(k);
 }
-function mehrTab(){
-  app.appendChild(el('h2',{text:'Mehr'}));
-  checklisteKarte();
-  hinweisKarte();
-  zahlenKarte();
-  googleKarte();
-  gutscheinKarte();
-  if(STD.firmen_codes)codeKarte();
-  ladenSeitenKarte();
+function seiteAnsehenKarte(){
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Seite ansehen'}),el('p',{class:'hinweis',text:'Änderungen sind nach dem Speichern in ca. 2–3 Minuten online.'}),
     el('div',{class:'reihe'},[el('a',{class:'knopf voll',href:'../',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Website öffnen'})])]));
+}
+function staendeKarte(){
   /* Preis-Stände */
   var sk=el('div',{class:'karte'},[el('h3',{text:'Preis-Stände'}),el('p',{class:'hinweis',text:'Den Stand '+STD.grundstand+' (gedruckte Karte) gibt es immer. Dazu bis zu drei eigene Stände, z. B. vor einer Preiserhöhung. Einzelne Preise holen Sie beim Gericht unter „Frühere Preise“ zurück.'})]);
   staende().forEach(function(st,i){
@@ -1004,26 +1136,31 @@ function mehrTab(){
     ANP.staende=(ANP.staende||[]).filter(function(s){return s.name!==st.name;}).concat([st]);zeichnen();}})]));
   if(eigene>=3)sk.appendChild(el('p',{class:'hinweis',text:'Höchstens drei eigene Stände – zum Festlegen bitte erst einen löschen.'}));
   app.appendChild(sk);
-  preisKarte();
+}
+function druckKarte(){
   /* Drucken */
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
     el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}),
-      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)'],['../druck/preisschilder.pdf','Preisschilder Getränke (8 je A4)'],['../druck/aushang-a3.pdf','Aushang A3 (ganze Karte)'],['../druck/aushang-vorbestellen.pdf','Aushang A5 „Hier vorbestellen“ (6 Sprachen)'],['../druck/status-empfehlung.png','WhatsApp-Status: Empfehlungen']],
+      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)'],['../druck/preisschilder.pdf','Preisschilder Getränke (8 je A4)'],['../druck/aushang-a3.pdf','Aushang A3 (ganze Karte)'],['../druck/aushang-vorbestellen.pdf','Aushang A5 „Hier vorbestellen“ (6 Sprachen)'],['../druck/aushang-fenster.pdf','Fenster-Aushang A4 quer (großer QR, nach außen)'],['../druck/status-empfehlung.png','WhatsApp-Status: Empfehlungen']],
       [].concat.apply([],(JSON.parse(ALT).aktionen||[]).filter(function(a){return a.bis>=heute();}).map(function(a){return [['../druck/'+slug(a.name,a.von)+'.pdf','Plakat: '+a.name+' (A4)'],
         ['../druck/'+slug(a.name,a.von)+'.png','Bild zum Posten: '+a.name],['../druck/status-'+slug(a.name,a.von)+'.png','WhatsApp-Status: '+a.name]];})))
       .map(function(d){return el('a',{class:'knopf',href:d[0],target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:d[1]});}))]));
+}
+function rueckKarte(){
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Letzte Änderung rückgängig'}),
     el('p',{class:'hinweis',text:'Holt den Stand vor dem letzten Speichern zurück.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf',text:'Rückgängig machen …',onclick:rueckgaengig})])]));
+}
+function gefahrKarte(){
   /* Gefahrenbereich: Aktionen, die sich nicht so einfach zurücknehmen lassen */
   app.appendChild(el('h2',{class:'gefahr-titel',text:'⚠️ Gefahrenbereich'}));
   app.appendChild(el('div',{class:'karte gefahr'},[
     el('p',{class:'hinweis',style:'margin:0 0 6px',text:'Nur benutzen, wenn Sie sicher sind.'}),
     el('h3',{text:'Standard wiederherstellen'}),
-    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“, Gutscheine und Firmen-Codes bleiben erhalten.'}),
+    el('p',{class:'hinweis',text:'Setzt Preise, Gerichte, Öffnungszeiten, Sperren, Zutaten, Aktionen und Hinweise auf den ursprünglichen Stand zurück. Die Checkliste „Vor dem Freischalten“, Gutscheine, Firmen-Codes und der Preis-Verlauf bleiben erhalten.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot voll',text:'Alles auf Standard zurücksetzen',onclick:function(){
       frage('Wirklich alle Änderungen löschen und den Standard wiederherstellen?','Ja, zurücksetzen').then(function(j){if(!j)return;
-        var cl=ANP.checkliste,gs=ANP.gutscheine,cd=ANP.codes;ANP={};if(cl)ANP.checkliste=cl;if(gs)ANP.gutscheine=gs;if(cd)ANP.codes=cd;speichern('Chef-App: Standard wiederhergestellt');});}})]),
+        var cl=ANP.checkliste,gs=ANP.gutscheine,cd=ANP.codes,pv=ANP.preisverlauf;ANP={};if(cl)ANP.checkliste=cl;if(gs)ANP.gutscheine=gs;if(cd)ANP.codes=cd;if(pv)ANP.preisverlauf=pv;speichern('Chef-App: Standard wiederhergestellt');});}})]),
     el('h3',{style:'margin-top:18px',text:'Zugang auf diesem Gerät'}),
     el('p',{class:'hinweis',text:'Der Zugang ist nur auf diesem Gerät gespeichert. Nach dem Abmelden braucht es einen neuen Zugangslink von Michael.'}),
     el('div',{class:'reihe'},[el('button',{class:'knopf rot',text:'Auf diesem Gerät abmelden',onclick:function(){frage('Zugang auf diesem Gerät löschen?','Abmelden').then(function(j){if(j){try{localStorage.removeItem(TK);}catch(e){}location.reload();}});}})])]));
@@ -1082,9 +1219,8 @@ function start(){
     einrichten(e.message==='zugang'?'Der Zugang ist ungültig oder abgelaufen.':'Laden fehlgeschlagen: '+e.message);});
 }
 
-document.getElementById('tabs').addEventListener('click',function(ev){var b=ev.target.closest('[data-tab]');if(!b)return;TAB=b.dataset.tab;
-  [].forEach.call(this.querySelectorAll('[data-tab]'),function(x){if(x===b)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});
-  zeichnen();window.scrollTo(0,0);});
+document.getElementById('tabs').addEventListener('click',function(ev){var b=ev.target.closest('[data-tab]');if(!b)return;
+  if(b.dataset.tab==='mehr'&&TAB==='mehr')SEITE='';zuTab(b.dataset.tab);});
 document.getElementById('speichern-knopf').addEventListener('click',function(){speichern();});
 document.getElementById('verwerfen').addEventListener('click',function(){frage('Ungespeicherte Änderungen verwerfen?','Verwerfen').then(function(j){if(j){ANP=JSON.parse(ALT);zeichnen();}});});
 window.addEventListener('beforeunload',function(e){if(STD&&geaendert()){e.preventDefault();e.returnValue='';}});
@@ -1142,6 +1278,8 @@ CHECKLISTE = [
         ["bildschirm", "Bildschirm im Laden", "Fernseher mit HDMI und Fire-TV-Stick (ca. 40 €), Adresse unter Mehr → Bildschirm im Laden als Startseite einstellen.", 0],
         ["kueche", "Küchenansicht", "Auf welchem Gerät im Laden öffnen wir die Bestellungen? Bondrucker gewünscht (ca. 40 €)?", 0],
         ["gutscheine", "Geschenkgutscheine", "Welche Werte? Restbetrag als neuer Gutschein? Gültig 3 Jahre bis Jahresende (gesetzlich).", 0],
+        ["slots", "Vorbestellungen je Viertelstunde", "Wie viele Vorbestellungen schafft die Küche pro Viertelstunde? Eingestellt sind 5 je Laden (Zeiten → Vorbestellungen je Viertelstunde). Ist die Zahl erreicht, sperrt die Küchenansicht die Zeit online – dafür braucht das Küchen-Gerät den Chef-App-Zugang.", 0],
+        ["ton", "„Abholbereit per Ton“", "Drückt die Küche „Fertig ✓“, hört der Gast einen Ton, wenn die Seite offen ist. Läuft über den Dienst ntfy.sh – mit in die Prüfung der Datenschutzerklärung nehmen. Später auch auf eigenem Server möglich.", 0],
         ["fahrplan", "Zugzeiten Altenberg", "Die Abfahrten gelten bis 12.12.2026. Danach trägt Michael den neuen Fahrplan ein.", 0],
     ]],
     ["Google und Fotos", [
@@ -1181,6 +1319,7 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="",
         "fotos": sorted(fotos),
         "firmen_codes": bool(firmen_codes),
         "zug_bis": zug_bis,
+        "slot_standard": ANP.SLOT_STANDARD,
         "laeden": [{"id": s["id"], "name": s["name"], "strasse": s["strasse"], "plz": s["plz"], "ort": s["ort"], "tel": s["tel"],
                     "bar": bool(s.get("bar")), "extra": s.get("extra", ""),
                     "zeiten": {str(t): [zeit(v[0]), zeit(v[1])] for t, v in s["zeiten_standard"].items()}} for s in standorte],

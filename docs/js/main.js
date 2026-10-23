@@ -155,11 +155,12 @@
   },true);
   /* Offline: Speisekarte bleibt verfügbar (Service Worker, nur auf der echten Seite) */
   if(true&&'serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
-  /* „Hat's geschmeckt?“ – einmal, beim nächsten Besuch nach einer WhatsApp-Bestellung (2 Std. bis 14 Tage später) */
+  /* „Hat's geschmeckt?“ – einmal, ab der 3. Bestellung von diesem Handy, beim nächsten Besuch (2 Std. bis 14 Tage danach).
+     Stammgäste werden gefragt, nicht jeder Erstbesteller – das schont Gäste und bringt ehrlichere Bewertungen. */
   var GOOGLE={"freital": "ChIJi62UlB_FCUcRyZITkeCfe8Q", "altenberg": "ChIJ7XWZiUmTCUcRxe2o2WmxkxQ"};
   setTimeout(function(){
     var bw=null;try{bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');}catch(e){return;}
-    if(!bw||bw.fertig||!GOOGLE[bw.l])return;var alt=Date.now()-bw.t;if(alt<2*36e5||alt>14*864e5)return;
+    if(!bw||bw.fertig||!GOOGLE[bw.l]||!GAST||GAST.n<3)return;var alt=Date.now()-bw.t;if(alt<2*36e5||alt>14*864e5)return;
     if(!document.getElementById('hand-tipp').hidden)return;
     try{bw.fertig=1;localStorage.setItem('saray-bewertung',JSON.stringify(bw));}catch(e){return;}
     var ort=bw.l==='freital'?'Freital':'Altenberg';
@@ -172,7 +173,7 @@
         [[nr?L('💬 Nachricht an den Laden','💬 Message the shop'):L('📞 Laden anrufen','📞 Call the shop'),function(){
           if(nr)window.open('https://wa.me/'+nr+'?text='+encodeURIComponent(t),'_blank','noopener');else location.href='tel:'+TEL[bw.l][1];handTippZu();}],
          [L('Schließen','Close'),handTippZu]],25000);}
-    handTippZeigen('<b>'+L('Hat alles gepasst?','Was everything okay?')+'</b><br>'+(SP==='de'?'Ihre Bestellung bei Saray Döner '+ort:fuell(T('Your order at Saray Döner {ort}'),{ort:ort})),
+    handTippZeigen('<b>'+L('Hat alles gepasst?','Was everything okay?')+'</b><br>'+(SP==='de'?'Sie haben schon '+GAST.n+'-mal bei Saray Döner '+ort+' bestellt – danke!':fuell(T('You have already ordered {n} times at Saray Döner {ort} – thank you!'),{n:GAST.n,ort:ort})),
       [[L('👍 Ja, lecker','👍 Yes, delicious'),google],[L('👎 Nicht ganz','👎 Not quite'),laden]],25000);
   },1500);
   /* „Inhaltsstoffe … · Allergene …“ öffnet die Liste unten */
@@ -749,6 +750,7 @@
   setTimeout(function(){var w=document.getElementById('winter');if(!w)return;try{w.hidden=!winterAktiv();}catch(e){}
     var b=document.getElementById('winter-bestellen');if(b)b.addEventListener('click',function(){abh.laden='altenberg';abhSpeichern();ladenZeigen();oeffnen();});
     var g=document.getElementById('winter-gruppe');if(g)g.addEventListener('click',function(){abh.laden='altenberg';abhSpeichern();var s=document.querySelector('[data-sammel-start]');if(s)s.click();});},0);
+  var VOLL={};
   function zeitenFuellen(){
     selZeit.textContent='';selTag.textContent='';hinweisZ.hidden=true;ZINFO={};
     if(!abh.laden){[selTag,selZeit].forEach(function(s){var o=el('option',null,L('Bitte zuerst den Laden wählen','Please choose the shop first'));o.value='';s.appendChild(o);s.disabled=true;});return;}
@@ -773,11 +775,20 @@
     if(off===0&&wz){hinweisZ.textContent=L('Gerade viel los: Abholung frühestens in ca. '+(wz+20)+' Minuten.','Busy right now: earliest pickup in about '+(wz+20)+' minutes.');hinweisZ.hidden=false;}
     if(off===0&&h0&&n.min>=h0[0]){
       optionen.push({v:'heute, so schnell wie möglich',t:L('So schnell wie möglich','As soon as possible')});ZINFO['heute, so schnell wie möglich']={off:0,min:n.min+20+wz};}
-    slots(off).forEach(function(m){var v=vor+', '+zeitText(m);optionen.push({v:v,t:zeitText(m,en)});ZINFO[v]={off:off,min:m};});
-    optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;selZeit.appendChild(o);});
-    if(optionen.some(function(x){return x.v===abh.zeit;}))selZeit.value=abh.zeit;else abh.zeit=selZeit.value;
+    /* Ausgebuchte Viertelstunden (meldet die Küche) sind gesperrt; war eine davon gewählt, wird die nächste freie vorgeschlagen */
+    var vollT=(VOLL[abh.laden]||{})[selTag.value]||[],frei=[];
+    slots(off).forEach(function(m){var v=vor+', '+zeitText(m),hm=(m<600?'0':'')+zeitText(m,true),ist=vollT.indexOf(hm)>-1;
+      optionen.push({v:v,t:zeitText(m,en)+(ist?' – '+L('ausgebucht','fully booked'):''),voll:ist,m:m});if(!ist){ZINFO[v]={off:off,min:m};frei.push(m);}});
+    optionen.forEach(function(x){var o=el('option',null,x.t);o.value=x.v;if(x.voll)o.disabled=true;selZeit.appendChild(o);});
+    var gew=optionen.filter(function(x){return x.v===abh.zeit;})[0],ersatz=null;
+    if(gew&&gew.voll)ersatz=optionen.filter(function(x){return !x.voll&&x.m>gew.m;})[0]||optionen.filter(function(x){return !x.voll;}).slice(-1)[0];
+    if(gew&&!gew.voll)selZeit.value=abh.zeit;
+    else{var erste=ersatz||optionen.filter(function(x){return !x.voll;})[0];abh.zeit=erste?erste.v:'';selZeit.value=abh.zeit;}
+    if(ersatz){hinweisZ.textContent=SP==='de'?zeitText(gew.m)+' ist schon ausgebucht – wir haben „'+ersatz.t+'“ für Sie gewählt.'
+      :fuell(T('{a} is fully booked – we picked {b} for you.'),{a:zeitText(gew.m,true),b:ersatz.t});hinweisZ.hidden=false;}
+    else if(optionen.length&&!abh.zeit){hinweisZ.textContent=L('An diesem Tag ist alles ausgebucht. Bitte einen anderen Tag wählen oder anrufen.','Fully booked on this day. Please choose another day or call us.');hinweisZ.hidden=false;}
     if(abh.zug&&!ZINFO[abh.zeit])abh.zug='';
-    zugZeigen(off,slots(off));
+    zugZeigen(off,frei);
     abhSpeichern();zeichnenSpaeter();
   }
   var zsp=false;function zeichnenSpaeter(){if(zsp)return;zsp=true;setTimeout(function(){zsp=false;zeichnen();waAktualisieren();},0);}
@@ -817,6 +828,9 @@
     var zi=ZINFO[abh.zeit];
     if(zi){var kb=knopf(L('📅 Abholung in den Kalender','📅 Add pickup to calendar'),{'class':'knopf knopf-linie wa-kalender','id':'wa-kalender'});
       var ics=icsText(zi,BNR);kb.addEventListener('click',function(){icsLaden(ics,'saray-abholung-'+BNR+'.ics');});waGesendet.appendChild(kb);}
+    var tf=kuecheLink()?tonToken():'';
+    if(tf){var tb=knopf(L('🔔 Ton, wenn die Bestellung fertig ist','🔔 Sound when the order is ready'),{'class':'knopf knopf-linie wa-ton','id':'wa-ton'}),tnr=BNR;
+      tb.addEventListener('click',function(){tonStarten(tf,tnr);tb.remove();});waGesendet.appendChild(tb);}
     waGesendet.hidden=false;});
   /* Kalendereintrag (.ics) für die Abholung, mit Erinnerung 15 Minuten vorher */
   var ADR={"freital": "Saray Döner, Dresdner Str. 87, 01705 Freital", "altenberg": "Saray Döner, Dresdner Str. 23, 01773 Altenberg"};
@@ -904,12 +918,39 @@
     if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
-    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,g:GAST?GAST.id:'',c:gastNr(),
+    var o={v:1,nr:BNR,f:tonToken(),l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,g:GAST?GAST.id:'',c:gastNr(),
       test:document.body.classList.contains('vorschau')||TESTMODUS?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];}),
       w:zettel.map(function(x){var y={k:x.k,q:x.q};if(x.g)y.g=x.g;if(x.o&&Object.keys(x.o).some(function(k){return x.o[k]&&x.o[k].length;}))y.o=x.o;if(x.notiz)y.notiz=x.notiz;return y;})};
     return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
   }
+  /* „Abholbereit per Ton“: zufälliges Stichwort je Bestellung im Küchen-Link. Drückt die Küche „Fertig ✓“, meldet sie das an
+     den Push-Dienst; die offene Seite des Gastes hört mit (nur wenn er „🔔 Ton“ antippt) und spielt einen Ton. Keine Bestelldaten beim Dienst. */
+  var NTFY="https://ntfy.sh",TON={nr:'',f:''},TONW=null,tonES=null,tonWake=null,tonAc=null;
+  function tonToken(){if(!NTFY)return '';if(TON.nr!==BNR){var z='abcdefghijkmnpqrstuvwxyz23456789',f='';for(var i=0;i<16;i++)f+=z.charAt(Math.floor(Math.random()*z.length));TON={nr:BNR,f:f};}return TON.f;}
+  function tonPiep(n){try{tonAc=tonAc||new (window.AudioContext||window.webkitAudioContext)();if(tonAc.resume)tonAc.resume();var t=tonAc.currentTime+.05;
+    for(var i=0;i<n;i++){var o=tonAc.createOscillator(),g=tonAc.createGain(),a=t+i*.32;o.frequency.value=i%2?1175:880;g.gain.setValueAtTime(.0001,a);
+      g.gain.exponentialRampToValueAtTime(.5,a+.02);g.gain.exponentialRampToValueAtTime(.0001,a+.28);o.connect(g);g.connect(tonAc.destination);o.start(a);o.stop(a+.3);}}catch(e){}}
+  function tonMerken(){try{if(TONW)localStorage.setItem('saray-ton',JSON.stringify(TONW));else localStorage.removeItem('saray-ton');}catch(e){}}
+  function tonWach(){try{if(TONW&&TONW.z!=='fertig'&&navigator.wakeLock&&document.visibilityState==='visible')navigator.wakeLock.request('screen').then(function(w){tonWake=w;},function(){});}catch(e){}}
+  function tonBox(){var b=document.getElementById('ton-box');if(!b){b=el('div','ton-box');b.id='ton-box';b.setAttribute('role','status');b.setAttribute('aria-live','assertive');document.body.appendChild(b);}return b;}
+  function tonZeigen(){var b=tonBox();b.textContent='';if(!TONW){b.hidden=true;return;}b.hidden=false;b.classList.toggle('fertig',TONW.z==='fertig');
+    var t=TONW.z==='fertig'?(SP==='de'?'🎉 Ihre Bestellung '+TONW.nr+' ist fertig! Bis gleich.':fuell(T('🎉 Your order {nr} is ready! See you soon.'),{nr:TONW.nr}))
+      :TONW.z==='ok'?(SP==='de'?'✓ Die Küche hat Bestellung '+TONW.nr+' gesehen. Sie hören einen Ton, wenn sie fertig ist.':fuell(T('✓ The kitchen has seen order {nr}. You will hear a sound when it is ready.'),{nr:TONW.nr}))
+      :(SP==='de'?'🔔 Bestellung '+TONW.nr+': Sie hören einen Ton, wenn sie fertig ist. Bitte diese Seite offen lassen.':fuell(T('🔔 Order {nr}: you will hear a sound when it is ready. Please keep this page open.'),{nr:TONW.nr}));
+    b.appendChild(el('p',null,t));var x=knopf(TONW.z==='fertig'?'OK':L('Aus','Off'),{'class':'','id':'ton-aus'});
+    x.addEventListener('click',function(){tonStopp();});b.appendChild(x);}
+  function tonStopp(){TONW=null;tonMerken();if(tonES){tonES.close();tonES=null;}if(tonWake){try{tonWake.release();}catch(e){}tonWake=null;}tonZeigen();}
+  function tonMeldung(m){if(!TONW||['ok','fertig','zurueck'].indexOf(m)<0)return;var vorher=TONW.z;TONW.z=m==='zurueck'?'':m;if(TONW.z===vorher)return;tonMerken();tonZeigen();
+    if(m==='fertig'){tonPiep(6);try{if(navigator.vibrate)navigator.vibrate([300,150,300,150,600]);}catch(e){}document.title='✓ '+document.title.replace(/^✓ /,'');
+      if(tonWake){try{tonWake.release();}catch(e){}tonWake=null;}}
+    else if(m==='ok')tonPiep(1);}
+  function tonVerbinden(){if(!TONW||!window.EventSource)return;if(tonES)tonES.close();
+    try{tonES=new EventSource(NTFY+'/saray-'+TONW.f+'/sse?since='+Math.floor(TONW.a/1000-60));
+      tonES.onmessage=function(ev){try{var d=JSON.parse(ev.data);if(d.event==='message')tonMeldung(String(d.message||'').trim());}catch(e){}};}catch(e){}}
+  function tonStarten(f,nr){TONW={f:f,nr:nr,a:Date.now(),z:''};tonMerken();tonPiep(1);tonZeigen();tonVerbinden();tonWach();}
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&TONW){tonVerbinden();tonWach();}});
+  try{var tw=JSON.parse(localStorage.getItem('saray-ton')||'null');if(tw&&tw.f&&Date.now()-tw.a<6*36e5){TONW=tw;setTimeout(function(){tonZeigen();if(TONW.z!=='fertig')tonVerbinden();},0);}else localStorage.removeItem('saray-ton');}catch(e){}
   /* Allergie-Hinweis: steht im Wunschfeld etwas wie „Nussallergie“ oder „glutenfrei“, kommt eine Warnzeile oben in die Nachricht */
   var ALLERGIE=new RegExp("allerg|unvertr[\u00e4a]g|intoleran|z[\u00f6o]liakie|gluten|laktose|lactose|milcheiwei|nuss|n[\u00fcu]sse|erdnuss|mandel|cashew|pistazie|sesam|soja|\\bei\\b|\\beier|eiwei|fisch|krebs|garnele|schalentier|weichtier|muschel|sellerie|senf|lupine|sulfit|schwefel|histamin|fru[ck]tose|glutamat|halal|schwein|celiac|coeliac|dairy|\\bnuts?\\b|peanut|almond|sesame|\\bsoy|\\begg|shellfish|mustard|celery|sulphite|sulfite|alerji|laktoz|f[\u0131i]st[\u0131i]k|f[\u0131i]nd[\u0131i]k|ceviz|susam|soya|yumurta|helal|domuz|alergi|lepek|lakt[\u00f3o]z|o[\u0159r]ech|ara[\u0161s][\u00edi]d|sezam|s[\u00f3o]ja|vejce|\u0430\u043b\u043b\u0435\u0440\u0433|\u0433\u043b\u044e\u0442\u0435\u043d|\u043b\u0430\u043a\u0442\u043e\u0437|\u043e\u0440\u0435\u0445|\u0430\u0440\u0430\u0445\u0438\u0441|\u043a\u0443\u043d\u0436\u0443\u0442|\u0441\u043e\u044f|\u044f\u0439\u0446|\u062d\u0633\u0627\u0633\u064a\u0629|\u062c\u0644\u0648\u062a\u064a\u0646|\u0644\u0627\u0643\u062a\u0648\u0632|\u0645\u0643\u0633\u0631\u0627\u062a|\u0633\u0645\u0633\u0645|\u0635\u0648\u064a\u0627|\u0628\u064a\u0636|\u062d\u0644\u0627\u0644",'i');
   /* Stammgast: zufällige Kennung + Zähler auf diesem Handy (keine Telefonnummer, kein Name) */

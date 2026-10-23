@@ -278,6 +278,7 @@ body.monat-druck>*:not(#jahr){display:none!important}
 .warte-vorschlag{margin:12px 16px 0;padding:12px 14px;border-radius:14px;background:var(--paprika);color:#fff;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:700}
 .warte-vorschlag[hidden]{display:none}.warte-vorschlag span{flex:1 1 240px}.warte-vorschlag button{min-height:44px;padding:0 16px;border-radius:12px;border:2px solid #fff;background:#fff;color:var(--paprika);font-weight:700;cursor:pointer}
 .warte-vorschlag button.zweit{background:none;color:#fff}
+.slot-info{margin:10px 16px 0;padding:10px 14px;border-radius:12px;background:#fff;border:2px solid var(--paprika);font-weight:700}.slot-info[hidden]{display:none}
 .balken{display:grid;grid-template-columns:4.5em 1fr 4em;gap:6px 10px;align-items:center;max-width:560px;margin:10px 0}
 .balken i{display:block;height:16px;border-radius:8px;background:var(--tinte);min-width:2px}
 .balken span:nth-child(3n){text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
@@ -317,6 +318,7 @@ details.erledigt .bon{opacity:.6}
 <p class="leer" id="leer" hidden>Noch keine offenen Bestellungen. Sie erscheinen hier, wenn Sie in der WhatsApp-Nachricht eines Gastes auf den Link
 „Für die Küche“ tippen. Die Bestellungen bleiben auf diesem Gerät gespeichert, sortiert nach Abholzeit. Antippen hakt ein Gericht ab.</p>
 <div class="warte-vorschlag" id="warte-vorschlag" hidden></div>
+<p class="slot-info" id="slot-info" hidden></p>
 <details class="erledigt bedarf" id="bedarf" hidden><summary id="bedarf-titel">Was brauchen wir?</summary>
 <div class="chips hell" id="bedarf-wahl"></div><table id="bedarf-liste"></table></details>
 <div class="liste" id="offen"></div>
@@ -345,7 +347,7 @@ function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').r
   if(!o||typeof o.nr!=='string'||!Array.isArray(o.p))return null;
   o.p=o.p.filter(Array.isArray).slice(0,60).map(function(x){return {q:Math.max(1,Math.min(99,+x[0]||1)),n:String(x[1]||'').slice(0,120),w:String(x[2]||'').slice(0,300),f:String(x[3]||'').slice(0,40),x:String(x[4]||'').slice(0,200),c:+x[5]||0,ok:false};});
   return {id:o.nr+'-'+(+o.a||0),nr:o.nr.slice(0,8),l:LAEDEN[o.l]?o.l:'',z:String(o.z||'').slice(0,60),t:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(o.t||'')?o.t:'',
-    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,w:Array.isArray(o.w)?o.w.slice(0,60):[],g:String(o.g||'').slice(0,12),c:Math.max(0,Math.min(9999,+o.c||0)),sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
+    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,w:Array.isArray(o.w)?o.w.slice(0,60):[],g:String(o.g||'').slice(0,12),c:Math.max(0,Math.min(9999,+o.c||0)),sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),f:String(o.f||'').replace(/[^a-z0-9]/g,'').slice(0,24),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
 /* Link aus WhatsApp: Bestellung übernehmen (doppelt geöffnet = einmal gespeichert) */
 var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
 /* Jahresstatistik: pro Tag Bestellungen, Summe, Gerichte, Uhrzeiten, Sprachen, Laden (ohne Tests) */
@@ -385,7 +387,10 @@ function b64url(t){return btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-
 function nochmalLink(x){return location.origin+location.pathname.replace(/kueche\/?(index\.html)?$/,'')+'#nochmal='+b64url(JSON.stringify({l:x.l,p:x.w}));}
 function melden(t){var g=document.getElementById('gesendet');g.textContent=t;g.hidden=false;clearTimeout(melden.t);melden.t=setTimeout(function(){g.hidden=true;},4000);}
 /* WhatsApp öffnet die Kontaktauswahl: den Chat des Gastes antippen, senden */
-function senden(x,art){var t=antwort(x,art);x[art==='ok'?'bestaetigt':'gemeldet']=Date.now();x.neu=0;speichern();zeichnen();
+/* „Abholbereit per Ton“: kurze Meldung an die offene Seite des Gastes (nur ok/fertig/zurueck, keine Bestelldaten) */
+var NTFY=%%NTFY%%;
+function tonMelden(x,art){if(!x.f||!NTFY)return;try{fetch(NTFY+'/saray-'+x.f,{method:'POST',body:art}).catch(function(){});}catch(e){}}
+function senden(x,art){var t=antwort(x,art);x[art==='ok'?'bestaetigt':'gemeldet']=Date.now();x.neu=0;speichern();zeichnen();if(art==='ok')tonMelden(x,'ok');
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
   melden((art==='ok'?'Bestätigung':'Fertig-Meldung')+(x.sp!=='de'?' auf '+SP_NAME[x.sp]:'')+' – in WhatsApp den Chat von '+(x.m||'dem Gast')+' wählen.');}
 function zeitpunkt(x){return x.t?new Date(x.t+':00').getTime():x.a+20*60000;}
@@ -415,8 +420,8 @@ function bon(x){
   var s=el('div','summe');s.appendChild(el('span',null,'Summe (bar)'));s.appendChild(el('span',null,euro(x.s)));b.appendChild(s);
   var kn=el('div','knoepfe'),dr=el('button','knopf','Bon drucken'),fe=el('button','knopf voll',x.fertig?'Zurückholen':'Fertig ✓');dr.type=fe.type='button';
   dr.addEventListener('click',function(){document.querySelectorAll('.bon.druck').forEach(function(y){y.classList.remove('druck');});b.classList.add('druck');window.print();});
-  fe.addEventListener('click',function(){x.fertig=x.fertig?0:Date.now();x.neu=0;speichern();zeichnen();
-    if(x.fertig)melden('Erledigt. Unter „Erledigt“ können Sie dem Gast Bescheid geben.');});
+  fe.addEventListener('click',function(){x.fertig=x.fertig?0:Date.now();x.neu=0;speichern();zeichnen();tonMelden(x,x.fertig?'fertig':'zurueck');
+    if(x.fertig)melden(x.f?'Erledigt. Hat der Gast die Seite offen, hört er jetzt einen Ton. Unter „Erledigt“ können Sie ihm zusätzlich per WhatsApp Bescheid geben.':'Erledigt. Unter „Erledigt“ können Sie dem Gast Bescheid geben.');});
   kn.appendChild(dr);kn.appendChild(fe);b.appendChild(kn);
   var k2=el('div','knoepfe zwei');
   if(!x.fertig&&!x.tel){var be=el('button','knopf'+(x.bestaetigt?' ok':''),x.bestaetigt?'✓ Bestätigt':'Bestätigen');be.type='button';be.dataset.bestaetigen='';
@@ -432,7 +437,7 @@ function zeichnen(){
   var e=document.getElementById('erledigt');e.textContent='';fertig.forEach(function(x){e.appendChild(bon(x));});
   document.getElementById('erledigt-box').hidden=!fertig.length;document.getElementById('erledigt-titel').textContent='Erledigt ('+fertig.length+')';
   document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';
-  abschluss(sicht);bedarf(offen);jahrZeigen();monatZeigen();warteVorschlag();}
+  abschluss(sicht);bedarf(offen);jahrZeigen();monatZeigen();warteVorschlag();slotsPruefen();}
 /* ---------- Telefonbestellung erfassen: landet in derselben Liste, im Tagesabschluss und im Jahresrückblick ---------- */
 var KARTE=%%KARTE%%,telPos=[],telLaden='';
 function telOeffnen(){var t=document.getElementById('tel');t.hidden=false;telPos=[];telLaden=filter||Object.keys(LAEDEN)[0];
@@ -518,6 +523,39 @@ function warteSetzen(laden,plus){
     w[laden]={datum:h,min:min};
     return fetch(api,{method:'PUT',headers:kopf,body:JSON.stringify({message:'Küche: Wartezeit '+LAEDEN[laden]+' +'+min+' Min.',branch:'main',
       content:btoa(unescape(encodeURIComponent(JSON.stringify(anp,null,2)+'\n'))),sha:d.sha})}).then(function(r){if(!r.ok)throw new Error(String(r.status));return min;});});
+}
+/* Abholzeit-Slots: Sind für eine Viertelstunde so viele Bestellungen da wie in der Chef-App eingestellt (Standard 5),
+   sperrt die Küche diese Zeit auf der Seite (mit Chef-App-Zugang auf diesem Gerät, sonst nur Hinweis). Die Seite schlägt dann die nächste freie Zeit vor. */
+var SLOTS=%%SLOTS%%,vollBekannt={},vollLaeuft=0,vollFehler=0;
+try{vollBekannt=JSON.parse(localStorage.getItem('saray-kueche-voll')||'{}')||{};}catch(e){}
+Object.keys(SLOTS.voll||{}).forEach(function(l){Object.keys(SLOTS.voll[l]).forEach(function(d){SLOTS.voll[l][d].forEach(function(z){vollBekannt[l+'|'+d+'|'+z]=1;});});});
+function slotVon(t){var m=Math.floor((+t.slice(11,13)*60+ +t.slice(14,16))/15)*15;return t.slice(0,10)+'|'+('0'+Math.floor(m/60)).slice(-2)+':'+('0'+m%60).slice(-2);}
+function slotsPruefen(){
+  var box=document.getElementById('slot-info'),h=heuteISO(),zahl={},neu=[];
+  liste.forEach(function(x){if(x.test||!x.t||!x.l||x.t.slice(0,10)<h)return;var k=x.l+'|'+slotVon(x.t);zahl[k]=(zahl[k]||0)+1;});
+  Object.keys(zahl).forEach(function(k){var l=k.split('|')[0],mx=(SLOTS.max||{})[l];if(mx&&zahl[k]>=mx&&!vollBekannt[k])neu.push(k);});
+  var gesperrt=Object.keys(vollBekannt).filter(function(k){return k.split('|')[1]>=h&&(!filter||k.split('|')[0]===filter);}).sort();
+  box.textContent='';
+  if(neu.length&&!chefToken()){box.textContent='⚠ Ausgebucht: '+neu.map(function(k){var p=k.split('|');return LAEDEN[p[0]]+' '+(p[1]===h?'':p[1].slice(8,10)+'.'+p[1].slice(5,7)+'. ')+p[2];}).join(', ')+
+    ' – ohne Chef-App-Zugang auf diesem Gerät kann die Küche die Zeit nicht online sperren.';box.hidden=false;return;}
+  if(gesperrt.length){box.textContent='🔒 Online ausgebucht: '+gesperrt.map(function(k){var p=k.split('|');return LAEDEN[p[0]]+' '+(p[1]===h?'':p[1].slice(8,10)+'.'+p[1].slice(5,7)+'. ')+p[2];}).join(', ');box.hidden=false;}
+  else box.hidden=true;
+  if(!neu.length||vollLaeuft||Date.now()<vollFehler)return;
+  vollLaeuft=1;
+  anpAendern(function(anp){var v=anp.voll=anp.voll||{};Object.keys(v).forEach(function(l){Object.keys(v[l]||{}).forEach(function(d){if(d<h)delete v[l][d];});});
+    neu.forEach(function(k){var p=k.split('|'),t=(v[p[0]]=v[p[0]]||{}),z=(t[p[1]]=t[p[1]]||[]);if(z.indexOf(p[2])<0)z.push(p[2]);z.sort();});},
+    'Küche: ausgebucht '+neu.map(function(k){return k.replace(/\|/g,' ');}).join(', ')).then(function(){
+    neu.forEach(function(k){vollBekannt[k]=1;});try{localStorage.setItem('saray-kueche-voll',JSON.stringify(vollBekannt));}catch(e){}
+    vollLaeuft=0;melden('Ausgebucht gemeldet – in 2–3 Minuten bietet die Seite die nächste freie Zeit an.');slotsPruefen();},
+    function(){vollLaeuft=0;vollFehler=Date.now()+60000;});
+}
+/* daten/anpassungen.json lesen, ändern, zurückschreiben (Chef-App-Zugang auf diesem Gerät) */
+function anpAendern(aendern,nachricht){
+  var api='https://api.github.com/repos/'+REPO+'/contents/daten/anpassungen.json',kopf={'Accept':'application/vnd.github+json','Authorization':'Bearer '+chefToken()};
+  return fetch(api+'?ref=main',{headers:kopf,cache:'no-store'}).then(function(r){if(!r.ok&&r.status!==404)throw new Error(String(r.status));return r.status===404?{}:r.json();}).then(function(d){
+    var anp=d.content?JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))))||{}:{};aendern(anp);
+    var body={message:nachricht,branch:'main',content:btoa(unescape(encodeURIComponent(JSON.stringify(anp,null,2)+'\n')))};if(d.sha)body.sha=d.sha;
+    return fetch(api,{method:'PUT',headers:kopf,body:JSON.stringify(body)}).then(function(r){if(!r.ok)throw new Error(String(r.status));});});
 }
 var bedarfWahl='60';
 function bedarf(offen){
@@ -619,7 +657,7 @@ document.getElementById('plan-knopf').addEventListener('click',function(){
 """
 
 
-def schreiben(aus, daten, laeden, seite_url, version, repo="", karte=(), zaehler=""):
+def schreiben(aus, daten, laeden, seite_url, version, repo="", karte=(), zaehler="", ntfy="", slots=None):
     """daten: dict für den Bildschirm (siehe build.py); laeden: {id: name}; seite_url: Adresse für den QR-Code."""
     anzeige = seite_url.rstrip("/").replace("https://", "")
     (aus / "tv").mkdir(exist_ok=True)
@@ -628,5 +666,5 @@ def schreiben(aus, daten, laeden, seite_url, version, repo="", karte=(), zaehler
           .replace("%%QR%%", qr_svg(seite_url, ecl="M", farbe="#3A1531", rand=1))
           .replace("%%ADRESSE%%", anzeige), encoding="utf-8")
     (aus / "kueche").mkdir(exist_ok=True)
-    (aus / "kueche" / "index.html").write_text(KUECHE.replace("%%LAEDEN%%", json.dumps(laeden, ensure_ascii=False)).replace("%%REPO%%", json.dumps(repo)).replace("%%KARTE%%", json.dumps(list(karte), ensure_ascii=False)).replace("%%ZAEHLER%%", json.dumps(zaehler)).replace("%%ALLERGIE%%", json.dumps(ALLERGIE_RE)), encoding="utf-8")
+    (aus / "kueche" / "index.html").write_text(KUECHE.replace("%%LAEDEN%%", json.dumps(laeden, ensure_ascii=False)).replace("%%REPO%%", json.dumps(repo)).replace("%%KARTE%%", json.dumps(list(karte), ensure_ascii=False)).replace("%%ZAEHLER%%", json.dumps(zaehler)).replace("%%ALLERGIE%%", json.dumps(ALLERGIE_RE)).replace("%%NTFY%%", json.dumps(ntfy)).replace("%%SLOTS%%", json.dumps(slots or {"max": {}, "voll": {}})), encoding="utf-8")
     (aus / "version.json").write_text(json.dumps({"v": version}) + "\n")

@@ -16,7 +16,10 @@ Aufbau (alle Teile optional):
   "wartezeit": {"freital": {"datum": "2026-10-22", "min": 30}},                     # gilt nur an diesem Tag
   "aktionen":  [{"name": "Mittagstisch", "art": "mittag", ...}],                     # art "mittag": eigener Kasten oben
   "winter":    "auto",                                                               # Wintersaison Altenberg: auto/an/aus
-  "gutscheine": [{"nr": "G26-001", "h": "<sha256>", "wert": 2000, ...}]            # nur Chef-App; Seite liest sie nicht
+  "gutscheine": [{"nr": "G26-001", "h": "<sha256>", "wert": 2000, ...}],           # nur Chef-App; Seite liest sie nicht
+  "slot_max":  {"freital": 5, "altenberg": 0},                                       # Vorbestellungen je Viertelstunde, 0 = keine Grenze
+  "voll":      {"freital": {"2026-10-23": ["17:30", "17:45"]}},                      # ausgebuchte Viertelstunden (schreibt die Küche)
+  "preisverlauf": [{"d": "2026-10-23", "s": 1761200000000, "k": "12", "n": "12 Döner", "alt": ["7,00"], "neu": ["7,50"]}]  # nur Chef-App
 }
 Schlüssel eines Gerichts: seine Nummer, bei Gerichten ohne Nummer "<gruppe>|<abschnitt>|<name>".
 """
@@ -239,6 +242,39 @@ def sonderzeiten(d, warnen, ab_datum):
                 ok.setdefault(tag, {})[laden] = (_min(wert[0]), _min(wert[1]))
             else:
                 warnen(f"Besonderer Tag {tag} {laden}: {wert!r} ungültig")
+    return ok
+
+
+SLOT_STANDARD = 5   # Vorbestellungen je Viertelstunde, wenn in der Chef-App nichts eingestellt ist
+
+
+def slot_max(d, warnen):
+    """Höchstzahl Vorbestellungen je Viertelstunde und Laden (0 = keine Grenze)."""
+    ok = {l: SLOT_STANDARD for l in LAEDEN}
+    for laden, n in d.items() if isinstance(d, dict) else []:
+        if laden in LAEDEN and isinstance(n, int) and not isinstance(n, bool) and 0 <= n <= 30:
+            ok[laden] = n
+        else:
+            warnen(f"Höchstzahl je Viertelstunde {laden}: {n!r} ungültig")
+    return ok
+
+
+def voll(d, warnen, ab_datum):
+    """Ausgebuchte Viertelstunden: {laden: {datum: [HH:MM, …]}} – vergangene Tage fallen weg."""
+    ok = {}
+    for laden, tage in d.items() if isinstance(d, dict) else []:
+        if laden not in LAEDEN or not isinstance(tage, dict):
+            warnen(f"Ausgebucht {laden}: {tage!r} ungültig")
+            continue
+        for tag, zeiten in tage.items():
+            if not (isinstance(tag, str) and DATUM_RE.match(tag) and isinstance(zeiten, list)):
+                warnen(f"Ausgebucht {laden} {tag}: ungültig")
+                continue
+            if tag < ab_datum:
+                continue
+            z = sorted({x for x in zeiten if isinstance(x, str) and ZEIT_RE.match(x)}, key=_min)[:96]
+            if z:
+                ok.setdefault(laden, {})[tag] = [f"{_min(x) // 60:02d}:{_min(x) % 60:02d}" for x in z]
     return ok
 
 
