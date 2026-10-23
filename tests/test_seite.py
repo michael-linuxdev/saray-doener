@@ -2256,9 +2256,12 @@ def main():
                 t(b, url)
                 ok += 1
                 print(f"  ok      {t.__name__}")
-            except Exception:
+            except Exception as fehler:
                 print(f"  FEHLER  {t.__name__}")
                 traceback.print_exc()
+                if os.environ.get("GITHUB_ACTIONS"):   # als Anmerkung im Workflow sichtbar (auch ohne Zugriff auf das Log)
+                    zeile = "".join(traceback.format_exception_only(type(fehler), fehler)).strip().replace("\n", " ")[:600]
+                    print(f"::error title=Test {t.__name__}::{zeile}")
         b.close()
     srv.shutdown()
     if tmp:
