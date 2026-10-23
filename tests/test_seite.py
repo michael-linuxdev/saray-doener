@@ -2197,17 +2197,19 @@ def abholbereit_per_ton(b, url):
 def chef_app_einfuehrung_und_antworten(b, url):
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[], tour=True)
     p.wait_for_selector("#tour")
-    assert "1 / 11" in p.text_content(".tour-karte") and "Willkommen" in p.text_content(".tour-karte")
+    assert "1 / 11" in p.text_content(".tour-karte") and "Willkommen" in p.text_content(".tour-karte"), p.text_content(".tour-karte")
     p.click("#tour-weiter")
-    assert "Laden heute spontan zu" in p.text_content(".tour-karte")
+    assert "Laden heute spontan zu" in p.text_content(".tour-karte"), p.text_content(".tour-karte")
     p.wait_for_function("parseFloat(getComputedStyle(document.querySelector('.tour-loch')).width)>100")  # hervorgehoben
     for _ in range(6):
         p.click("#tour-weiter")
-    assert "Speichern" in p.text_content(".tour-karte") and p.is_visible("#speichern")
+    assert "Speichern" in p.text_content(".tour-karte h3"), p.text_content(".tour-karte")
+    assert p.is_visible("#speichern"), "Speichern-Leiste nicht gezeigt"
     p.click("#tour-zurueck")
-    assert "Zeiten" in p.text_content(".tour-karte h3")
+    assert "Zeiten" in p.text_content(".tour-karte h3"), p.text_content(".tour-karte")
     p.click("#tour-ende")
-    assert p.locator("#tour").count() == 0 and p.is_hidden("#speichern")
+    assert p.locator("#tour").count() == 0, "Einführung nicht beendet"
+    assert p.is_hidden("#speichern"), "Speichern-Leiste bleibt stehen"
     assert p.evaluate("localStorage.getItem('saray-chef-tour')") == "1"
     p.reload()
     p.wait_for_selector("nav.tabs:not([hidden])")
@@ -2224,15 +2226,16 @@ def chef_app_einfuehrung_und_antworten(b, url):
     p.click('nav.tabs [data-tab="mehr"]')
     p.click('[data-seite="antworten"]')
     t = p.text_content("#antw-karte")
-    assert "Mo–" in t and "/fertig" in t and "Dresdner Str. 87, 01705 Freital" in t, t
+    assert "Mo–" in t and "/fertig" in t and "Dresdner Str. 87, 01705 Freital" in t, t[:300]
     assert "#speisekarte" in t
     p.click('[data-antw-laden="altenberg"]')
     p.click('[data-antw-sp="tr"]')
     t = p.text_content("#antw-karte")
-    assert "Altenberg şubemize hoş geldiniz" in t and "Pzt" in t, t
-    ctx.grant_permissions(["clipboard-read", "clipboard-write"])
+    assert "Altenberg şubemize hoş geldiniz" in t and "Pzt" in t, t[:300]
+    p.evaluate("navigator.clipboard.writeText=t=>{window._kopiert=t;return Promise.resolve();}")   # Zwischenablage ist im CI nicht verfügbar
     p.click("#antw-karte .antw >> nth=0 >> text=Kopieren")
-    assert "hoş geldiniz" in p.evaluate("navigator.clipboard.readText()")
+    assert "hoş geldiniz" in p.evaluate("window._kopiert||''"), "Kopieren"
+    assert "Kopyalandı" in p.text_content("#antw-karte .antw >> nth=0") or "Kopiert" in p.text_content("#antw-karte .antw >> nth=0")
     assert not fehler, fehler
     ctx.close()
 
