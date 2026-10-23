@@ -368,3 +368,39 @@ def pause(d, warnen):
         else:
             warnen(f"Bestell-Pause {laden}: {p!r} ungültig")
     return ok
+
+
+def pakete(liste, gruppen, warnen, heute):
+    """Familien- und Party-Boxen: [{"name", "preis": "29,00", "inhalt": [{"k": "1", "q": 2}], "desc"?, "von"?, "bis"?}].
+    "k" ist der Schlüssel des Gerichts (Nummer oder Name). Gibt die gültigen, nicht abgelaufenen zurück, mit Normalpreis."""
+    gerichte = {}
+    for gr in gruppen:
+        for ab in gr["abschnitte"]:
+            for g in ab["gerichte"]:
+                gerichte[g[0] or g[1]] = g
+                gerichte[schluessel(gr["id"], ab["titel"], g)] = g   # Chef-App-Schlüssel
+    ok = []
+    for p in liste if isinstance(liste, list) else []:
+        if not (isinstance(p, dict) and _text_ok(p.get("name"), 40, leer=False) and isinstance(p.get("preis"), str) and PREIS_RE.match(p["preis"])
+                and isinstance(p.get("inhalt"), list) and p["inhalt"]):
+            warnen(f"Box {p!r} ungültig")
+            continue
+        inhalt = []
+        for x in p["inhalt"][:12]:
+            if isinstance(x, dict) and x.get("k") in gerichte and isinstance(x.get("q"), int) and 1 <= x["q"] <= 20:
+                g = gerichte[x["k"]]
+                inhalt.append({"k": g[0] or g[1], "q": x["q"]})
+        if not inhalt:
+            warnen(f"Box {p['name']!r}: keine gültigen Gerichte")
+            continue
+        for f in ("von", "bis"):
+            if p.get(f) and not (isinstance(p[f], str) and DATUM_RE.match(p[f])):
+                p = dict(p)
+                p.pop(f)
+        if p.get("bis") and p["bis"] < heute:
+            continue
+        normal = sum(int(gerichte[x["k"]][3][0].replace(",", "")) * x["q"] for x in inhalt)
+        teile = [f'{x["q"]}× {(("Nr. " + gerichte[x["k"]][0] + " ") if gerichte[x["k"]][0] else "")}{gerichte[x["k"]][1]}' for x in inhalt]
+        ok.append({"name": p["name"].strip(), "preis": p["preis"], "inhalt": inhalt, "text": ", ".join(teile), "normal": normal,
+                   "desc": p.get("desc", "").strip() if _text_ok(p.get("desc", ""), 120) else "", "von": p.get("von", ""), "bis": p.get("bis", "")})
+    return ok

@@ -576,7 +576,7 @@ def chef_app_aenderungen(b, url):
     assert d["gerichte"] == {"1": {"preise": ["7,50"]}}, d
     assert d["geloescht"] == ["8"], d
     assert d["neu"] == [{"gruppe": "doener", "abschnitt": "Döner", "nr": "13a", "name": "Döner Spezial",
-                         "desc": "Fladenbrot, Fleisch, Salat, Feta", "preise": ["9,00"]}], d
+                         "desc": "Fladenbrot, Fleisch, Salat, Feta", "preise": ["9,00"], "seit": "2026-10-21"}], d
     assert d["zeiten"] == {"altenberg": {"6": ["11:00", "21:00"]}}, d
     assert {"was": "huhn", "datum": "2026-10-21", "laden": "freital"} in d["verfuegbarkeit"], d
     assert {"was": "nuggets", "ab": "17:00", "laden": "freital"} in d["verfuegbarkeit"], d
@@ -1654,6 +1654,123 @@ def nochmal_bestellen_und_doener_tag(b, url):
     s.p.wait_for_selector("#sammel-dialog:not([hidden])")
     assert "Gemeinsam bestellen" in s.p.text_content("#sammel-titel")
     s.schliessen()
+
+
+
+@test
+def getraenk_dazu(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.wait_for_selector("#hand-tipp:not([hidden])")
+    assert "Getränk dazu?" in s.p.text_content("#hand-tipp") and "2,50 €" in s.p.text_content("#hand-tipp")
+    s.p.click("#hand-tipp >> text=Fanta")
+    s.p.click("#nr-2 .plus")
+    s.p.wait_for_timeout(1600)
+    assert s.js("document.getElementById('hand-tipp').hidden"), "Frage kam ein zweites Mal"
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    text = s.wa_text()
+    assert "1× Cola, Fanta, Sprite oder Wasser" in text and "Wunsch: Fanta" in text, text
+    s.schliessen()
+
+
+@test
+def letzte_fuenf_bestellungen(b, url):
+    s = Seite(b, url)
+    for nr in ("1", "50", "130"):
+        s.p.click(f"#nr-{nr} .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click("[data-laden=freital]")
+        s.wa_text()
+        s.p.click("#zettel-leeren")
+        s.p.click("#zettel-leeren")
+        s.js("document.getElementById('hand-tipp').hidden=true")
+    s.p.reload()
+    s.p.wait_for_timeout(400)
+    assert "Salat" in s.p.text_content("#letzte-liste")
+    s.p.click("#letzte-mehr summary")
+    weitere = s.js("[...document.querySelectorAll('#letzte-weitere li')].map(l=>l.textContent)")
+    assert len(weitere) == 2 and "Dürüm" in weitere[0] and "Döner Kebap" in weitere[1], weitere
+    s.p.click("#letzte-weitere li >> nth=1 >> button")
+    assert "Döner Kebap" in s.zettel_zeilen()[0], s.zettel_zeilen()
+    s.schliessen()
+
+
+@test
+def boxen_neu_marke_und_chef(b, url):
+    paket = {"name": "Familienbox", "preis": "29,00", "inhalt": [{"k": "1", "q": 2}, {"k": "20", "q": 2}, {"k": "73", "q": 1}]}
+    neu = {"gruppe": "doener", "abschnitt": "Döner", "nr": "13a", "name": "Döner Spezial", "desc": "mit Feta", "preise": ["8,50"], "seit": "2026-10-15"}
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit({"pakete": [paket], "neu": [neu]}, tmp)
+        s = Seite(b, u)
+        karte = s.p.text_content(".pakete")
+        assert "Familienbox" in karte and "2× Nr. 1 Döner Kebap" in karte and "2× Nr. 20 Kindermenü Nuggets" in karte and "statt" in karte, karte
+        assert s.js("!document.querySelector('[data-neu-bis]').hidden")
+        s.p.click(".pakete .plus")
+        s.p.click("#zettel-leiste")
+        s.p.click("[data-laden=freital]")
+        text = s.wa_text()
+        assert "1× Familienbox (2× Nr. 1 Döner Kebap" in text and "29,00 €" in text, text
+        s.schliessen()
+        s = Seite(b, u, zeit=datetime.datetime.fromisoformat("2026-11-20T12:00:00+01:00"))
+        assert s.js("document.querySelector('[data-neu-bis]').hidden"), "Neu-Marke nach 30 Tagen noch da"
+        s.schliessen()
+        srv.shutdown()
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.click('nav.tabs [data-tab="karte"]')
+    p.click("#paket-neu")
+    p.fill("#p-name", "Partybox")
+    p.fill("#p-preis", "45")
+    p.fill("#p-such", "Döner Kebap")
+    p.locator(".blatt .liste-gericht", has_text="Döner Kebap").first.click()
+    p.click(".blatt [aria-label=mehr]")
+    p.click(".blatt >> text=Übernehmen")
+    p.click('nav.tabs [data-tab="zeiten"]')
+    p.fill("#u-von", "2026-12-24")
+    p.fill("#u-bis", "2026-12-26")
+    p.click("#u-eintragen")
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert d["pakete"] == [{"name": "Partybox", "preis": "45,00", "inhalt": [{"k": "1", "q": 2}]}], d["pakete"]
+    assert d["sonderzeiten"]["2026-12-25"] == {"freital": None, "altenberg": None}, d["sonderzeiten"]
+    assert d["hinweise"][0]["text"] == "Betriebsferien: Saray Döner ist vom 24.12.2026 bis 26.12.2026 geschlossen." and d["hinweise"][0]["von"] == "2026-12-10", d["hinweise"]
+    assert not fehler, fehler
+    ctx.close()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit(d, tmp)
+        srv.shutdown()
+
+
+@test
+def kueche_wartezeit_vorschlag(b, url):
+    import base64
+    gespeichert = []
+    ctx = b.new_context(viewport={"width": 1180, "height": 900}, locale="de-DE", timezone_id="Europe/Berlin")
+    k = ctx.new_page()
+    k.clock.set_fixed_time(ZEIT)
+    def github(route):
+        r = route.request
+        if r.method == "PUT":
+            body = json.loads(r.post_data)
+            gespeichert.append((body["message"], json.loads(base64.b64decode(body["content"]).decode())))
+            route.fulfill(status=200, json={"content": {"sha": "neu"}})
+        else:
+            route.fulfill(status=200, json={"sha": "alt", "content": base64.b64encode(json.dumps({"hinweise": []}).encode()).decode()})
+    k.route("https://api.github.com/**", github)
+    k.add_init_script("localStorage.setItem('saray-chef-token','TESTTOKEN')")
+    for i in range(8):
+        o = {"v": 1, "nr": f"A{i}", "l": "altenberg", "z": "heute", "t": "2026-10-21T18:15", "m": "X", "s": 700, "a": 1792600000000 + i, "p": [[1, "Nr. 1 Döner Kebap", "", "", "", 700]]}
+        k.goto(url + "kueche/#b=" + base64.urlsafe_b64encode(json.dumps(o).encode()).decode().rstrip("="))
+        k.wait_for_function(f"document.querySelectorAll('#offen .bon').length==={i + 1}")
+    k.wait_for_selector("#warte-vorschlag:not([hidden])")
+    assert "Viel los in Altenberg: 8 Bestellungen" in k.text_content("#warte-vorschlag")
+    k.click("#warte-ja")
+    k.wait_for_selector("#warte-vorschlag", state="hidden")
+    msg, anp = gespeichert[-1]
+    assert msg == "Küche: Wartezeit Altenberg +15 Min." and anp["wartezeit"] == {"altenberg": {"datum": "2026-10-21", "min": 15}}, gespeichert
+    ctx.close()
 
 
 @test

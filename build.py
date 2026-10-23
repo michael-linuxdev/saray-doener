@@ -254,6 +254,21 @@ FISCH_ICON = (' <svg class="veg" viewBox="0 0 24 24" role="img" aria-label="mit 
               '<path d="M2 12c3-5 9-6 14-3l5-3-1 6 1 6-5-3c-5 3-11 2-14-3z" fill="#1565C0"/><circle cx="7" cy="11" r="1.2" fill="#fff"/></svg>')
 
 
+# „Neu“-Marke: Gerichte, die in der Chef-App neu angelegt wurden („seit“), 30 Tage lang
+def neu_bis():
+    import datetime as _d
+    aus = {}
+    for n in ANPASSUNGEN.get("neu", []) if isinstance(ANPASSUNGEN.get("neu"), list) else []:
+        if isinstance(n, dict) and isinstance(n.get("seit"), str) and ANP.DATUM_RE.match(n["seit"]):
+            bis = (_d.date.fromisoformat(n["seit"]) + _d.timedelta(days=30)).isoformat()
+            if bis >= HEUTE_ISO:
+                aus[str(n.get("nr") or "").strip() or str(n.get("name", "")).strip()] = bis
+    return aus
+
+
+NEU_BIS = neu_bis()
+
+
 def gericht_html(g, gruppe, abschnitt, groessen):
     nr, name, desc, preise = g[:4]
     varianten = g[4] if len(g) > 4 else []
@@ -266,7 +281,8 @@ def gericht_html(g, gruppe, abschnitt, groessen):
     waehlbar = nr in VEG_WAEHLBAR
     teile = [f'<li class="gericht{" ist-beliebt" if beliebt or empfohlen else ""}"{f' id="nr-{nr}"' if nr else ""} data-s="{e(suchtext)}{" beliebt" if beliebt else ""}{" empfehlung" if empfohlen else ""}{" vegetarisch vegetarian" if veg else ""}{" pescetarisch pescetarian fisch fish" if fisch else ""}"{" data-veg" if veg or waehlbar else ""}{" data-fisch" if fisch else ""}{zettel_daten(nr, name, desc, preise, groessen, gericht_typ(nr, gruppe, abschnitt), varianten)}>']
     teile.append(f'<span class="nr">{chr(60) + "span class=" + chr(34) + "sr-only" + chr(34) + ">Nr. </span>" + e(anz(nr)) if nr else ""}</span>')
-    teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{VEG_ICON if veg and gruppe != "Getränke" else ""}{FISCH_ICON if fisch else ""}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
+    neu_bis = NEU_BIS.get(nr or name)
+    teile.append(f'<span class="zeile"><span class="name">{t(name, EN.name(name))}{VEG_ICON if veg and gruppe != "Getränke" else ""}{FISCH_ICON if fisch else ""}{f' <span class="marke-beliebt marke-neu" data-neu-bis="{neu_bis}" data-en="New">Neu</span>' if neu_bis else ""}{' <span class="marke-beliebt" data-en="Popular">Beliebt</span>' if beliebt else ""}{' <span class="marke-beliebt marke-empfehlung" data-en="Recommended">Empfehlung</span>' if empfohlen else ""}</span><span class="punkte" aria-hidden="true"></span></span>')
     if groessen:
         for i, p in enumerate(preise):
             teile.append(preis(p, f"preis p{i + 1}", groessen[i]))
@@ -626,7 +642,7 @@ p{margin:0}
 .marke-beliebt{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;
   font:700 .7rem/1.5 var(--text);letter-spacing:.01em;white-space:nowrap}
 .beliebt{margin-bottom:40px;min-width:0;max-width:100vw}
-.mittag{margin-bottom:28px;min-width:0;max-width:100vw}.mittag-zeit{margin:-6px 0 10px;color:var(--tinte-weich);font-weight:700}body.sucht .mittag{display:none}
+.mittag,.pakete{margin-bottom:28px;min-width:0;max-width:100vw}body.sucht .pakete{display:none}.paket-statt{font:400 .8rem var(--text);color:var(--tinte-weich);text-decoration:line-through;margin-left:4px}.mittag-zeit{margin:-6px 0 10px;color:var(--tinte-weich);font-weight:700}body.sucht .mittag{display:none}
 .karte-inhalt{min-width:0}
 .tipps{width:calc(100% + 2 * var(--rand));position:relative}
 .beliebt-titel{font-size:1.35rem;margin-bottom:12px}
@@ -913,6 +929,10 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 [data-offen=bald] .status-text{color:var(--paprika)}
 .wahl-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
 .sammel-start .knopf+.knopf{margin-left:8px}
+.letzte-mehr{margin-top:10px}.letzte-mehr summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}
+.letzte-mehr ul{list-style:none;margin:0;padding:0}.letzte-mehr li{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--linie);font-size:.95rem}
+.knopf.klein{min-height:38px;padding:0 14px;font-size:.92rem;flex:none}
+.marke-neu{background:var(--gruen,#2E7D32)!important;color:#fff!important}
 .zug-wahl{margin:12px 0 2px}.zug-titel{margin:0 0 6px;font-weight:700;font-size:.92rem}.zug-chips{display:flex;flex-wrap:wrap;gap:6px}.zug-chips .chip{font-size:.9rem}.zug-quelle{font-size:.78rem;color:var(--tinte-weich);margin:6px 0 0}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
 .wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
@@ -1116,7 +1136,7 @@ ZETTEL_JS = r'''
     'Gemüse':'vegetables','Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
     'Dönerfleisch':'döner meat','Hähnchen-Dönerfleisch':'chicken döner meat','Käse':'cheese','Halloumikäse':'halloumi','Fetakäse':'feta'};
   function w(v){if(SP==='de'||!W[v])return v;var x=T(W[v]);return x.charAt(0).toUpperCase()+x.slice(1);}
-  function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"]');}
+  function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"],li.paket[data-k="'+nr+'"]');}
   try{zettel=JSON.parse(localStorage.getItem(ZK)||'[]');if(!Array.isArray(zettel))zettel=[];}catch(e){zettel=[];}
   zettel.forEach(function(x){x.u=uidZ++;if(x.o&&!Array.isArray(x.o.s))x.o.s=x.o.s?[x.o.s]:[];});
   /* Bestellnummer: kurz, gut vorzulesen; neu, sobald nach dem Senden etwas geändert wird */
@@ -1258,7 +1278,7 @@ ZETTEL_JS = r'''
   function zeichnen(){
     zettel.forEach(bereinigen);
     var n=anzahl();
-    zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);
+    zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);if(n===0)getraenkGefragt=false;
     zl.querySelector('.zl-anzahl').textContent=n;zl.querySelector('.zl-summe').textContent=euro(summe());
     zl.setAttribute('aria-label',L('Meine Bestellung ansehen: ','View my order: ')+n+(n===1?L(' Gericht, ',' dish, '):L(' Gerichte, ',' dishes, '))+euro(summe()));
     zliste.textContent='';
@@ -1318,6 +1338,19 @@ ZETTEL_JS = r'''
     var meldung=nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis;
     melden(meldung);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
+    getraenkFragen(li);
+  }
+  /* „Getränk dazu?“ – einmal pro Bestellung, beim ersten Essen ohne Getränk im Zettel */
+  var GETRAENK_K='Cola, Fanta, Sprite oder Wasser',getraenkGefragt=false;
+  function istGetraenk(k){var li=gerichtLi(k);return !!(li&&li.closest('#getraenke'));}
+  function getraenkFragen(li){
+    if(getraenkGefragt||sammel||li.closest('#getraenke')||zettel.some(function(x){return istGetraenk(x.k);}))return;
+    var gl=gerichtLi(GETRAENK_K);if(!gl||gl.classList.contains('nicht-da'))return;
+    getraenkGefragt=true;var pr=+gl.dataset.p.split('|')[0];
+    function dazu(sorte){return function(){var x={k:gl.dataset.k,n:gl.dataset.n,d:gl.dataset.d,g:'',c:pr,q:1,t:'',v:'',o:grund(''),notiz:sorte,u:uidZ++};
+      zettel.push(x);zusammenfassen();speichern();zeichnen();handTippZu();melden(L(sorte+' ist in Ihrer Bestellung.',sorte+' added to your order.'));};}
+    setTimeout(function(){if(!huelle.hidden||zettel.some(function(x){return istGetraenk(x.k);})){getraenkGefragt=false;return;}handTippZeigen('<b>'+L('Getränk dazu?','Something to drink?')+'</b><br>'+L('0,5 l für ','0.5 l for ')+euro(pr)+L(' (zzgl. Pfand)',' (plus deposit)'),
+      [['Cola',dazu('Cola')],['Fanta',dazu('Fanta')],[L('Wasser','Water'),dazu(L('Wasser','Wasser'))],[L('Nein danke','No thanks'),handTippZu]],15000);},1300);
   }
   document.addEventListener('click',function(ev){
     var b=ev.target.closest('.plus');
@@ -1525,24 +1558,37 @@ ZETTEL_JS = r'''
     a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},4000);
   }
   /* „Wie letztes Mal“: Zettel merken, sobald er abgeschickt, kopiert oder vorgelesen wird */
-  var LK='saray-letzte',letzte=null,boxL=document.getElementById('letzte');
-  try{letzte=JSON.parse(localStorage.getItem(LK)||'null');}catch(e){letzte=null;}
+  /* Die letzten fünf Bestellungen (nur auf diesem Gerät); die neueste oben mit großem Knopf */
+  var LK='saray-letzte',LLK='saray-letzte-liste',letzteListe=[],letzte=null,boxL=document.getElementById('letzte');
+  try{letzteListe=JSON.parse(localStorage.getItem(LLK)||'[]');if(!Array.isArray(letzteListe))letzteListe=[];}catch(e){letzteListe=[];}
+  if(!letzteListe.length){try{var alt1=JSON.parse(localStorage.getItem(LK)||'null');if(alt1&&Array.isArray(alt1.p))letzteListe=[alt1];}catch(e){}}
+  letzte=letzteListe[0]||null;
   function letzteMerken(){
     if(!zettel.length)return;
-    letzte={am:Date.now(),p:zettel.map(function(x){return {k:x.k,g:x.g,q:x.q,o:x.o,notiz:x.notiz||''};})};
-    try{localStorage.setItem(LK,JSON.stringify(letzte));}catch(e){}
+    var neu={am:Date.now(),l:abh.laden||'',p:zettel.map(function(x){return {k:x.k,g:x.g,q:x.q,o:x.o,notiz:x.notiz||''};})},sg=JSON.stringify(neu.p);
+    letzteListe=[neu].concat(letzteListe.filter(function(b2){return JSON.stringify(b2.p)!==sg;})).slice(0,5);letzte=neu;
+    try{localStorage.setItem(LLK,JSON.stringify(letzteListe));localStorage.setItem(LK,JSON.stringify(neu));}catch(e){}
   }
-  function letzteGueltig(){
-    if(!letzte||!Array.isArray(letzte.p))return [];
-    return letzte.p.filter(function(p){var li=gerichtLi(p.k);if(!li)return false;var gs=li.dataset.g?li.dataset.g.split('|'):[''];return gs.indexOf(p.g||'')>-1;});
+  function gueltig(b2){
+    if(!b2||!Array.isArray(b2.p))return [];
+    return b2.p.filter(function(p){var li=gerichtLi(p.k);if(!li)return false;var gs=li.dataset.g?li.dataset.g.split('|'):[''];return gs.indexOf(p.g||'')>-1;});
   }
+  function letzteGueltig(){return gueltig(letzte);}
+  function kurz(g){var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
+    return Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');}
+  function uebernehmen(g){g.forEach(function(p){var x=ausDaten(p);if(x)zettel.push(x);});zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();}
   function letzteZeigen(){
     if(!boxL)return;
     var g=letzteGueltig(),suche=document.getElementById('suche-feld');
     boxL.hidden=!g.length||zettel.length>0||!!(suche&&suche.value.trim());
     if(boxL.hidden)return;
-    var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
-    document.getElementById('letzte-liste').textContent=Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');
+    document.getElementById('letzte-liste').textContent=kurz(g);
+    var wb=document.getElementById('letzte-weitere');wb.textContent='';
+    letzteListe.slice(1).forEach(function(b2){var g2=gueltig(b2);if(!g2.length)return;var li=el('li');
+      var d=new Date(b2.am),dt=('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.';
+      li.appendChild(el('span',null,dt+' – '+kurz(g2)));var k=knopf(L('Nochmal','Again'),{'class':'knopf knopf-linie klein'});
+      k.addEventListener('click',function(){uebernehmen(g2);});li.appendChild(k);wb.appendChild(li);});
+    document.getElementById('letzte-mehr').hidden=!wb.children.length;
   }
   /* Eintrag aus gespeicherten/geteilten Daten mit aktuellem Preis; null, wenn es das Gericht nicht mehr gibt */
   function ausDaten(p,fuer){
@@ -1554,10 +1600,7 @@ ZETTEL_JS = r'''
     return {k:p.k,n:li.dataset.n,d:li.dataset.d,g:p.g||'',c:pr[i],q:Math.min(50,Math.max(1,+p.q||1)),t:li.dataset.t||'',v:li.dataset.v||'',o:o,
       notiz:String(p.notiz||'').slice(0,200),fuer:fuer?String(fuer).slice(0,40):(p.fuer?String(p.fuer).slice(0,40):''),u:uidZ++};
   }
-  document.getElementById('letzte-knopf').addEventListener('click',function(){
-    letzteGueltig().forEach(function(p){var x=ausDaten(p);if(x)zettel.push(x);});
-    zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
-  });
+  document.getElementById('letzte-knopf').addEventListener('click',function(){uebernehmen(letzteGueltig());});
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
   var codeBox=document.getElementById('code-box'),codeFeld=document.getElementById('code-feld'),codeInfo=document.getElementById('code-info');
   function codeZeigen(){if(!codeBox)return;var d=codeAktiv(),rb=rabatt();codeBox.hidden=!CODES.length;
@@ -1822,6 +1865,9 @@ JS = r"""
   function euroK(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   /* Speisekarte: heute laufende Aktionen markieren (alter Preis durchgestrichen, Aktionspreis als Marke) */
   function aktionenZeigen(){
+    document.querySelectorAll('[data-neu-bis]').forEach(function(m){m.hidden=isoTag(0)>m.dataset.neuBis;});
+    document.querySelectorAll('li.paket').forEach(function(p){var h=isoTag(0);p.hidden=(p.dataset.von&&h<p.dataset.von)||(p.dataset.bis&&h>p.dataset.bis);});
+    var pk=document.querySelector('.pakete');if(pk)pk.hidden=!pk.querySelector('li.paket:not([hidden])');
     var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay(),jm=jetzt().min;
     document.querySelectorAll('[data-mittag]').forEach(function(sec){var a=AKTIONEN[+sec.dataset.mittag];
       sec.hidden=!a||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.zb!=null&&jm>=a.zb);});
@@ -2177,6 +2223,7 @@ SEITE = r"""<!doctype html>
           <h3 id="letzte-titel" data-en="Same as last time?">Wie letztes Mal?</h3>
           <p class="letzte-liste" id="letzte-liste"></p>
           <button type="button" class="knopf knopf-dunkel" id="letzte-knopf" data-en="Order the same again">Nochmal so bestellen</button>
+          <details class="letzte-mehr" id="letzte-mehr" hidden><summary data-en="Earlier orders">Frühere Bestellungen</summary><ul id="letzte-weitere"></ul></details>
         </section>
         <p class="treffer" aria-live="polite" hidden></p>
         <div class="nichts" hidden><p><span data-en="No dish matches">Kein Gericht passt zu</span> <q></q>.</p><button type="button" class="knopf knopf-linie" data-en="Clear search">Suche löschen</button></div>
@@ -2356,6 +2403,29 @@ def mittag_html():
 
 
 MITTAG_HTML = mittag_html()
+
+# Familien- und Party-Boxen aus der Chef-App: feste Pakete mit Festpreis, Inhalt aus der Karte
+PAKETE = ANP.pakete(ANPASSUNGEN.get("pakete"), GRUPPEN, WARNUNGEN.append, HEUTE_ISO)
+
+
+def pakete_html():
+    if not PAKETE:
+        return ""
+    karten = []
+    for p in PAKETE:
+        name = p["name"]
+        daten = zettel_daten("", name, p["text"], [p["preis"]], None).replace(f' data-n="{e(name)}"', f' data-n="{e(name + " (" + p["text"] + ")")}"')
+        spar = p["normal"] - int(p["preis"].replace(",", ""))
+        statt = f'<span class="paket-statt">{t("statt ", "instead of ")}{(p["normal"] / 100):.2f} €</span>'.replace(".", ",") if spar > 0 else ""
+        karten.append(f'<li class="tipp paket" data-von="{p["von"]}" data-bis="{p["bis"]}"{daten}><a href="#beliebt">'
+                      f'<span class="tipp-nr" data-en="Box">Box</span><b class="tipp-name">{e(name)}</b>'
+                      f'<span class="tipp-info">{e(p["text"])}{(" · " + e(p["desc"])) if p["desc"] else ""}</span>'
+                      f'<span class="tipp-preis">{preis(p["preis"])} {statt}</span></a>{plus_knopf(name)}</li>')
+    return ('<section class="pakete" aria-label="Boxen"><h3 class="beliebt-titel" data-en="Family &amp; party boxes">Familien- &amp; Party-Boxen</h3>'
+            '<ul class="tipps">' + "".join(karten) + '</ul></section>')
+
+
+PAKETE_HTML = pakete_html()
 
 
 # Verfügbarkeit: feste Regeln, die immer gelten (tagesaktuelle Änderungen: docs/status.json).
@@ -2539,7 +2609,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         "%%SUCH_ICON%%": SUCH_ICON,
         "%%NAV%%": NAV,
         "%%KARTE%%": KARTE,
-        "%%BELIEBT%%": MITTAG_HTML + BELIEBT_HTML,
+        "%%BELIEBT%%": MITTAG_HTML + PAKETE_HTML + BELIEBT_HTML,
         "%%ORTE%%": ORTE,
         "%%GRUPPEN_TEL%%": "".join(f'<a class="knopf knopf-linie" href="tel:{st["tel_href"]}">{TEL_ICON}{e(st["name"])}: {e(st["tel"])}</a>' for st in STANDORTE),
         "%%GRUPPEN_BAR%%": ('<p class="bar">' + BAR_ICON + t("Bezahlt wird bei Abholung – nur bar.", "You pay on pickup – cash only.") + '</p>') if all(st.get("bar") for st in STANDORTE) else "",
@@ -2647,7 +2717,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
     }
     version = hashlib.sha1((ohne_stand + css + js + json.dumps(tv, sort_keys=True)).encode()).hexdigest()[:10]
     tv["version"] = version
-    laden_seiten.schreiben(aus, tv, {st["id"]: st["name"] for st in STANDORTE}, DOMAIN if not VORSCHAU else f"https://{CNAME}/", version)
+    laden_seiten.schreiben(aus, tv, {st["id"]: st["name"] for st in STANDORTE}, DOMAIN if not VORSCHAU else f"https://{CNAME}/", version, REPO)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())
     for w in WARNUNGEN:
         print("WARNUNG:", w)

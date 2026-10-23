@@ -56,6 +56,9 @@ details.erledigt{margin:8px 16px}
 .zahlen{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.zahlen div{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:10px 14px;min-width:130px}
 .zahlen b{display:block;font:700 1.6rem "Saray Slab",serif}.zahlen span{font-size:.9rem;color:var(--tinte-weich)}
 .klein{font-size:.85rem;color:var(--tinte-weich)}
+.warte-vorschlag{margin:12px 16px 0;padding:12px 14px;border-radius:14px;background:var(--paprika);color:#fff;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:700}
+.warte-vorschlag[hidden]{display:none}.warte-vorschlag span{flex:1 1 240px}.warte-vorschlag button{min-height:44px;padding:0 16px;border-radius:12px;border:2px solid #fff;background:#fff;color:var(--paprika);font-weight:700;cursor:pointer}
+.warte-vorschlag button.zweit{background:none;color:#fff}
 .balken{display:grid;grid-template-columns:4.5em 1fr 4em;gap:6px 10px;align-items:center;max-width:560px;margin:10px 0}
 .balken i{display:block;height:16px;border-radius:8px;background:var(--tinte);min-width:2px}
 .balken span:nth-child(3n){text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
@@ -86,6 +89,7 @@ details.erledigt .bon{opacity:.6}
 <header class="kopf"><h1>Küche · Saray Döner</h1><div class="chips" id="filter"></div></header>
 <p class="leer" id="leer" hidden>Noch keine offenen Bestellungen. Sie erscheinen hier, wenn Sie in der WhatsApp-Nachricht eines Gastes auf den Link
 „Für die Küche“ tippen. Die Bestellungen bleiben auf diesem Gerät gespeichert, sortiert nach Abholzeit. Antippen hakt ein Gericht ab.</p>
+<div class="warte-vorschlag" id="warte-vorschlag" hidden></div>
 <details class="erledigt bedarf" id="bedarf" hidden><summary id="bedarf-titel">Was brauchen wir?</summary>
 <div class="chips hell" id="bedarf-wahl"></div><table id="bedarf-liste"></table></details>
 <div class="liste" id="offen"></div>
@@ -187,7 +191,35 @@ function zeichnen(){
   var e=document.getElementById('erledigt');e.textContent='';fertig.forEach(function(x){e.appendChild(bon(x));});
   document.getElementById('erledigt-box').hidden=!fertig.length;document.getElementById('erledigt-titel').textContent='Erledigt ('+fertig.length+')';
   document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';
-  abschluss(sicht);bedarf(offen);jahrZeigen();}
+  abschluss(sicht);bedarf(offen);jahrZeigen();warteVorschlag();}
+/* Viel los? Ab 8 offenen Bestellungen in der nächsten Stunde (je Laden) +15 Min. Wartezeit vorschlagen.
+   Mit Chef-App-Zugang auf diesem Gerät wird direkt gespeichert (GitHub), sonst führt der Knopf in die Chef-App. */
+var REPO="michael-linuxdev/saray-doener",SCHWELLE=8,warteWeg={},warteGesetzt={};
+function chefToken(){try{return localStorage.getItem('saray-chef-token')||'';}catch(e){return '';}}
+function warteVorschlag(){
+  var box=document.getElementById('warte-vorschlag'),h=heuteISO();box.textContent='';
+  var l=Object.keys(LAEDEN).filter(function(id){return (!filter||filter===id)&&!warteWeg[id+h]&&!warteGesetzt[id+h]&&
+    liste.filter(function(x){return !x.fertig&&x.l===id&&rest(x)<=60;}).length>=SCHWELLE;})[0];
+  box.hidden=!l;if(!l)return;
+  var n=liste.filter(function(x){return !x.fertig&&x.l===l&&rest(x)<=60;}).length;
+  box.appendChild(el('span',null,'Viel los in '+LAEDEN[l]+': '+n+' Bestellungen in der nächsten Stunde. +15 Min. Wartezeit für Online-Bestellungen?'));
+  var ja=el('button',null,'+15 Min.'),nein=el('button','zweit','Nein');ja.type=nein.type='button';ja.id='warte-ja';
+  nein.addEventListener('click',function(){warteWeg[l+h]=1;warteVorschlag();});
+  ja.addEventListener('click',function(){
+    if(!chefToken()){location.href='../chef/';return;}
+    ja.disabled=true;ja.textContent='Speichert …';
+    warteSetzen(l,15).then(function(min){warteGesetzt[l+h]=1;warteVorschlag();melden('Wartezeit '+LAEDEN[l]+': +'+min+' Min. – in 2–3 Minuten auf der Seite.');},
+      function(e){ja.disabled=false;ja.textContent='+15 Min.';melden('Speichern hat nicht geklappt ('+e.message+'). Bitte in der Chef-App einstellen.');});});
+  box.appendChild(ja);box.appendChild(nein);
+}
+function warteSetzen(laden,plus){
+  var api='https://api.github.com/repos/'+REPO+'/contents/daten/anpassungen.json',kopf={'Accept':'application/vnd.github+json','Authorization':'Bearer '+chefToken()};
+  return fetch(api+'?ref=main',{headers:kopf,cache:'no-store'}).then(function(r){if(!r.ok&&r.status!==404)throw new Error(String(r.status));return r.status===404?{}:r.json();}).then(function(d){
+    var anp=d.content?JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))))||{}:{},h=heuteISO(),w=(anp.wartezeit=anp.wartezeit||{}),alt=w[laden]&&w[laden].datum===h?w[laden].min:0,min=Math.min(120,alt+plus);
+    w[laden]={datum:h,min:min};
+    return fetch(api,{method:'PUT',headers:kopf,body:JSON.stringify({message:'Küche: Wartezeit '+LAEDEN[laden]+' +'+min+' Min.',branch:'main',
+      content:btoa(unescape(encodeURIComponent(JSON.stringify(anp,null,2)+'\n'))),sha:d.sha})}).then(function(r){if(!r.ok)throw new Error(String(r.status));return min;});});
+}
 var bedarfWahl='60';
 function bedarf(offen){
   var box=document.getElementById('bedarf');box.hidden=!offen.length;if(!offen.length)return;

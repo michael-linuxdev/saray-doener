@@ -484,5 +484,15 @@
 "📅 Add to calendar": "📅 Takvime ekle",
 "📅 Weekly döner day": "📅 Haftalık döner günü",
 "📞 Call the shop": "📞 Şubeyi ara",
-"Your order at Saray Döner {ort}": "Saray Döner {ort} siparişiniz"
+"Your order at Saray Döner {ort}": "Saray Döner {ort} siparişiniz",
+" (plus deposit)": " (depozito hariç)",
+"Again": "Tekrar",
+"Earlier orders": "Önceki siparişler",
+"Something to drink?": "İçecek ister misiniz?",
+"Water": "Su",
+"{n} l for ": "{n} l, fiyatı ",
+"Family & party boxes": "Aile ve parti kutuları",
+"Box": "Kutu",
+"instead of ": "yerine ",
+"New": "Yeni"
 }

@@ -74,6 +74,9 @@
   function euroK(c){return (c/100).toFixed(2).replace('.',',')+' €';}
   /* Speisekarte: heute laufende Aktionen markieren (alter Preis durchgestrichen, Aktionspreis als Marke) */
   function aktionenZeigen(){
+    document.querySelectorAll('[data-neu-bis]').forEach(function(m){m.hidden=isoTag(0)>m.dataset.neuBis;});
+    document.querySelectorAll('li.paket').forEach(function(p){var h=isoTag(0);p.hidden=(p.dataset.von&&h<p.dataset.von)||(p.dataset.bis&&h>p.dataset.bis);});
+    var pk=document.querySelector('.pakete');if(pk)pk.hidden=!pk.querySelector('li.paket:not([hidden])');
     var iso=isoTag(0),wt=new Date(iso+'T12:00:00Z').getUTCDay(),jm=jetzt().min;
     document.querySelectorAll('[data-mittag]').forEach(function(sec){var a=AKTIONEN[+sec.dataset.mittag];
       sec.hidden=!a||iso<a.von||iso>a.bis||(a.tage&&a.tage.indexOf(wt)<0)||(a.zb!=null&&jm>=a.zb);});
@@ -390,7 +393,7 @@
     'Gemüse':'vegetables','Peperoni':'hot peppers','Ananas':'pineapple','Oliven':'olives','Brokkoli':'broccoli','Mais':'corn','Schinken':'ham','Salami':'salami',
     'Dönerfleisch':'döner meat','Hähnchen-Dönerfleisch':'chicken döner meat','Käse':'cheese','Halloumikäse':'halloumi','Fetakäse':'feta'};
   function w(v){if(SP==='de'||!W[v])return v;var x=T(W[v]);return x.charAt(0).toUpperCase()+x.slice(1);}
-  function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"]');}
+  function gerichtLi(nr){return document.querySelector('li.gericht[data-k="'+nr+'"],li.paket[data-k="'+nr+'"]');}
   try{zettel=JSON.parse(localStorage.getItem(ZK)||'[]');if(!Array.isArray(zettel))zettel=[];}catch(e){zettel=[];}
   zettel.forEach(function(x){x.u=uidZ++;if(x.o&&!Array.isArray(x.o.s))x.o.s=x.o.s?[x.o.s]:[];});
   /* Bestellnummer: kurz, gut vorzulesen; neu, sobald nach dem Senden etwas geändert wird */
@@ -532,7 +535,7 @@
   function zeichnen(){
     zettel.forEach(bereinigen);
     var n=anzahl();
-    zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);
+    zl.hidden=n===0;document.body.classList.toggle('mit-zettel',n>0);if(n===0)getraenkGefragt=false;
     zl.querySelector('.zl-anzahl').textContent=n;zl.querySelector('.zl-summe').textContent=euro(summe());
     zl.setAttribute('aria-label',L('Meine Bestellung ansehen: ','View my order: ')+n+(n===1?L(' Gericht, ',' dish, '):L(' Gerichte, ',' dishes, '))+euro(summe()));
     zliste.textContent='';
@@ -592,6 +595,19 @@
     var meldung=nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis;
     melden(meldung);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
+    getraenkFragen(li);
+  }
+  /* „Getränk dazu?“ – einmal pro Bestellung, beim ersten Essen ohne Getränk im Zettel */
+  var GETRAENK_K='Cola, Fanta, Sprite oder Wasser',getraenkGefragt=false;
+  function istGetraenk(k){var li=gerichtLi(k);return !!(li&&li.closest('#getraenke'));}
+  function getraenkFragen(li){
+    if(getraenkGefragt||sammel||li.closest('#getraenke')||zettel.some(function(x){return istGetraenk(x.k);}))return;
+    var gl=gerichtLi(GETRAENK_K);if(!gl||gl.classList.contains('nicht-da'))return;
+    getraenkGefragt=true;var pr=+gl.dataset.p.split('|')[0];
+    function dazu(sorte){return function(){var x={k:gl.dataset.k,n:gl.dataset.n,d:gl.dataset.d,g:'',c:pr,q:1,t:'',v:'',o:grund(''),notiz:sorte,u:uidZ++};
+      zettel.push(x);zusammenfassen();speichern();zeichnen();handTippZu();melden(L(sorte+' ist in Ihrer Bestellung.',sorte+' added to your order.'));};}
+    setTimeout(function(){if(!huelle.hidden||zettel.some(function(x){return istGetraenk(x.k);})){getraenkGefragt=false;return;}handTippZeigen('<b>'+L('Getränk dazu?','Something to drink?')+'</b><br>'+L('0,5 l für ','0.5 l for ')+euro(pr)+L(' (zzgl. Pfand)',' (plus deposit)'),
+      [['Cola',dazu('Cola')],['Fanta',dazu('Fanta')],[L('Wasser','Water'),dazu(L('Wasser','Wasser'))],[L('Nein danke','No thanks'),handTippZu]],15000);},1300);
   }
   document.addEventListener('click',function(ev){
     var b=ev.target.closest('.plus');
@@ -799,24 +815,37 @@
     a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},4000);
   }
   /* „Wie letztes Mal“: Zettel merken, sobald er abgeschickt, kopiert oder vorgelesen wird */
-  var LK='saray-letzte',letzte=null,boxL=document.getElementById('letzte');
-  try{letzte=JSON.parse(localStorage.getItem(LK)||'null');}catch(e){letzte=null;}
+  /* Die letzten fünf Bestellungen (nur auf diesem Gerät); die neueste oben mit großem Knopf */
+  var LK='saray-letzte',LLK='saray-letzte-liste',letzteListe=[],letzte=null,boxL=document.getElementById('letzte');
+  try{letzteListe=JSON.parse(localStorage.getItem(LLK)||'[]');if(!Array.isArray(letzteListe))letzteListe=[];}catch(e){letzteListe=[];}
+  if(!letzteListe.length){try{var alt1=JSON.parse(localStorage.getItem(LK)||'null');if(alt1&&Array.isArray(alt1.p))letzteListe=[alt1];}catch(e){}}
+  letzte=letzteListe[0]||null;
   function letzteMerken(){
     if(!zettel.length)return;
-    letzte={am:Date.now(),p:zettel.map(function(x){return {k:x.k,g:x.g,q:x.q,o:x.o,notiz:x.notiz||''};})};
-    try{localStorage.setItem(LK,JSON.stringify(letzte));}catch(e){}
+    var neu={am:Date.now(),l:abh.laden||'',p:zettel.map(function(x){return {k:x.k,g:x.g,q:x.q,o:x.o,notiz:x.notiz||''};})},sg=JSON.stringify(neu.p);
+    letzteListe=[neu].concat(letzteListe.filter(function(b2){return JSON.stringify(b2.p)!==sg;})).slice(0,5);letzte=neu;
+    try{localStorage.setItem(LLK,JSON.stringify(letzteListe));localStorage.setItem(LK,JSON.stringify(neu));}catch(e){}
   }
-  function letzteGueltig(){
-    if(!letzte||!Array.isArray(letzte.p))return [];
-    return letzte.p.filter(function(p){var li=gerichtLi(p.k);if(!li)return false;var gs=li.dataset.g?li.dataset.g.split('|'):[''];return gs.indexOf(p.g||'')>-1;});
+  function gueltig(b2){
+    if(!b2||!Array.isArray(b2.p))return [];
+    return b2.p.filter(function(p){var li=gerichtLi(p.k);if(!li)return false;var gs=li.dataset.g?li.dataset.g.split('|'):[''];return gs.indexOf(p.g||'')>-1;});
   }
+  function letzteGueltig(){return gueltig(letzte);}
+  function kurz(g){var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
+    return Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');}
+  function uebernehmen(g){g.forEach(function(p){var x=ausDaten(p);if(x)zettel.push(x);});zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();}
   function letzteZeigen(){
     if(!boxL)return;
     var g=letzteGueltig(),suche=document.getElementById('suche-feld');
     boxL.hidden=!g.length||zettel.length>0||!!(suche&&suche.value.trim());
     if(boxL.hidden)return;
-    var zus={};g.forEach(function(p){var li=gerichtLi(p.k),nm=(SP!=='de'?nameFremd(li,li.dataset.n):li.dataset.n)+(p.g?' ('+p.g+')':'');zus[nm]=(zus[nm]||0)+p.q;});
-    document.getElementById('letzte-liste').textContent=Object.keys(zus).map(function(k){return zus[k]+'× '+k;}).join(' · ');
+    document.getElementById('letzte-liste').textContent=kurz(g);
+    var wb=document.getElementById('letzte-weitere');wb.textContent='';
+    letzteListe.slice(1).forEach(function(b2){var g2=gueltig(b2);if(!g2.length)return;var li=el('li');
+      var d=new Date(b2.am),dt=('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.';
+      li.appendChild(el('span',null,dt+' – '+kurz(g2)));var k=knopf(L('Nochmal','Again'),{'class':'knopf knopf-linie klein'});
+      k.addEventListener('click',function(){uebernehmen(g2);});li.appendChild(k);wb.appendChild(li);});
+    document.getElementById('letzte-mehr').hidden=!wb.children.length;
   }
   /* Eintrag aus gespeicherten/geteilten Daten mit aktuellem Preis; null, wenn es das Gericht nicht mehr gibt */
   function ausDaten(p,fuer){
@@ -828,10 +857,7 @@
     return {k:p.k,n:li.dataset.n,d:li.dataset.d,g:p.g||'',c:pr[i],q:Math.min(50,Math.max(1,+p.q||1)),t:li.dataset.t||'',v:li.dataset.v||'',o:o,
       notiz:String(p.notiz||'').slice(0,200),fuer:fuer?String(fuer).slice(0,40):(p.fuer?String(p.fuer).slice(0,40):''),u:uidZ++};
   }
-  document.getElementById('letzte-knopf').addEventListener('click',function(){
-    letzteGueltig().forEach(function(p){var x=ausDaten(p);if(x)zettel.push(x);});
-    zusammenfassen();speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
-  });
+  document.getElementById('letzte-knopf').addEventListener('click',function(){uebernehmen(letzteGueltig());});
   document.querySelectorAll('[data-anruf]').forEach(function(a){a.addEventListener('click',letzteMerken);});
   var codeBox=document.getElementById('code-box'),codeFeld=document.getElementById('code-feld'),codeInfo=document.getElementById('code-info');
   function codeZeigen(){if(!codeBox)return;var d=codeAktiv(),rb=rabatt();codeBox.hidden=!CODES.length;

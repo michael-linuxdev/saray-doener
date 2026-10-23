@@ -164,8 +164,8 @@ def slug(name, von):
 TAGE_LANG = ["sonntags", "montags", "dienstags", "mittwochs", "donnerstags", "freitags", "samstags"]
 
 
-def plakat_html(a, quadrat=False):
-    """A4 hoch: Aktions-Plakat fürs Schaufenster. quadrat=True: Bild zum Posten (Instagram, WhatsApp-Status)."""
+def plakat_html(a, quadrat=False, status=False):
+    """A4 hoch: Aktions-Plakat fürs Schaufenster. quadrat=True: Bild zum Posten (Instagram). status=True: 1080 × 1920 für den WhatsApp-Status."""
     gerichte = {(g[0] or g[1]): (g, ab) for gr in build.GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"]}
     zeilen = []
     for k, neu in a["preise"].items():
@@ -213,15 +213,84 @@ li{{display:flex;align-items:baseline;gap:5mm;background:#fff;border:1mm solid #
 .fuss svg{{width:34mm;height:34mm;flex:none}}.fuss b{{font:700 7mm/1.2 Slab;display:block}}.fuss p{{margin:1mm 0 0;font-size:4.6mm;line-height:1.35}}
 .muster{{position:absolute;left:0;right:0;top:0;background:#3A1531;color:#fff;text-align:center;font:700 3.6mm Text;padding:1.6mm;letter-spacing:.3mm}}
 {"body{height:210mm}.kopf{margin-top:8mm}.stoerer{margin-top:5mm;font-size:18mm}h1{margin-top:6mm}ul{margin-top:6mm}.fuss{margin:4mm 0 8mm}.fuss svg{width:26mm;height:26mm}" if quadrat else ""}
-</style></head><body>{"" if quadrat else muster}
+{"body{height:373.3mm}.kopf{margin-top:34mm}.kopf img{width:30mm}.kopf b{font-size:15mm}.stoerer{margin-top:16mm;font-size:22mm}h1{margin-top:16mm;font-size:16mm}ul{margin-top:14mm}main{justify-content:flex-start}.fuss{margin:8mm 0 30mm}" if status else ""}
+</style></head><body>{"" if quadrat or status else muster}
 <main><div class="kopf"><img src="{uri("maskottchen", "saray-koch-kopf.svg")}" alt=""><b>Saray Döner</b></div>
-<div class="stoerer">AKTION</div>
+<div class="stoerer">{"MITTAGSTISCH" if a.get("art") == "mittag" else "AKTION"}</div>
 <h1>{e(a["name"]).replace(" €", "&nbsp;€")}</h1>
 <ul>{"".join(zeilen)}</ul>
 <div class="wann">{wann}<span>{" · ".join(x for x in (tage, uhr, wo) if x)}</span></div></main>
 <div class="fuss">{qr}<div><b>Jetzt vorbestellen</b><p>Code scannen, Gerichte wählen und per WhatsApp schicken – ohne Warten an der Theke.<br>{e(build.CNAME)}</p></div></div>
 <script>/* bei vielen Gerichten verkleinern, bis alles auf die Seite passt */
 var m=document.querySelector('main'),z=1;while(m.scrollHeight>m.clientHeight+1&&z>.5){{z-=.03;m.style.zoom=z;}}</script>
+</body></html>"""
+
+
+def status_empfehlung_html():
+    """1080 × 1920 für den WhatsApp-Status: „Heute bei Saray“ mit den Empfehlungen und QR-Code zum Vorbestellen."""
+    gerichte = {(g[0] or g[1]): g for gr in build.GRUPPEN for ab in gr["abschnitte"] for g in ab["gerichte"]}
+    zeilen = "".join(f'<li><span class="nm">{e(gerichte[n][1])}<small>{e(gerichte[n][2])}</small></span><span class="neu">{gerichte[n][3][0]} €</span></li>'
+                     for n in [x for x in build.EMPFEHLUNG if x in gerichte and x not in build.NUR_DIAET][:4])
+    qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{width:210mm;height:373.3mm;font-family:Text;color:#3A1531;background:#FFD21F;display:flex;flex-direction:column;align-items:center;overflow:hidden}}
+.kopf{{display:flex;align-items:center;gap:5mm;margin-top:34mm}}.kopf img{{width:30mm}}.kopf b{{font:700 15mm/1 Slab}}
+h1{{font:700 19mm/1.05 Slab;text-align:center;margin:16mm 12mm 0}}
+.koch{{width:70mm;margin-top:8mm}}
+ul{{list-style:none;margin:10mm 0 0;padding:0;width:176mm}}
+li{{display:flex;align-items:center;gap:5mm;background:#fff;border:1mm solid #3A1531;border-radius:4mm;padding:4mm 6mm;margin-bottom:4mm}}
+.nm{{flex:1;font:700 8.5mm/1.15 Slab}}.nm small{{display:block;font:400 4.5mm Text;margin-top:1mm}}
+.neu{{font:700 11mm/1 Slab;color:#C8371A;white-space:nowrap}}
+.fuss{{margin:auto 0 30mm;display:flex;align-items:center;gap:6mm;background:#fff;border-radius:4mm;padding:5mm 7mm;width:176mm}}
+.fuss svg{{width:34mm;height:34mm;flex:none}}.fuss b{{font:700 7mm/1.2 Slab;display:block}}.fuss p{{margin:1mm 0 0;font-size:4.6mm;line-height:1.35}}
+</style></head><body>
+<div class="kopf"><img src="{uri("maskottchen", "saray-koch-kopf.svg")}" alt=""><b>Saray Döner</b></div>
+<h1>Frisch vom Spieß.<br>Heute bei uns:</h1>
+<ul>{zeilen}</ul>
+<img class="koch" src="{uri("maskottchen", "saray-koch.svg")}" alt="">
+<div class="fuss">{qr}<div><b>Jetzt vorbestellen</b><p>Code scannen, wählen, per WhatsApp schicken – ohne Warten abholen. Nur Barzahlung.<br>{e(build.CNAME)}</p></div></div>
+</body></html>"""
+
+
+def aushang_html():
+    """A3 hoch: die ganze Karte als Aushang fürs Schaufenster oder den Rahmen an der Theke – immer mit aktuellen Preisen."""
+    heute = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Berlin")).strftime("%d.%m.%Y")
+    spalten = "".join(gruppe_html(g["id"]) for g in build.GRUPPEN)
+    qr = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
+    orte = " · ".join(f'<b>{e(st["name"])}</b> {e(st["strasse"])}, Tel. {e(st["tel"])}, {e(st["kurz"])}' for st in build.STANDORTE)
+    muster = '<div class="muster">ENTWURF</div>' if build.VORSCHAU else ""
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A3;margin:0}}*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{width:297mm;height:420mm;font-family:Text;color:#3A1531;background:#FFD21F;display:flex;flex-direction:column;padding:12mm 12mm 10mm;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:hidden;position:relative}}
+.kopf{{display:flex;align-items:center;gap:5mm}}.kopf img{{width:18mm}}.kopf h1{{font:700 11mm/1 Slab;margin:0;flex:1;white-space:nowrap}}.kopf span{{font:700 4mm/1.3 Text;text-align:right}}
+.spalten{{flex:1;min-height:0;columns:4;column-gap:5mm;column-fill:auto;margin-top:5mm;font-size:3.1mm;overflow:hidden}}
+section{{break-inside:auto;margin-bottom:3mm}}
+h2{{font:700 5.2mm/1 Slab;background:#3A1531;color:#FFD21F;padding:1.6mm 2.5mm;border-radius:1.6mm;margin:0 0 1.5mm;break-after:avoid}}
+h3{{font:700 3.6mm Slab;margin:2mm 0 1mm;border-bottom:.35mm solid #3A1531;display:flex;flex-wrap:wrap;gap:1mm 2mm;align-items:baseline;break-after:avoid}}
+h3 small{{font:400 2.7mm Text}}h3 .kz{{font:400 2.5mm Text;color:#6b5566}}h3 .gr{{margin-left:auto;display:flex;gap:3mm;font:700 2.7mm Text}}
+ul{{list-style:none;margin:0;padding:0}}li{{display:flex;gap:1.6mm;padding:.7mm 0;break-inside:avoid;border-bottom:.15mm dotted #b39a2a}}
+.nr{{width:6mm;flex:none;text-align:right;font-weight:700;color:#6b5566}}.nm{{flex:1}}.nm small{{display:block;font-size:2.5mm;color:#4d3347}}
+.pr{{display:flex;gap:2.4mm;white-space:nowrap;color:#C8371A}}.pr b{{font:700 3.4mm Slab}}
+.notiz{{margin:1mm 0 0;font-size:2.6mm}}
+.fuss{{display:flex;align-items:center;gap:5mm;background:#fff;border-radius:3mm;padding:3mm 5mm;margin-top:4mm;font-size:3.2mm;line-height:1.4}}
+.fuss svg{{width:26mm;height:26mm;flex:none}}.fuss b{{font-family:Slab}}
+.muster{{position:absolute;left:0;right:0;top:0;background:#3A1531;color:#fff;text-align:center;font:700 3.6mm Text;padding:1.4mm}}
+</style></head><body>{muster}
+<div class="kopf"><img src="{uri("maskottchen", "saray-koch-kopf.svg")}" alt=""><h1>Saray Döner · Speisekarte</h1><span>Nur Barzahlung · Preise in Euro inkl. MwSt.<br>Stand {heute}</span></div>
+<div class="spalten">{spalten}</div>
+<div class="fuss">{qr}<div><b>Vorbestellen per WhatsApp: {e(build.CNAME)}</b><br>{orte}<br>Alle Gerichte mit Soße nach Wahl: Knoblauch, Kräuter, Chili. Allergene und Inhaltsstoffe: Mappe an der Theke.</div></div>
+<script>/* passt alles auf das Blatt? sonst Schrift verkleinern */
+var sp=document.querySelector('.spalten'),f=3.1;
+function zuViel(){{var r=sp.getBoundingClientRect();return [].some.call(sp.querySelectorAll('li,h3'),function(x){{var q=x.getBoundingClientRect();return q.right>r.right+1||q.bottom>r.bottom+1;}});}}
+document.fonts.ready.then(function(){{while(zuViel()&&f>1.9){{f-=.05;sp.style.fontSize=f+'mm';}}document.body.dataset.fertig=f.toFixed(2);}});</script>
 </body></html>"""
 
 
@@ -417,6 +486,29 @@ async def main(ziel):
                          prefer_css_page_size=True)
             if "--vorschau" in sys.argv:
                 await pg.screenshot(path=str(HIER / "druck" / f"{name}-vorschau.png"))
+            await pg.close()
+            tmp.unlink()
+        # Aushang A3 mit der ganzen Karte
+        tmp = HIER / "_aushang.html"
+        tmp.write_text(aushang_html(), encoding="utf-8")
+        pg = await b.new_page(viewport={"width": 1123, "height": 1587})
+        await pg.goto(tmp.as_uri())
+        await pg.wait_for_selector("body[data-fertig]")
+        await pg.wait_for_timeout(300)
+        await pg.pdf(path=str(ziel / "aushang-a3.pdf"), format="A3", print_background=True, prefer_css_page_size=True)
+        if "--vorschau" in sys.argv:
+            await pg.screenshot(path=str(HIER / "druck" / "aushang-vorschau.png"))
+        await pg.close()
+        tmp.unlink()
+        # Bilder für den WhatsApp-Status (1080 × 1920): Empfehlungen + je Aktion/Mittagstisch
+        status = [("status-empfehlung.png", status_empfehlung_html())] + [(f"status-{slug(a['name'], a['von'])}.png", plakat_html(a, status=True)) for a in build.AKTIONEN]
+        for name, inhalt in status:
+            tmp = HIER / "_status.html"
+            tmp.write_text(inhalt, encoding="utf-8")
+            pg = await b.new_page(viewport={"width": 794, "height": 1411}, device_scale_factor=1080 / 794)
+            await pg.goto(tmp.as_uri())
+            await pg.wait_for_timeout(400)
+            await pg.screenshot(path=str(ziel / name))
             await pg.close()
             tmp.unlink()
         for a in build.AKTIONEN:

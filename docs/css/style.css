@@ -144,7 +144,7 @@ p{margin:0}
 .marke-beliebt{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--paprika);color:#fff;
   font:700 .7rem/1.5 var(--text);letter-spacing:.01em;white-space:nowrap}
 .beliebt{margin-bottom:40px;min-width:0;max-width:100vw}
-.mittag{margin-bottom:28px;min-width:0;max-width:100vw}.mittag-zeit{margin:-6px 0 10px;color:var(--tinte-weich);font-weight:700}body.sucht .mittag{display:none}
+.mittag,.pakete{margin-bottom:28px;min-width:0;max-width:100vw}body.sucht .pakete{display:none}.paket-statt{font:400 .8rem var(--text);color:var(--tinte-weich);text-decoration:line-through;margin-left:4px}.mittag-zeit{margin:-6px 0 10px;color:var(--tinte-weich);font-weight:700}body.sucht .mittag{display:none}
 .karte-inhalt{min-width:0}
 .tipps{width:calc(100% + 2 * var(--rand));position:relative}
 .beliebt-titel{font-size:1.35rem;margin-bottom:12px}
@@ -431,6 +431,10 @@ li.nicht-da .plus{opacity:.35;cursor:not-allowed}
 [data-offen=bald] .status-text{color:var(--paprika)}
 .wahl-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
 .sammel-start .knopf+.knopf{margin-left:8px}
+.letzte-mehr{margin-top:10px}.letzte-mehr summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}
+.letzte-mehr ul{list-style:none;margin:0;padding:0}.letzte-mehr li{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--linie);font-size:.95rem}
+.knopf.klein{min-height:38px;padding:0 14px;font-size:.92rem;flex:none}
+.marke-neu{background:var(--gruen,#2E7D32)!important;color:#fff!important}
 .zug-wahl{margin:12px 0 2px}.zug-titel{margin:0 0 6px;font-weight:700;font-size:.92rem}.zug-chips{display:flex;flex-wrap:wrap;gap:6px}.zug-chips .chip{font-size:.9rem}.zug-quelle{font-size:.78rem;color:var(--tinte-weich);margin:6px 0 0}.wa-nr{margin:0 0 6px;font-size:1.05rem}.wa-nr b{font-size:1.25rem;letter-spacing:.06em}.wa-kalender{margin-top:10px;width:100%}
 .wa-gesendet{margin:0;padding:10px 12px;border-radius:12px;background:#E3F3E8;color:#14512A;font-size:.92rem;font-weight:700}.wa-gesendet a{color:inherit}.zettel-bar,.bar{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.92rem}.zettel-bar{margin:6px 0 0}.bar{margin:8px 0 0}.zettel-bar .ico,.bar .ico{width:22px;height:22px;flex:none}
 .zettel-hinweis{color:var(--tinte-weich);font-size:.92rem;margin-bottom:14px}
