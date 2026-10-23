@@ -626,7 +626,23 @@ var UE={
 "WhatsApp-Status: ": "WhatsApp durumu: ",
 "📦 ": "📦 ",
 "weniger": "daha az",
-"mehr": "daha fazla"
+"mehr": "daha fazla",
+"🚫 Heute spontan geschlossen?": "🚫 Bugün beklenmedik şekilde kapalı mı?",
+"Für Krankheit, Stromausfall oder Lieferprobleme: Der Laden ist heute zu, oben steht ein Hinweis, Bestellungen für heute gehen nicht mehr. Wirkt nach dem Speichern in ca. 2–3 Minuten.": "Hastalık, elektrik kesintisi veya tedarik sorunları için: dükkân bugün kapalı, üstte duyuru çıkar, bugün için sipariş verilemez. Kaydettikten yakl. 2–3 dakika sonra etkili.",
+" heute geschlossen": " bugün kapalı",
+" doch geöffnet": " yine de açık",
+"📈 Preise anpassen": "📈 Fiyatları ayarla",
+"Alle Preise oder eine Kategorie auf einmal erhöhen. Vorher steht die Liste alt → neu da; der heutige Stand wird automatisch als Preis-Stand gesichert.": "Tüm fiyatları veya bir kategoriyi bir kerede artırın. Önce eski → yeni liste görünür; bugünkü durum otomatik olarak fiyat listesi olarak kaydedilir.",
+"+ Betrag": "+ Tutar",
+"+ Prozent": "+ Yüzde",
+"Wie?": "Nasıl?",
+"Was?": "Ne?",
+"Alle": "Hepsi",
+"Preise übernehmen": "Fiyatları uygula",
+" Gerichte, z. B.:": " yemek, örn.:",
+" Preise geändert – bitte prüfen und speichern.": " fiyat değişti – lütfen kontrol edip kaydedin.",
+". Der heutige Stand wird vorher gesichert.": ". Bugünkü durum önce kaydedilir.",
+"Speisekarte (bei Google unter „Speisekarte“ → „Speisekarte bearbeiten“)": "Menü (Google'da „Menü“ → „Menüyü düzenle“)"
 },UE_SP='';try{UE_SP=localStorage.getItem('saray-chef-sprache')||'';}catch(e){}
 if(UE_SP!=='tr'&&UE_SP!=='de')UE_SP=/^tr/i.test(navigator.language||'')?'tr':'de';
 var UE_FR=Object.keys(UE).filter(function(k){return /^[\s)“,.·(]|[\s„(,]$/.test(k)&&k.trim().length>=2;}).sort(function(a,b){return b.length-a.length;});
@@ -811,11 +827,26 @@ function wartezeitKarte(){
     zeichnen();}})]));
   return k;
 }
+/* Heute spontan geschlossen (Krankheit, Stromausfall …): ein Tipp je Laden, ein Tipp zurück */
+function zuKarte(){
+  var t=heute(),k=el('div',{class:'karte'},[el('h3',{text:'🚫 Heute spontan geschlossen?'}),
+    el('p',{class:'hinweis',text:'Für Krankheit, Stromausfall oder Lieferprobleme: Der Laden ist heute zu, oben steht ein Hinweis, Bestellungen für heute gehen nicht mehr. Wirkt nach dem Speichern in ca. 2–3 Minuten.'})]);
+  var reihe=el('div',{class:'reihe'});
+  STD.laeden.forEach(function(l){var sz=(ANP.sonderzeiten||{})[t],zu=!!sz&&(l.id in sz)&&sz[l.id]===null&&(ANP.hinweise||[]).some(function(h){return h.spontan===l.id&&h.von===t;});
+    reihe.appendChild(el('button',{class:'knopf'+(zu?' rot voll':' rot'),'data-zu':l.id,text:zu?l.name+' doch geöffnet':l.name+' heute geschlossen',onclick:function(){
+      ANP.sonderzeiten=ANP.sonderzeiten||{};ANP.hinweise=ANP.hinweise||[];
+      if(zu){delete ANP.sonderzeiten[t][l.id];ANP.hinweise=ANP.hinweise.filter(function(h){return !(h.spontan===l.id&&h.von===t);});}
+      else{(ANP.sonderzeiten[t]=ANP.sonderzeiten[t]||{})[l.id]=null;
+        ANP.hinweise.push({text:'Saray Döner '+l.name+' ist heute leider geschlossen. Wir sind bald wieder für Sie da.',en:'Saray Döner '+l.name+' is unfortunately closed today. We will be back soon.',von:t,bis:t,spontan:l.id});}
+      zeichnen();}}));});
+  k.appendChild(reihe);return k;
+}
 function heuteTab(){
   var bald=offeneFeiertage(14);
   if(bald.length)app.appendChild(el('div',{class:'karte feiertag'},[el('b',{text:'📅 '+bald.map(function(f){return datumDE(f[0])+' '+f[1];}).join(', ')}),
     el('p',{class:'hinweis',style:'margin:4px 0 8px',text:'Öffnungszeiten für diesen Tag noch nicht festgelegt.'}),
     el('button',{class:'knopf klein voll',text:'Jetzt festlegen',onclick:function(){TAB='zeiten';[].forEach.call(document.querySelectorAll('[data-tab]'),function(x){if(x.dataset.tab==='zeiten')x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});zeichnen();window.scrollTo(0,0);}})]));
+  app.appendChild(zuKarte());
   app.appendChild(wartezeitKarte());
   app.appendChild(el('h2',{text:'Was gibt es heute nicht?'}));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Für welchen Laden?'}),
@@ -1184,6 +1215,10 @@ function kopierZeile(titel,wert,lang){
   var t=el(lang?'textarea':'input',{readonly:true,'aria-label':titel,rows:lang?'5':null});t.value=wert;
   return el('div',{class:'gp-zeile'},[el('div',{class:'gp-kopf'},[el('b',{text:titel}),k]),t]);
 }
+function googleKarteText(){var z=[],alt='';
+  gerichte().filter(function(x){return !x.geloescht;}).forEach(function(x){var k=x.g.titel+(x.a.titel!==x.g.titel?' – '+x.a.titel:'');if(k!==alt){z.push('');z.push(k);alt=k;}
+    var gr=x.a.groessen||[];z.push((x.nr?x.nr+' ':'')+x.name+(x.desc?' ('+x.desc+')':'')+': '+x.preise.map(function(p,i){return (gr[i]?gr[i]+' ':'')+p+' €';}).join(' / '));});
+  return z.join('\n').trim();}
 function googleKarte(){ /* Angaben fürs Google-Unternehmensprofil – zum Abgleichen und Kopieren */
   var T=['So','Mo','Di','Mi','Do','Fr','Sa'],W=[1,2,3,4,5,6,0];
   var d=el('details',{class:'karte checkliste'},[el('summary',{},[el('b',{text:'Google-Unternehmensprofil'}),' · Angaben zum Kopieren'])]);
@@ -1200,7 +1235,8 @@ function googleKarte(){ /* Angaben fürs Google-Unternehmensprofil – zum Abgle
        'Dönerfleisch aus Kalb und Pute, Hähnchen-Döner, viele vegetarische Gerichte mit Falafel und Halloumi. '+
        'Online vorbestellen: Gerichte auf der Website zusammenstellen und per WhatsApp schicken, dann ohne Warten abholen. '+
        (l.extra?l.extra+' ':'')+'Bezahlung nur bar.',1],
-     ['Merkmale','Abholung: ja · Lieferung: nein · Vegetarische Gerichte: ja · Zahlungen: nur Bargeld'+(l.extra&&/draußen/.test(l.extra)?' · Sitzplätze im Freien: ja':'')]
+     ['Merkmale','Abholung: ja · Lieferung: nein · Vegetarische Gerichte: ja · Zahlungen: nur Bargeld'+(l.extra&&/draußen/.test(l.extra)?' · Sitzplätze im Freien: ja':'')],
+     ['Speisekarte (bei Google unter „Speisekarte“ → „Speisekarte bearbeiten“)',googleKarteText(),1]
     ].forEach(function(x){d.appendChild(kopierZeile(x[0],x[1],x[2]));});
   });
   d.appendChild(el('p',{class:'hinweis',text:'Außerdem: Kategorie „Döner-Restaurant“, Fotos vom Laden und von Gerichten hochladen, auf Bewertungen antworten. Halal nur angeben, wenn es bestätigt ist.'}));
@@ -1376,6 +1412,32 @@ function codeKarte(){
    .forEach(function(n){k.appendChild(n);});
   app.appendChild(k);
 }
+/* Preiserhöhung mit Vorschau: Betrag oder Prozent, gerundet; vorher wird der heutige Stand gesichert */
+function preisKarte(){
+  var k=el('div',{class:'karte'},[el('h3',{text:'📈 Preise anpassen'}),el('p',{class:'hinweis',text:'Alle Preise oder eine Kategorie auf einmal erhöhen. Vorher steht die Liste alt → neu da; der heutige Stand wird automatisch als Preis-Stand gesichert.'})]);
+  var art='betrag',wert=50,grp='',mb=el('div',{class:'wahl'}),wb=el('div',{class:'wahl'}),gb=el('div',{class:'wahl'}),vorschau=el('div'),fehler=el('p',{class:'fehler',hidden:true});
+  function cent(p){return Math.round(parseFloat(String(p).replace(',','.'))*100);}
+  function txt(c){return (c/100).toFixed(2).replace('.',',');}
+  function neuPreis(p){var c=cent(p);if(art==='betrag')return c+wert;var n=c*(1+wert/100);return Math.round(n/10)*10;}
+  function betroffen(){return gerichte().filter(function(x){return !x.geloescht&&(!grp||x.g.id===grp);});}
+  function z(){mb.textContent='';wb.textContent='';gb.textContent='';vorschau.textContent='';
+    [['betrag','+ Betrag'],['prozent','+ Prozent']].forEach(function(o){mb.appendChild(el('button',{'aria-pressed':String(art===o[0]),text:o[1],onclick:function(){art=o[0];wert=art==='betrag'?50:5;z();}}));});
+    (art==='betrag'?[10,20,50,100]:[3,5,10]).forEach(function(v){wb.appendChild(el('button',{'aria-pressed':String(wert===v),'data-preis-wert':v,text:art==='betrag'?'+'+txt(v)+' €':'+'+v+' %',onclick:function(){wert=v;z();}}));});
+    [{id:'',titel:'Alle'}].concat(STD.gruppen).forEach(function(g){gb.appendChild(el('button',{'aria-pressed':String(grp===g.id),'data-preis-gruppe':g.id,text:g.titel,onclick:function(){grp=g.id;z();}}));});
+    var l=betroffen();vorschau.appendChild(el('p',{class:'hinweis',text:l.length+' Gerichte, z. B.:'}));
+    l.slice(0,6).forEach(function(x){vorschau.appendChild(el('div',{class:'tag'},[el('span',{style:'flex:1',text:(x.nr?x.nr+' ':'')+x.name}),
+      el('span',{text:x.preise.join(' / ')+' → '+x.preise.map(function(p){return txt(neuPreis(p));}).join(' / ')+' €'})]));});}
+  z();
+  [el('label',{text:'Wie?'}),mb,wb,el('label',{text:'Was?'}),gb,vorschau,fehler,el('div',{class:'reihe',style:'margin-top:10px'},[el('button',{class:'knopf voll',id:'preise-erhoehen',text:'Preise übernehmen',onclick:function(){
+    var l=betroffen();
+    frage(l.length+' Preise ändern ('+(art==='betrag'?'+'+txt(wert)+' €':'+'+wert+' %')+')? Der heutige Stand wird vorher gesichert.','Ja, übernehmen').then(function(j){if(!j)return;
+      var d=heute(),p2=d.split('-'),name='Vor Änderung '+p2[2]+'.'+p2[1]+'.'+p2[0];
+      if((ANP.staende||[]).length<3&&!(ANP.staende||[]).some(function(s2){return s2.name===name;})){var st={name:name,datum:d,preise:{}};
+        gerichte().forEach(function(x){if(!x.geloescht)st.preise[schl(x)]=x.preise.slice();});ANP.staende=(ANP.staende||[]).concat([st]);}
+      l.forEach(function(x){preisSetzen(x,x.preise.map(function(p){return txt(neuPreis(p));}));});
+      zeichnen();status(l.length+' Preise geändert – bitte prüfen und speichern.','ok',5000);});}})])].forEach(function(n){k.appendChild(n);});
+  app.appendChild(k);
+}
 function mehrTab(){
   app.appendChild(el('h2',{text:'Mehr'}));
   checklisteKarte();
@@ -1403,6 +1465,7 @@ function mehrTab(){
     ANP.staende=(ANP.staende||[]).filter(function(s){return s.name!==st.name;}).concat([st]);zeichnen();}})]));
   if(eigene>=3)sk.appendChild(el('p',{class:'hinweis',text:'Höchstens drei eigene Stände – zum Festlegen bitte erst einen löschen.'}));
   app.appendChild(sk);
+  preisKarte();
   /* Drucken */
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
     el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}),

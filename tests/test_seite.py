@@ -1773,6 +1773,64 @@ def kueche_wartezeit_vorschlag(b, url):
     ctx.close()
 
 
+
+@test
+def lieblingswunsch(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    s.p.click("[data-anpassen]")
+    s.p.click('[data-o="ohne"][data-w="Zwiebeln"]')
+    s.p.fill(".z-notiz", "extra scharf")
+    s.p.press(".z-notiz", "Tab")
+    s.wa_text()
+    s.p.click("#zettel-leeren")
+    s.p.click("#zettel-leeren")
+    s.js("document.getElementById('hand-tipp').hidden=true")
+    s.p.click("#nr-1 .plus")
+    s.p.wait_for_selector("#hand-tipp:not([hidden])")
+    tipp = s.p.text_content("#hand-tipp")
+    assert "Wie immer?" in tipp and "ohne Zwiebeln" in tipp and "extra scharf" in tipp, tipp
+    s.p.click("#hand-tipp >> text=Ja, so")
+    s.p.click("#zettel-leiste")
+    text = s.wa_text()
+    assert "Döner Kebap" in text and "ohne Zwiebeln" in text and "Wunsch: extra scharf" in text, text
+    s.schliessen()
+
+
+@test
+def chef_app_zu_preise_google(b, url):
+    gespeichert = []
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=gespeichert)
+    p.click("[data-zu='freital']")
+    assert "Freital doch geöffnet" in p.text_content("[data-zu='freital']")
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click("[data-preis-gruppe='getraenke']")
+    p.click("#preise-erhoehen")
+    p.click(".blatt >> text=Ja, übernehmen")
+    p.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)")
+    google = p.evaluate("[...document.querySelectorAll('textarea')].map(t=>t.value).filter(v=>v.indexOf('Döner Kebap')>-1)[0]")
+    assert "1 Döner Kebap (Fladenbrot, Fleisch, Salat): 7,00 €" in google and "80 Pizza Margherita (Tomate, Käse): 24 cm 6,50 € / 30 cm 7,50 €" in google, google[:400]
+    assert "Tasse Kaffee: 3,00 €" in google, "Google-Text nicht mit neuen Preisen"
+    p.click("#speichern-knopf")
+    p.wait_for_selector(".status.ok >> text=Online")
+    d = gespeichert[-1]
+    assert d["sonderzeiten"]["2026-10-21"] == {"freital": None}, d
+    assert d["hinweise"][0]["spontan"] == "freital" and "heute leider geschlossen" in d["hinweise"][0]["text"], d["hinweise"]
+    assert d["gerichte"]["getraenke|Heiße Getränke|Tasse Kaffee"] == {"preise": ["3,00"]}, d["gerichte"]
+    assert "1" not in d["gerichte"], "Döner wurde mit erhöht"
+    assert d["staende"][0]["name"] == "Vor Änderung 21.10.2026" and d["staende"][0]["preise"]["getraenke|Heiße Getränke|Tasse Kaffee"] == ["2,50"], d["staende"][0]["name"]
+    assert not fehler, fehler
+    ctx.close()
+    with tempfile.TemporaryDirectory() as tmp:
+        srv, u = bauen_mit(d, tmp)
+        s = Seite(b, u)
+        assert s.js("document.querySelector('[data-status=freital]').getAttribute('data-offen')") == "nein"
+        s.schliessen()
+        srv.shutdown()
+
+
 @test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""

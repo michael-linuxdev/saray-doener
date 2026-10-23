@@ -480,5 +480,21 @@
 "WhatsApp-Status: ": "WhatsApp durumu: ",
 "📦 ": "📦 ",
 "weniger": "daha az",
-"mehr": "daha fazla"
+"mehr": "daha fazla",
+"🚫 Heute spontan geschlossen?": "🚫 Bugün beklenmedik şekilde kapalı mı?",
+"Für Krankheit, Stromausfall oder Lieferprobleme: Der Laden ist heute zu, oben steht ein Hinweis, Bestellungen für heute gehen nicht mehr. Wirkt nach dem Speichern in ca. 2–3 Minuten.": "Hastalık, elektrik kesintisi veya tedarik sorunları için: dükkân bugün kapalı, üstte duyuru çıkar, bugün için sipariş verilemez. Kaydettikten yakl. 2–3 dakika sonra etkili.",
+" heute geschlossen": " bugün kapalı",
+" doch geöffnet": " yine de açık",
+"📈 Preise anpassen": "📈 Fiyatları ayarla",
+"Alle Preise oder eine Kategorie auf einmal erhöhen. Vorher steht die Liste alt → neu da; der heutige Stand wird automatisch als Preis-Stand gesichert.": "Tüm fiyatları veya bir kategoriyi bir kerede artırın. Önce eski → yeni liste görünür; bugünkü durum otomatik olarak fiyat listesi olarak kaydedilir.",
+"+ Betrag": "+ Tutar",
+"+ Prozent": "+ Yüzde",
+"Wie?": "Nasıl?",
+"Was?": "Ne?",
+"Alle": "Hepsi",
+"Preise übernehmen": "Fiyatları uygula",
+" Gerichte, z. B.:": " yemek, örn.:",
+" Preise geändert – bitte prüfen und speichern.": " fiyat değişti – lütfen kontrol edip kaydedin.",
+". Der heutige Stand wird vorher gesichert.": ". Bugünkü durum önce kaydedilir.",
+"Speisekarte (bei Google unter „Speisekarte“ → „Speisekarte bearbeiten“)": "Menü (Google'da „Menü“ → „Menüyü düzenle“)"
 }

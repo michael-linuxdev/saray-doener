@@ -590,12 +590,27 @@
     var neu={k:li.dataset.k,n:li.dataset.n,d:li.dataset.d,g:g,c:c,q:1,t:li.dataset.t||'',v:li.dataset.v||'',o:grund(li.dataset.t),notiz:'',u:uidZ++};
     var s1=sig(neu),x=zettel.find(function(y){return sig(y)===s1;});
     if(x)x.q++;else zettel.push(neu);
+    if(!x)setTimeout(function(){lieblingFragen(neu);},0);
     speichern();zeichnen();
     var hinweis=neu.t==='S'?L(' Zutaten in der Bestellung wählen.',' Choose the toppings in your order.'):neu.t==='R'?L(' Variante in der Bestellung wählen.',' Choose the option in your order.'):neu.t==='B'?L(' Belag in der Bestellung wählen.',' Choose the topping in your order.'):'';
     var meldung=nameA(neu)+(g?' ('+g+')':'')+L(' ist in Ihrer Bestellung.',' added to your order.')+hinweis;
     melden(meldung);
     if(btn){btn.classList.add('ok');btn.textContent='✓';setTimeout(function(){btn.classList.remove('ok');btn.textContent='+';},1200);}
     getraenkFragen(li);
+  }
+  /* Lieblingswünsche: was jemand zuletzt zu einem Gericht gewählt hat (nur auf diesem Handy), beim nächsten Mal anbieten */
+  var WK='saray-wuensche',WUE={};try{WUE=JSON.parse(localStorage.getItem(WK)||'{}')||{};}catch(e){WUE={};}
+  function lieblingeMerken(){zettel.forEach(function(x){if(!x.t&&!x.notiz)return;var std=JSON.stringify(grund(x.t));
+    if(JSON.stringify(x.o)!==std||x.notiz)WUE[x.k]={o:JSON.parse(JSON.stringify(x.o)),notiz:x.notiz||''};else delete WUE[x.k];});
+    try{localStorage.setItem(WK,JSON.stringify(WUE));}catch(e){}}
+  function lieblingFragen(neu){
+    var f=WUE[neu.k];if(!f)return;
+    var probe=Object.assign({},neu,{o:JSON.parse(JSON.stringify(f.o||{}))});bereinigen(probe);
+    var t=(probe.t||fehlend(probe).length?wuensche(probe):'');if(f.notiz)t+=(t?', ':'')+f.notiz;if(!t)return;
+    var esc=function(v){return String(v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+    handTippZeigen('<b>'+L('Wie immer?','As usual?')+'</b><br>'+esc(nameA(neu))+': '+esc(t),
+      [[L('Ja, so','Yes, like that'),function(){var x=zettel.find(function(y){return y.u===neu.u;});if(x){x.o=JSON.parse(JSON.stringify(f.o||{}));x.notiz=f.notiz||'';bereinigen(x);
+        zusammenfassen();speichern();zeichnen();melden(L('Wie immer übernommen.','Applied as usual.'));}handTippZu();}],[L('Nein','No'),handTippZu]],15000);
   }
   /* „Getränk dazu?“ – einmal pro Bestellung, beim ersten Essen ohne Getränk im Zettel */
   var GETRAENK_K='Cola, Fanta, Sprite oder Wasser',getraenkGefragt=false;
@@ -606,7 +621,7 @@
     getraenkGefragt=true;var pr=+gl.dataset.p.split('|')[0];
     function dazu(sorte){return function(){var x={k:gl.dataset.k,n:gl.dataset.n,d:gl.dataset.d,g:'',c:pr,q:1,t:'',v:'',o:grund(''),notiz:sorte,u:uidZ++};
       zettel.push(x);zusammenfassen();speichern();zeichnen();handTippZu();melden(L(sorte+' ist in Ihrer Bestellung.',sorte+' added to your order.'));};}
-    setTimeout(function(){if(!huelle.hidden||zettel.some(function(x){return istGetraenk(x.k);})){getraenkGefragt=false;return;}handTippZeigen('<b>'+L('Getränk dazu?','Something to drink?')+'</b><br>'+L('0,5 l für ','0.5 l for ')+euro(pr)+L(' (zzgl. Pfand)',' (plus deposit)'),
+    setTimeout(function(){if(!huelle.hidden||!document.getElementById('hand-tipp').hidden||zettel.some(function(x){return istGetraenk(x.k);})){getraenkGefragt=false;return;}handTippZeigen('<b>'+L('Getränk dazu?','Something to drink?')+'</b><br>'+L('0,5 l für ','0.5 l for ')+euro(pr)+L(' (zzgl. Pfand)',' (plus deposit)'),
       [['Cola',dazu('Cola')],['Fanta',dazu('Fanta')],[L('Wasser','Water'),dazu(L('Wasser','Wasser'))],[L('Nein danke','No thanks'),handTippZu]],15000);},1300);
   }
   document.addEventListener('click',function(ev){
@@ -822,6 +837,7 @@
   letzte=letzteListe[0]||null;
   function letzteMerken(){
     if(!zettel.length)return;
+    try{lieblingeMerken();}catch(e){}
     var neu={am:Date.now(),l:abh.laden||'',p:zettel.map(function(x){return {k:x.k,g:x.g,q:x.q,o:x.o,notiz:x.notiz||''};})},sg=JSON.stringify(neu.p);
     letzteListe=[neu].concat(letzteListe.filter(function(b2){return JSON.stringify(b2.p)!==sg;})).slice(0,5);letzte=neu;
     try{localStorage.setItem(LLK,JSON.stringify(letzteListe));localStorage.setItem(LK,JSON.stringify(neu));}catch(e){}

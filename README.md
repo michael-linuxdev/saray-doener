@@ -111,6 +111,10 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Zeiten → Urlaub / Betriebsferien:** von–bis und Laden; trägt alle Tage als geschlossen ein und setzt den Hinweis „Betriebsferien …“ ab 14 Tage vorher.
 - **Drucken:** `aushang-a3.pdf` (ganze Karte, A3 hoch, Schrift passt sich an), `status-empfehlung.png` und `status-<aktion>.png` (1080 × 1920 für den WhatsApp-Status).
 - **Küche → Wartezeit-Vorschlag:** Ab 8 offenen Bestellungen eines Ladens in der nächsten Stunde fragt die Küchenansicht „+15 Min. Wartezeit?“. Ist auf dem Gerät die Chef-App eingerichtet, speichert ein Tipp direkt (GitHub), sonst öffnet sich die Chef-App.
+- **Wie immer?** Was ein Gast zuletzt zu einem Gericht gewählt hat (ohne Zwiebeln, Soße, Wunschtext), bietet die Seite beim nächsten Mal mit einem Tipp an – gespeichert nur auf seinem Handy.
+- **Heute → „Heute spontan geschlossen“:** je Laden ein Tipp; setzt den Tag auf geschlossen und den Hinweis oben, ein zweiter Tipp nimmt beides zurück.
+- **Mehr → Preise anpassen:** + Betrag oder + Prozent (auf 10 Cent gerundet) für alle oder eine Kategorie, mit Vorschau; der heutige Stand wird vorher als Preis-Stand „Vor Änderung …“ gesichert.
+- **Mehr → Google-Unternehmensprofil → Speisekarte:** die ganze Karte als Text zum Einfügen in Google („Speisekarte bearbeiten“).
 - **„Hat alles gepasst?“:** Beim nächsten Besuch nach einer WhatsApp-Bestellung fragt die Seite einmal nach. „👍 Ja, lecker“ führt zur Google-Bewertung, „👎 Nicht ganz“ öffnet eine WhatsApp an den Laden („Rückmeldung zu meiner Bestellung K47 …“) – Kritik landet zuerst beim Laden statt öffentlich.
 - **Nochmal bestellen:** Die Bestätigung aus der Küchenansicht enthält einen Link (`#nochmal=…`), der genau diese Bestellung wieder in den Bestellzettel legt – auch auf einem anderen Handy.
 - **Fester Döner-Tag:** Im Abschnitt für Firmen „📅 Fester Döner-Tag“: Wochentag und Uhrzeit wählen, es kommt eine wöchentliche Kalender-Erinnerung (.ics) mit Link `#gemeinsam`, der direkt „Gemeinsam bestellen“ öffnet.
