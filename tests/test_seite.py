@@ -1075,7 +1075,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     gespeichert = []
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "von 36 offen" in p.text_content(".checkliste summary")
+    assert "von 37 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1441,7 +1441,7 @@ def chef_app_tuerkisch(b, url):
     p.click('nav.tabs [data-tab="karte"]')
     assert "Pizza Margherita" in p.text_content("#app"), "Gerichtsnamen bleiben deutsch"
     p.click('nav.tabs [data-tab="mehr"]')
-    assert "Hediye çekleri" in p.text_content("#app") and "36 / 36 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    assert "Hediye çekleri" in p.text_content("#app") and "37 / 37 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
     p.click("#sprache")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
@@ -1829,6 +1829,47 @@ def chef_app_zu_preise_google(b, url):
         assert s.js("document.querySelector('[data-status=freital]').getAttribute('data-offen')") == "nein"
         s.schliessen()
         srv.shutdown()
+
+
+
+@test
+def grosse_schrift(b, url):
+    s = Seite(b, url)
+    s.p.click("[data-gross]")
+    assert s.js("document.documentElement.classList.contains('gross')")
+    assert s.js("getComputedStyle(document.documentElement).fontSize") == "19.2px"
+    s.p.reload()
+    s.p.wait_for_timeout(300)
+    assert s.js("document.documentElement.classList.contains('gross')") and "Normale Schrift" in s.p.text_content("[data-gross]")
+    s.schliessen()
+
+
+@test
+def kueche_telefon_und_monat(b, url):
+    ctx = b.new_context(viewport={"width": 1180, "height": 900}, locale="de-DE", timezone_id="Europe/Berlin")
+    k = ctx.new_page()
+    k.clock.set_fixed_time(ZEIT)
+    k.add_init_script("window.open=function(u){window._offen=decodeURIComponent(u)}")
+    k.goto(url + "kueche/")
+    k.click("#tel-neu")
+    k.click("#tel-laden >> text=Altenberg")
+    k.fill("#tel-name", "Frau Müller")
+    k.fill("#tel-such", "Döner Kebap")
+    k.click("#tel-treffer button >> nth=0")
+    k.click("#tel-pos .menge button >> nth=1")
+    k.fill("#tel-pos input", "ohne Zwiebeln")
+    k.fill("#tel-zeit", "18:30")
+    k.click("#tel-ok")
+    k.wait_for_selector("#offen .bon")
+    bon = k.text_content("#offen .bon")
+    assert "📞 Telefon" in bon and "Frau Müller" in bon and "Altenberg" in bon and "2×" in bon and "ohne Zwiebeln" in bon and "14,00 €" in bon, bon
+    assert k.locator("#offen .bon [data-bestaetigen]").count() == 0
+    k.evaluate("document.getElementById('jahr').open=true")
+    text = k.text_content("#monat-inhalt")
+    assert "Monatsbericht Oktober 2026" in text and "Bestellungen: 1 (davon 1 per Telefon, 0 online)" in text and "Summe (bar): 14,00 €" in text, text
+    k.click("#monat-teilen")
+    assert k.evaluate("window._offen").startswith("https://wa.me/?text=Saray Döner – Monatsbericht Oktober 2026")
+    ctx.close()
 
 
 @test

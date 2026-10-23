@@ -1125,6 +1125,7 @@ CHECKLISTE = [
     ]],
     ["Ideen für später", [
         ["stammkarte", "Stammkarte digital", "Nach 10 Bestellungen über die Seite ein Getränk gratis – ohne Konto, gezählt auf dem Handy des Gastes; die Küchenansicht zeigt „10. Bestellung – Getränk gratis“. Machen wir das?", 0],
+        ["gericht-des-tages", "Gericht des Tages automatisch", "Jeden Tag ein anderes Gericht aus einer festen Liste oben auf der Seite, mit kleinem Rabatt – ohne tägliches Einstellen.", 0],
         ["ohne-besteck", "Ohne Besteck, ohne Tüte", "Zwei Häkchen im Bestellzettel; spart Material, die Küche sieht es auf dem Bon.", 0],
         ["vorlauf-auto", "Vorlauf bei großen Bestellungen automatisch", "Ab z. B. 10 Gerichten bietet der Bestellzettel nur Abholzeiten mit genug Vorlauf an (z. B. 1 Stunde).", 0],
         ["firmen-codes", "Firmen-Rabattcodes", "Vorerst abgeschaltet. Nur mit Kontrolle an der Theke sinnvoll (Bestellung auf Firmennamen oder Firmenausweis).", 0],

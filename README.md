@@ -115,6 +115,9 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Heute → „Heute spontan geschlossen“:** je Laden ein Tipp; setzt den Tag auf geschlossen und den Hinweis oben, ein zweiter Tipp nimmt beides zurück.
 - **Mehr → Preise anpassen:** + Betrag oder + Prozent (auf 10 Cent gerundet) für alle oder eine Kategorie, mit Vorschau; der heutige Stand wird vorher als Preis-Stand „Vor Änderung …“ gesichert.
 - **Mehr → Google-Unternehmensprofil → Speisekarte:** die ganze Karte als Text zum Einfügen in Google („Speisekarte bearbeiten“).
+- **Große Schrift:** In der Fußzeile „🔍 Große Schrift“ – vergrößert die ganze Seite um 20 %, auf dem Gerät gemerkt.
+- **Küche → 📞 Telefonbestellung:** Laden, Name, Abholzeit und Gerichte (Suche in der aktuellen Karte, Menge, Wunsch) eintippen. Die Bestellung steht dann in derselben Liste, im Tagesabschluss und im Jahresrückblick (mit Kennzeichen „📞 Telefon“).
+- **Küche → Monatsbericht:** im Jahresrückblick je Monat Bestellungen (Telefon/online), Summe, stärkster Tag, Top 5; mit GoatCounter-Schlüssel auf dem Gerät auch die Besuche der Website. Drucken oder „Per WhatsApp schicken“ (z. B. an Khan und Ahmet).
 - **„Hat alles gepasst?“:** Beim nächsten Besuch nach einer WhatsApp-Bestellung fragt die Seite einmal nach. „👍 Ja, lecker“ führt zur Google-Bewertung, „👎 Nicht ganz“ öffnet eine WhatsApp an den Laden („Rückmeldung zu meiner Bestellung K47 …“) – Kritik landet zuerst beim Laden statt öffentlich.
 - **Nochmal bestellen:** Die Bestätigung aus der Küchenansicht enthält einen Link (`#nochmal=…`), der genau diese Bestellung wieder in den Bestellzettel legt – auch auf einem anderen Handy.
 - **Fester Döner-Tag:** Im Abschnitt für Firmen „📅 Fester Döner-Tag“: Wochentag und Uhrzeit wählen, es kommt eine wöchentliche Kalender-Erinnerung (.ics) mit Link `#gemeinsam`, der direkt „Gemeinsam bestellen“ öffnet.

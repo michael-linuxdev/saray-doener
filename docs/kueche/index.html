@@ -56,6 +56,17 @@ details.erledigt{margin:8px 16px}
 .zahlen{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.zahlen div{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:10px 14px;min-width:130px}
 .zahlen b{display:block;font:700 1.6rem "Saray Slab",serif}.zahlen span{font-size:.9rem;color:var(--tinte-weich)}
 .klein{font-size:.85rem;color:var(--tinte-weich)}
+.tel{margin:12px 16px;padding:14px 16px;background:#fff;border:3px solid var(--tinte);border-radius:18px;max-width:640px}
+.tel h2{font:700 1.3rem "Saray Slab",serif;margin:0 0 10px}.tel label{display:block;font-weight:700;margin:8px 0 4px}
+.tel input{display:block;width:100%;min-height:46px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit;margin-top:4px}
+.tel-reihe{display:flex;gap:10px}.tel-reihe label{flex:1}
+#tel-treffer button{display:flex;width:100%;justify-content:space-between;gap:10px;min-height:44px;padding:0 12px;margin:4px 0;border:1px solid var(--linie);border-radius:10px;background:var(--gelb-blass);font:inherit;cursor:pointer;text-align:left}
+.tel .pos li{cursor:default;align-items:center}.tel .pos input{min-height:38px;margin:4px 0 0;font-size:.95rem}
+.tel .menge{display:flex;gap:6px;align-items:center}.tel .menge button{width:36px;height:36px;border-radius:50%;border:2px solid var(--tinte);background:#fff;font-weight:700;cursor:pointer}
+.fehler{color:var(--paprika);font-weight:700}
+.tel-marke{display:inline-block;background:var(--tinte);color:var(--gelb);border-radius:99px;padding:1px 8px;font-size:.8rem;margin-left:6px}
+.monat{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:12px 14px;margin:10px 0;max-width:620px}
+body.monat-druck>*:not(#jahr){display:none!important}
 .warte-vorschlag{margin:12px 16px 0;padding:12px 14px;border-radius:14px;background:var(--paprika);color:#fff;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:700}
 .warte-vorschlag[hidden]{display:none}.warte-vorschlag span{flex:1 1 240px}.warte-vorschlag button{min-height:44px;padding:0 16px;border-radius:12px;border:2px solid #fff;background:#fff;color:var(--paprika);font-weight:700;cursor:pointer}
 .warte-vorschlag button.zweit{background:none;color:#fff}
@@ -77,7 +88,8 @@ details.erledigt .bon{opacity:.6}
   .liste{display:block;padding:0}
   .bon.druck{border:0;box-shadow:none;width:72mm;padding:0;font-size:12pt;break-after:page}
   .pos li.ok{opacity:1;text-decoration:none}.pos li .hk{display:none}
-  body.jahr-druck .bon.druck{display:none}
+  body.jahr-druck .bon.druck,body.monat-druck .bon.druck{display:none}
+  body.monat-druck #jahr{display:block!important;margin:0}body.monat-druck #jahr>*:not(#monat-box){display:none!important}body.monat-druck #monat-box .knoepfe,body.monat-druck #monat-wahl{display:none}
   body.jahr-druck #jahr{display:block!important;margin:0}body.jahr-druck #jahr summary,body.jahr-druck .knoepfe,body.jahr-druck #jahr-wahl{display:none}
   .bon.druck{page:bon}
   @page bon{size:80mm auto;margin:4mm}
@@ -86,7 +98,14 @@ details.erledigt .bon{opacity:.6}
 </style>
 </head>
 <body>
-<header class="kopf"><h1>Küche · Saray Döner</h1><div class="chips" id="filter"></div></header>
+<header class="kopf"><h1>Küche · Saray Döner</h1><button class="chip" type="button" id="tel-neu">📞 Telefonbestellung</button><div class="chips" id="filter"></div></header>
+<section class="tel" id="tel" hidden aria-label="Telefonbestellung"><h2>📞 Telefonbestellung</h2>
+<div class="chips hell" id="tel-laden"></div>
+<div class="tel-reihe"><label>Name<input id="tel-name" type="text" maxlength="40" autocomplete="off"></label><label>Abholung<input id="tel-zeit" type="time" step="300"></label></div>
+<label>Gericht suchen<input id="tel-such" type="search" placeholder="Name oder Nummer" autocomplete="off"></label><div id="tel-treffer"></div>
+<ul class="pos" id="tel-pos"></ul><div class="summe"><span>Summe (bar)</span><span id="tel-summe">0,00 €</span></div>
+<p class="fehler" id="tel-fehler" hidden></p>
+<div class="knoepfe"><button class="knopf" type="button" id="tel-ab">Abbrechen</button><button class="knopf voll" type="button" id="tel-ok">Bestellung anlegen</button></div></section>
 <p class="leer" id="leer" hidden>Noch keine offenen Bestellungen. Sie erscheinen hier, wenn Sie in der WhatsApp-Nachricht eines Gastes auf den Link
 „Für die Küche“ tippen. Die Bestellungen bleiben auf diesem Gerät gespeichert, sortiert nach Abholzeit. Antippen hakt ein Gericht ab.</p>
 <div class="warte-vorschlag" id="warte-vorschlag" hidden></div>
@@ -98,6 +117,8 @@ details.erledigt .bon{opacity:.6}
 <div class="chips hell" id="abschluss-tag"></div><div id="abschluss-inhalt"></div>
 <p class="klein">Nur Bestellungen, die auf diesem Gerät geöffnet wurden (die letzten 7 Tage). Ersetzt keine Kasse und kein Kassenbuch.</p></details>
 <details class="erledigt abschluss" id="jahr"><summary>Jahresrückblick</summary>
+<div id="monat-box"><h3>Monatsbericht</h3><div class="chips hell" id="monat-wahl"></div><div id="monat-inhalt"></div>
+<div class="knoepfe" style="max-width:420px"><button class="knopf" type="button" id="monat-drucken">Drucken</button><button class="knopf voll" type="button" id="monat-teilen">Per WhatsApp schicken</button></div></div>
 <div class="chips hell" id="jahr-wahl"></div><div id="jahr-inhalt"></div>
 <p class="klein">Zählt jede Bestellung, die auf diesem Gerät geöffnet wurde (ohne Testbestellungen), ab dem ersten Öffnen. Bleibt gut ein Jahr auf dem Gerät.</p>
 <div class="knoepfe" style="max-width:320px"><button class="knopf" type="button" id="jahr-drucken">Rückblick drucken</button></div></details>
@@ -120,7 +141,7 @@ function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').r
 var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
 /* Jahresstatistik: pro Tag Bestellungen, Summe, Gerichte, Uhrzeiten, Sprachen, Laden (ohne Tests) */
 var JK='saray-kueche-jahr',JAHR={};try{JAHR=JSON.parse(localStorage.getItem(JK)||'{}')||{};}catch(e){JAHR={};}
-function jahrZaehlen(x){if(x.test)return;var d=x.t?x.t.slice(0,10):new Date(x.a).toISOString().slice(0,10),j=JAHR[d]=JAHR[d]||{n:0,s:0,g:{},h:{},sp:{},l:{}};
+function jahrZaehlen(x){if(x.test)return;var d=x.t?x.t.slice(0,10):new Date(x.a).toISOString().slice(0,10),j=JAHR[d]=JAHR[d]||{n:0,s:0,g:{},h:{},sp:{},l:{}};if(x.tel)j.tel=(j.tel||0)+1;
   j.n++;j.s+=x.s;x.p.forEach(function(p){var n=p.n.replace(/\s*\(.*\)$/,'');j.g[n]=(j.g[n]||0)+p.q;});
   if(x.t){var h=x.t.slice(11,13);j.h[h]=(j.h[h]||0)+1;}j.sp[x.sp]=(j.sp[x.sp]||0)+1;if(x.l)j.l[x.l]=(j.l[x.l]||0)+1;
   var grenze=new Date(Date.now()-400*864e5).toISOString().slice(0,10);Object.keys(JAHR).forEach(function(k){if(k<grenze)delete JAHR[k];});
@@ -163,6 +184,7 @@ function bon(x){
   var k=el('div','bon-kopf'),nr=el('span','bnr',x.nr);if(x.test)nr.appendChild(el('span','test','TEST'));k.appendChild(nr);
   var z=el('span','zeit',x.t?x.t.slice(11):'sofort');
   z.appendChild(el('small',null,x.fertig?'erledigt':r<0?'seit '+(-r)+' Min. fällig':r===0?'jetzt':'in '+(r>=120?Math.round(r/60)+' Std.':r+' Min.')));k.appendChild(z);b.appendChild(k);
+  if(x.tel)nr.appendChild(el('span','tel-marke','📞 Telefon'));
   b.appendChild(el('div','meta',[x.m||'ohne Name',LAEDEN[x.l]||'',x.zug?'Zug '+x.zug:'',x.z].filter(Boolean).join(' · ')));
   var ul=el('ul','pos');x.p.forEach(function(p){var li=el('li',p.ok?'ok':'');li.appendChild(el('span','m',p.q+'×'));
     var t=el('span',null,p.n);if(p.w)t.appendChild(el('span','w',p.w));if(p.f)t.appendChild(el('span','w','für '+p.f));if(p.x)t.appendChild(el('span','n','Wunsch: '+p.x));li.appendChild(t);
@@ -178,9 +200,9 @@ function bon(x){
     if(x.fertig)melden('Erledigt. Unter „Erledigt“ können Sie dem Gast Bescheid geben.');});
   kn.appendChild(dr);kn.appendChild(fe);b.appendChild(kn);
   var k2=el('div','knoepfe zwei');
-  if(!x.fertig){var be=el('button','knopf'+(x.bestaetigt?' ok':''),x.bestaetigt?'✓ Bestätigt':'Bestätigen');be.type='button';be.dataset.bestaetigen='';
+  if(!x.fertig&&!x.tel){var be=el('button','knopf'+(x.bestaetigt?' ok':''),x.bestaetigt?'✓ Bestätigt':'Bestätigen');be.type='button';be.dataset.bestaetigen='';
     be.addEventListener('click',function(){senden(x,'ok');});k2.appendChild(be);}
-  else{var me=el('button','knopf'+(x.gemeldet?' ok':''),x.gemeldet?'✓ Gast Bescheid gegeben':'Gast: „Ist fertig“');me.type='button';me.dataset.melden='';
+  else if(!x.tel){var me=el('button','knopf'+(x.gemeldet?' ok':''),x.gemeldet?'✓ Gast Bescheid gegeben':'Gast: „Ist fertig“');me.type='button';me.dataset.melden='';
     me.addEventListener('click',function(){senden(x,'fertig');});k2.appendChild(me);}
   b.appendChild(k2);return b;}
 function zeichnen(){
@@ -191,7 +213,65 @@ function zeichnen(){
   var e=document.getElementById('erledigt');e.textContent='';fertig.forEach(function(x){e.appendChild(bon(x));});
   document.getElementById('erledigt-box').hidden=!fertig.length;document.getElementById('erledigt-titel').textContent='Erledigt ('+fertig.length+')';
   document.title=(offen.length?'('+offen.length+') ':'')+'Küche · Saray Döner';
-  abschluss(sicht);bedarf(offen);jahrZeigen();warteVorschlag();}
+  abschluss(sicht);bedarf(offen);jahrZeigen();monatZeigen();warteVorschlag();}
+/* ---------- Telefonbestellung erfassen: landet in derselben Liste, im Tagesabschluss und im Jahresrückblick ---------- */
+var KARTE=[["Nr. 1 Döner Kebap", 700], ["Nr. 2 Döner mit Käse", 800], ["Nr. 3 Döner vegetarisch", 600], ["Nr. 4 Döner vegetarisch mit Käse", 700], ["Nr. 5 Halloumi-Döner, vegetarisch", 700], ["Nr. 6 Super Döner", 850], ["Nr. 7 Super Döner mit Käse", 950], ["Nr. 8 Döner Hawaii", 800], ["Nr. 9 Schnitzel-Döner", 700], ["Nr. 10 Schnitzel-Döner mit Käse", 800], ["Nr. 11 Falafel-Döner vegetarisch", 700], ["Nr. 12 Falafel-Döner vegetarisch mit Käse", 800], ["Nr. 30 Hähnchen-Döner", 700], ["Nr. 31 Hähnchen-Döner mit Käse", 800], ["Nr. 32 Hähnchen Super Döner", 850], ["Nr. 33 Hähnchen Super Döner mit Käse", 950], ["Nr. 34 Hähnchen-Döner-Teller", 1000], ["Nr. 35 Hähnchen-Döner-Teller", 1000], ["Nr. 36 Hähnchen-Döner-Teller", 1100], ["Nr. 37 Hähnchen-Döner-Teller", 1200], ["Nr. 38 Hähnchen-Döner überbacken", 1000], ["Nr. 50 Dürüm", 800], ["Nr. 51 Dürüm mit Käse", 900], ["Nr. 52 Dürüm vegetarisch", 700], ["Nr. 53 Dürüm vegetarisch mit Käse", 800], ["Nr. 54 Super Dürüm", 950], ["Nr. 55 Super Dürüm mit Käse", 1050], ["Nr. 56 Dürüm Hawaii", 900], ["Nr. 57 Halloumi-Dürüm vegetarisch", 800], ["Nr. 58 Falafel-Dürüm vegetarisch", 800], ["Nr. 40 Hähnchen-Dürüm", 800], ["Nr. 41 Hähnchen-Dürüm mit Käse", 900], ["Nr. 42 Super Hähnchen-Dürüm", 950], ["Nr. 43 Super Hähnchen-Dürüm mit Käse", 1050], ["Nr. 13 Döner-Box", 700], ["Nr. 14 Döner-Box mit Käse", 800], ["Nr. 15 Döner-Box Hähnchen", 700], ["Nr. 16 Döner-Box Hähnchen mit Käse", 800], ["Nr. 21 Döner-Teller", 1000], ["Nr. 22 Döner-Teller", 1000], ["Nr. 23 Döner-Teller", 1100], ["Nr. 24 Döner-Teller vegetarisch", 1100], ["Nr. 25 Döner-Teller", 1200], ["Nr. 26 Saray-Teller", 1500], ["Nr. 28 Döner überbacken", 1000], ["Peperoni, Oliven oder Ananas", 200], ["Pommes, Salat, Halloumikäse, Käse oder Reis", 250], ["Nr. 80 Pizza Margherita (24 cm)", 650], ["Nr. 80 Pizza Margherita (30 cm)", 750], ["Nr. 81 Pizza Funghi (24 cm)", 750], ["Nr. 81 Pizza Funghi (30 cm)", 850], ["Nr. 82 Pizza Salami (24 cm)", 850], ["Nr. 82 Pizza Salami (30 cm)", 950], ["Nr. 83 Pizza Schinken (24 cm)", 850], ["Nr. 83 Pizza Schinken (30 cm)", 950], ["Nr. 84 Pizza vegetarisch (24 cm)", 850], ["Nr. 84 Pizza vegetarisch (30 cm)", 950], ["Nr. 85 Pizza Primavera (24 cm)", 850], ["Nr. 85 Pizza Primavera (30 cm)", 950], ["Nr. 86 Pizza Toscana (24 cm)", 850], ["Nr. 86 Pizza Toscana (30 cm)", 950], ["Nr. 87 Pizza Tonno (24 cm)", 850], ["Nr. 87 Pizza Tonno (30 cm)", 950], ["Nr. 88 Pizza Salami-Schinken (24 cm)", 850], ["Nr. 88 Pizza Salami-Schinken (30 cm)", 950], ["Nr. 89 Pizza Hawaii (24 cm)", 850], ["Nr. 89 Pizza Hawaii (30 cm)", 950], ["Nr. 90 Pizza Döner (24 cm)", 950], ["Nr. 90 Pizza Döner (30 cm)", 1050], ["Nr. 91 Pizza Saray (24 cm)", 900], ["Nr. 91 Pizza Saray (30 cm)", 1000], ["Nr. 92 Pizza Solino (24 cm)", 900], ["Nr. 92 Pizza Solino (30 cm)", 1000], ["Nr. 93 Pizza 4 Käse (24 cm)", 900], ["Nr. 93 Pizza 4 Käse (30 cm)", 1000], ["Nr. 94 Pizza Frühling (24 cm)", 900], ["Nr. 94 Pizza Frühling (30 cm)", 1000], ["Nr. 95 Pizza Döner-Tasche (24 cm)", 950], ["Nr. 95 Pizza Döner-Tasche (30 cm)", 1050], ["Nr. 96 Pizza Freital (24 cm)", 950], ["Nr. 96 Pizza Freital (30 cm)", 1050], ["Nr. 97 Pizza Spezial (24 cm)", 950], ["Nr. 97 Pizza Spezial (30 cm)", 1050], ["Nr. 98 Pizza Halloumi (24 cm)", 850], ["Nr. 98 Pizza Halloumi (30 cm)", 950], ["Nr. 99 Pizza Potschappel (24 cm)", 950], ["Nr. 99 Pizza Potschappel (30 cm)", 1050], ["Nr. 100 Pizza Dynamo (24 cm)", 950], ["Nr. 100 Pizza Dynamo (30 cm)", 1050], ["Nr. 101 Pizza 4 Jahreszeiten (24 cm)", 950], ["Nr. 101 Pizza 4 Jahreszeiten (30 cm)", 1050], ["Nr. 102 Pizza America (24 cm)", 950], ["Nr. 102 Pizza America (30 cm)", 1050], ["Nr. 103 Pizza Calzone (24 cm)", 950], ["Nr. 103 Pizza Calzone (30 cm)", 1050], ["Nr. 104 Pizza Mozzarella (24 cm)", 800], ["Nr. 104 Pizza Mozzarella (30 cm)", 900], ["Nr. 105 Pizza Rana (24 cm)", 950], ["Nr. 105 Pizza Rana (30 cm)", 1050], ["Paprika, Zwiebel, Champignon, Tomate, Peperoni, Ananas, Oliven, Brokkoli oder Mais", 150], ["Schinken, Salami, Dönerfleisch oder Hähnchen-Dönerfleisch", 200], ["Käse, Halloumikäse oder Fetakäse", 200], ["Nr. 125 Pizzabrötchen", 750], ["Nr. 120 Lahmacun", 400], ["Nr. 121 Lahmacun", 600], ["Nr. 122 Lahmacun", 700], ["Nr. 123 Lahmacun", 800], ["Nr. 124 Lahmacun", 900], ["Nr. 150 Baguette Margherita", 600], ["Nr. 151 Baguette Salami", 750], ["Nr. 152 Baguette Schinken", 750], ["Nr. 153 Baguette Hawaii", 800], ["Nr. 154 Baguette Tonno", 800], ["Nr. 156 Baguette Schinken-Salami", 750], ["Nr. 157 Baguette Dönerfleisch", 800], ["Nr. 158 Baguette Halloumi", 700], ["Nr. 159 Baguette Schnitzel", 700], ["Nr. 160 Baguette vegetarisch", 700], ["Fladenbrot mit Soße oder ganz", 250], ["Fladenbrot mit Soße und Käse", 350], ["Nr. 130 Salat", 500], ["Nr. 131 Salat mit Fleisch", 700], ["Nr. 132 Salat mit Käse", 650], ["Nr. 133 Salat mit Fleisch und Käse", 800], ["Nr. 134 Salat mit Hähnchenfleisch", 700], ["Nr. 135 Salat mit Hähnchenfleisch und Käse", 800], ["Nr. 136 Salat Tonno", 700], ["Nr. 137 Salat Hawaii", 650], ["Nr. 138 Salat mit Schinken", 650], ["Nr. 139 Salat mit Schinken und Ananas", 750], ["Nr. 140 Bauernsalat", 750], ["Nr. 141 Salat mit Halloumi", 700], ["Nr. 142 Salat mit Falafel", 700], ["Nr. 143 Salat mit Mozzarella", 700], ["Nr. 70 Schnitzel", 1000], ["Nr. 71 Fischfilet (Seelachs)", 1000], ["Nr. 72 Pommes, klein", 300], ["Nr. 73 Pommes, groß", 400], ["Nr. 60 Nuggets-Döner", 700], ["Nr. 61 Nuggets-Döner mit Käse", 800], ["Nr. 62 Nuggets-Teller", 1000], ["Nr. 63 Nuggets-Teller", 1000], ["Nr. 64 Nuggets-Teller", 1100], ["Nr. 65 Nuggets-Box", 700], ["Nr. 17 Kindermenü", 700], ["Nr. 18 Kinderdöner", 600], ["Nr. 19 Kinder-Hähnchendöner", 600], ["Nr. 20 Kindermenü Nuggets", 700], ["Tasse Kaffee", 250], ["Kännchen Kaffee", 450], ["Cappuccino", 300], ["Espresso", 250], ["Milchkaffee", 300], ["Latte macchiato", 350], ["Heiße Milch", 220], ["Heiße Schokolade", 300], ["Apfeltee (türkisch)", 220], ["Früchtetee", 220], ["Zimttee (türkisch)", 220], ["Schwarzer Tee (türkisch)", 220], ["Orangentee (türkisch)", 220], ["Pfefferminztee", 220], ["Kamillentee", 220], ["Cola, Fanta, Sprite oder Wasser", 250], ["Apfelschorle oder Mezzo Mix", 250], ["Apfelsaft, Multivitaminsaft oder Orangensaft", 250]],telPos=[],telLaden='';
+function telOeffnen(){var t=document.getElementById('tel');t.hidden=false;telPos=[];telLaden=filter||Object.keys(LAEDEN)[0];
+  var d=new Date(Date.now()+20*60000),m=Math.ceil(d.getMinutes()/5)*5;d.setMinutes(m,0,0);
+  document.getElementById('tel-zeit').value=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  document.getElementById('tel-name').value='';document.getElementById('tel-such').value='';document.getElementById('tel-treffer').textContent='';
+  document.getElementById('tel-fehler').hidden=true;telZeichnen();document.getElementById('tel-name').focus();}
+function telZeichnen(){
+  var lb=document.getElementById('tel-laden');lb.textContent='';Object.keys(LAEDEN).forEach(function(id){var b=el('button','chip',LAEDEN[id]);b.type='button';
+    b.setAttribute('aria-pressed',String(telLaden===id));b.addEventListener('click',function(){telLaden=id;telZeichnen();});lb.appendChild(b);});
+  var ul=document.getElementById('tel-pos');ul.textContent='';var sum=0;
+  telPos.forEach(function(p,i){sum+=p.c*p.q;var li=el('li');var mg=el('span','menge'),mi=el('button',null,'−'),pl=el('button',null,'+');mi.type=pl.type='button';
+    mi.addEventListener('click',function(){if(p.q>1)p.q--;else telPos.splice(i,1);telZeichnen();});pl.addEventListener('click',function(){p.q++;telZeichnen();});
+    mg.appendChild(mi);mg.appendChild(el('b',null,p.q+'×'));mg.appendChild(pl);li.appendChild(mg);
+    var t=el('span');t.style.flex='1';t.appendChild(el('span',null,p.n));var no=el('input');no.placeholder='Wunsch (optional)';no.value=p.x;no.addEventListener('input',function(){p.x=no.value;});t.appendChild(no);li.appendChild(t);
+    li.appendChild(el('b',null,euro(p.c*p.q)));ul.appendChild(li);});
+  document.getElementById('tel-summe').textContent=euro(sum);}
+document.getElementById('tel-neu').addEventListener('click',telOeffnen);
+document.getElementById('tel-ab').addEventListener('click',function(){document.getElementById('tel').hidden=true;});
+document.getElementById('tel-such').addEventListener('input',function(ev){var q=ev.target.value.trim().toLowerCase(),tr=document.getElementById('tel-treffer');tr.textContent='';if(!q)return;
+  KARTE.filter(function(g){return g[0].toLowerCase().indexOf(q)>-1;}).slice(0,8).forEach(function(g){var b=el('button');b.type='button';b.appendChild(el('span',null,g[0]));b.appendChild(el('b',null,euro(g[1])));
+    b.addEventListener('click',function(){var da=telPos.filter(function(p){return p.n===g[0]&&!p.x;})[0];if(da)da.q++;else telPos.push({n:g[0],c:g[1],q:1,x:''});
+      ev.target.value='';tr.textContent='';telZeichnen();ev.target.focus();});tr.appendChild(b);});});
+document.getElementById('tel-ok').addEventListener('click',function(){
+  var f=document.getElementById('tel-fehler'),zeit=document.getElementById('tel-zeit').value,name=document.getElementById('tel-name').value.trim();
+  if(!telPos.length){f.textContent='Bitte mindestens ein Gericht hinzufügen.';f.hidden=false;return;}
+  if(!/^\d{2}:\d{2}$/.test(zeit)){f.textContent='Bitte die Abholzeit eintragen.';f.hidden=false;return;}
+  var nr='T'+(10+Math.floor(Math.random()*90)),a=Date.now(),sum=telPos.reduce(function(s2,p){return s2+p.c*p.q;},0);
+  var o={id:nr+'-'+a,nr:nr,l:telLaden,z:'Telefon, '+zeit+' Uhr',t:heuteISO()+'T'+zeit,m:name.slice(0,40),s:sum,r:0,rc:'',sp:'de',w:[],test:false,tel:1,a:a,fertig:0,neu:1,
+    p:telPos.map(function(p){return {q:p.q,n:p.n,w:'',f:'',x:p.x.slice(0,200),c:p.c*p.q,ok:false};})};
+  aufnehmen(o);speichern();document.getElementById('tel').hidden=true;zeichnen();melden('Telefonbestellung '+nr+' angelegt.');});
+/* ---------- Monatsbericht: Zahlen eines Monats zum Drucken oder Weiterschicken (Besucher, falls GoatCounter-Schlüssel auf dem Gerät) ---------- */
+var ZAEHLER="saraymicana",monatWahl=heuteISO().slice(0,7),besucher={};
+function monatDaten(m){var r={n:0,s:0,tel:0,g:{},wt:{},sp:{}};Object.keys(JAHR).forEach(function(d){if(d.slice(0,7)!==m)return;var j=JAHR[d];r.n+=j.n;r.s+=j.s;r.tel+=j.tel||0;
+  var w=new Date(d+'T12:00:00').getDay();r.wt[w]=(r.wt[w]||0)+j.n;Object.keys(j.g).forEach(function(k){r.g[k]=(r.g[k]||0)+j.g[k];});Object.keys(j.sp).forEach(function(k){r.sp[k]=(r.sp[k]||0)+j.sp[k];});});return r;}
+var MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],WTAG=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+function monatName(m){return MONATE[+m.slice(5)-1]+' '+m.slice(0,4);}
+function monatText(m){var r=monatDaten(m),top=Object.keys(r.g).sort(function(a,b){return r.g[b]-r.g[a];}).slice(0,5),wt=Object.keys(r.wt).sort(function(a,b){return r.wt[b]-r.wt[a];})[0];
+  var z=['Saray Döner – Monatsbericht '+monatName(m),'','Bestellungen: '+r.n+' (davon '+r.tel+' per Telefon, '+(r.n-r.tel)+' online)','Summe (bar): '+euro(r.s)+(r.n?' · pro Bestellung '+euro(Math.round(r.s/r.n)):'')];
+  if(besucher[m]!=null)z.push('Besuche auf der Website: '+besucher[m]);
+  if(wt!=null)z.push('Stärkster Tag: '+WTAG[wt]);
+  if(top.length){z.push('','Am meisten bestellt:');top.forEach(function(k,i){z.push((i+1)+'. '+k.replace(/^Nr\. \S+ /,'')+' – '+r.g[k]+'×');});}
+  z.push('','Nur Bestellungen, die in der Küchenansicht geöffnet oder erfasst wurden.');return z.join('\n');}
+function monatZeigen(){
+  var ms=[];Object.keys(JAHR).forEach(function(d){var m=d.slice(0,7);if(ms.indexOf(m)<0)ms.push(m);});if(ms.indexOf(heuteISO().slice(0,7))<0)ms.push(heuteISO().slice(0,7));ms.sort().reverse();
+  if(ms.indexOf(monatWahl)<0)monatWahl=ms[0];
+  var w=document.getElementById('monat-wahl');w.textContent='';ms.slice(0,12).forEach(function(m){var b=el('button','chip',monatName(m));b.type='button';b.setAttribute('aria-pressed',String(m===monatWahl));
+    b.addEventListener('click',function(){monatWahl=m;zeichnen();});w.appendChild(b);});
+  var inh=document.getElementById('monat-inhalt');inh.textContent='';var pre=el('div','monat');pre.style.whiteSpace='pre-line';pre.textContent=monatText(monatWahl);inh.appendChild(pre);
+  besucherHolen(monatWahl);}
+function besucherHolen(m){var key='';try{key=localStorage.getItem('saray-chef-goatcounter')||'';}catch(e){}
+  if(!key||!ZAEHLER||besucher[m]!=null||besucherHolen.laeuft)return;besucherHolen.laeuft=1;
+  var start=m+'-01T00:00:00Z',e2=new Date(Date.UTC(+m.slice(0,4),+m.slice(5),1)).toISOString().replace('.000','');
+  fetch('https://'+ZAEHLER+'.goatcounter.com/api/v0/stats/hits?limit=100&start='+encodeURIComponent(start)+'&end='+encodeURIComponent(e2),{headers:{'Authorization':'Bearer '+key,'Accept':'application/json'}})
+    .then(function(r){return r.ok?r.json():null;}).then(function(d){besucherHolen.laeuft=0;if(!d)return;var n=0;(d.hits||[]).forEach(function(h){if(!h.event)n+=h.count;});besucher[m]=n;monatZeigen();},function(){besucherHolen.laeuft=0;});}
+document.getElementById('monat-drucken').addEventListener('click',function(){document.body.classList.add('monat-druck');
+  function weg(){document.body.classList.remove('monat-druck');window.removeEventListener('afterprint',weg);}window.addEventListener('afterprint',weg);window.print();});
+document.getElementById('monat-teilen').addEventListener('click',function(){window.open('https://wa.me/?text='+encodeURIComponent(monatText(monatWahl)),'_blank');});
 /* Viel los? Ab 8 offenen Bestellungen in der nächsten Stunde (je Laden) +15 Min. Wartezeit vorschlagen.
    Mit Chef-App-Zugang auf diesem Gerät wird direkt gespeichert (GitHub), sonst führt der Knopf in die Chef-App. */
 var REPO="michael-linuxdev/saray-doener",SCHWELLE=8,warteWeg={},warteGesetzt={};

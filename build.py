@@ -516,6 +516,7 @@ CSS = r"""
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html.gross{font-size:120%}html.gross #zettel-titel{font-size:1.45rem}html.gross .z-notiz,html.gross .chip{font-size:1.05rem}
 body{margin:0;background:var(--weiss);color:var(--tinte);font:400 1.0625rem/1.55 var(--text);
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 img{display:block;max-width:100%;height:auto}
@@ -1841,6 +1842,12 @@ JS = r"""
   function handZeigen(){document.documentElement.classList.toggle('links',linkshand);
     document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('✋ Rechtshänder? Knöpfe nach rechts','✋ Right-handed? Buttons to the right'):L('✋ Linkshänder? Knöpfe nach links','✋ Left-handed? Buttons to the left');
       b.setAttribute('aria-pressed',String(linkshand));});}
+  /* Große Schrift: auf diesem Gerät gemerkt */
+  var GSK='saray-gross',gross=false;try{gross=localStorage.getItem(GSK)==='1';}catch(e){}
+  function grossZeigen(){document.documentElement.classList.toggle('gross',gross);
+    document.querySelectorAll('[data-gross]').forEach(function(b){b.textContent=gross?L('🔍 Normale Schrift','🔍 Normal text'):L('🔍 Große Schrift','🔍 Large text');b.setAttribute('aria-pressed',String(gross));});}
+  grossZeigen();
+  document.addEventListener('click',function(ev){if(!ev.target.closest('[data-gross]'))return;gross=!gross;try{localStorage.setItem(GSK,gross?'1':'0');}catch(e){}grossZeigen();});
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
     try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
   handZeigen();
@@ -2121,7 +2128,7 @@ JS = r"""
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
-    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{aktionenZeigen();}catch(e){}
+    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{grossZeigen();}catch(e){}try{aktionenZeigen();}catch(e){}
     try{verfZeigen();}catch(e){}
   }
   /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */
@@ -2292,7 +2299,8 @@ SEITE = r"""<!doctype html>
         <img class="logo" src="%%IMG_KOPF%%" width="76" height="76" alt="">
         <p class="motto" data-en="Quality is no accident.">Qualität ist kein Zufall.</p>
         <p><span lang="tr">Afiyet olsun</span> – <span data-en="enjoy your meal!">guten Appetit!</span></p>
-        <p class="klein fuss-hand"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button></p>
+        <p class="klein fuss-hand"><button type="button" class="hand-knopf" data-hand>Linkshänder: Knöpfe links</button>
+          <button type="button" class="hand-knopf" data-gross>🔍 Große Schrift</button></p>
         <p class="klein app-tipp" data-en="Tip: Put Saray on your home screen – in Safari via “Share” → “Add to Home Screen”, in Chrome via the menu → “Add to home screen”.">Tipp: Saray auf den Home-Bildschirm legen – in Safari über „Teilen“ → „Zum Home-Bildschirm“, in Chrome über das Menü → „Zum Startbildschirm hinzufügen“.</p>
       </div>
 %%FUSS_ORTE%%
@@ -2733,7 +2741,10 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
     }
     version = hashlib.sha1((ohne_stand + css + js + json.dumps(tv, sort_keys=True)).encode()).hexdigest()[:10]
     tv["version"] = version
-    laden_seiten.schreiben(aus, tv, {st["id"]: st["name"] for st in STANDORTE}, DOMAIN if not VORSCHAU else f"https://{CNAME}/", version, REPO)
+    tel_karte = [[(f"Nr. {x['nr']} " if x["nr"] else "") + x["name"] + (f" ({ab['groessen'][i]})" if ab["groessen"] else ""), c]
+                 for g in tv_gruppen for ab in g["abschnitte"] for x in ab["gerichte"] for i, c in enumerate(x["p"])]
+    laden_seiten.schreiben(aus, tv, {st["id"]: st["name"] for st in STANDORTE}, DOMAIN if not VORSCHAU else f"https://{CNAME}/", version, REPO,
+                           tel_karte, "" if einzeln else ZAEHLER)
     gesamt = sum(f.stat().st_size for f in aus.rglob("*") if f.is_file())
     for w in WARNUNGEN:
         print("WARNUNG:", w)

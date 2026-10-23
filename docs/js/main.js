@@ -34,6 +34,12 @@
   function handZeigen(){document.documentElement.classList.toggle('links',linkshand);
     document.querySelectorAll('[data-hand]').forEach(function(b){b.textContent=linkshand?L('✋ Rechtshänder? Knöpfe nach rechts','✋ Right-handed? Buttons to the right'):L('✋ Linkshänder? Knöpfe nach links','✋ Left-handed? Buttons to the left');
       b.setAttribute('aria-pressed',String(linkshand));});}
+  /* Große Schrift: auf diesem Gerät gemerkt */
+  var GSK='saray-gross',gross=false;try{gross=localStorage.getItem(GSK)==='1';}catch(e){}
+  function grossZeigen(){document.documentElement.classList.toggle('gross',gross);
+    document.querySelectorAll('[data-gross]').forEach(function(b){b.textContent=gross?L('🔍 Normale Schrift','🔍 Normal text'):L('🔍 Große Schrift','🔍 Large text');b.setAttribute('aria-pressed',String(gross));});}
+  grossZeigen();
+  document.addEventListener('click',function(ev){if(!ev.target.closest('[data-gross]'))return;gross=!gross;try{localStorage.setItem(GSK,gross?'1':'0');}catch(e){}grossZeigen();});
   document.addEventListener('click',function(ev){if(!ev.target.closest('[data-hand]'))return;linkshand=!linkshand;
     try{localStorage.setItem(HK,linkshand?'links':'rechts');}catch(e){}handZeigen();});
   handZeigen();
@@ -1101,7 +1107,7 @@
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
     try{aktualisieren();}catch(e){}
     if(feld&&feld.value.trim())suchen();
-    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{aktionenZeigen();}catch(e){}
+    zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{grossZeigen();}catch(e){}try{aktionenZeigen();}catch(e){}
     try{verfZeigen();}catch(e){}
   }
   /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */

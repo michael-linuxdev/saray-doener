@@ -18,6 +18,7 @@
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html.gross{font-size:120%}html.gross #zettel-titel{font-size:1.45rem}html.gross .z-notiz,html.gross .chip{font-size:1.05rem}
 body{margin:0;background:var(--weiss);color:var(--tinte);font:400 1.0625rem/1.55 var(--text);
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 img{display:block;max-width:100%;height:auto}

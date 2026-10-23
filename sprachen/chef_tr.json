@@ -496,5 +496,7 @@
 " Gerichte, z. B.:": " yemek, örn.:",
 " Preise geändert – bitte prüfen und speichern.": " fiyat değişti – lütfen kontrol edip kaydedin.",
 ". Der heutige Stand wird vorher gesichert.": ". Bugünkü durum önce kaydedilir.",
-"Speisekarte (bei Google unter „Speisekarte“ → „Speisekarte bearbeiten“)": "Menü (Google'da „Menü“ → „Menüyü düzenle“)"
+"Speisekarte (bei Google unter „Speisekarte“ → „Speisekarte bearbeiten“)": "Menü (Google'da „Menü“ → „Menüyü düzenle“)",
+"Gericht des Tages automatisch": "Otomatik günün yemeği",
+"Jeden Tag ein anderes Gericht aus einer festen Liste oben auf der Seite, mit kleinem Rabatt – ohne tägliches Einstellen.": "Her gün sabit bir listeden başka bir yemek sitenin üstünde, küçük indirimle – her gün ayar yapmadan."
 }
