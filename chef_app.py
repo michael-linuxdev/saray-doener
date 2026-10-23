@@ -836,6 +836,9 @@ function ladenSeitenKarte(){
     el('p',{class:'hinweis',text:'Für das Schaufenster (nach außen): nur Aktionen, Mittagstisch, Empfehlungen und ein großer QR-Code zum Vorbestellen.'}),
     el('div',{class:'reihe'},STD.laeden.map(function(l){return el('a',{class:'knopf',href:'../tv/?laden='+l.id+'&modus=fenster',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Schaufenster '+l.name});}))]);
   app.appendChild(k);
+  app.appendChild(el('div',{class:'karte'},[el('h3',{text:'🧪 Testbestellung'}),
+    el('p',{class:'hinweis',text:'Zum Ausprobieren und Einweisen: öffnet die Seite mit einem Test-Döner im Bestellzettel. Laden wählen, per WhatsApp schicken, im Laden den Link „Für die Küche“ antippen. Alles ist als TEST markiert.'}),
+    el('div',{class:'reihe'},[el('a',{class:'knopf',href:'../#testbestellung',target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:'Testbestellung starten'})])]));
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'🧾 Küchenansicht'}),
     el('p',{class:'hinweis',text:'In jeder WhatsApp-Bestellung steht unten ein Link „Für die Küche“. Antippen öffnet die Bestellung groß zum Abhaken, sortiert nach Abholzeit, mit Bon-Druck. Gespeichert wird nur auf dem Gerät im Laden.'}),
     el('p',{class:'hinweis',text:'„Bestätigen“ und „Ist fertig“ schreiben dem Gast eine fertige WhatsApp-Antwort in seiner Sprache – nur noch seinen Chat antippen und senden. Unten: Tagesabschluss mit Bestellungen, Summe und den beliebtesten Gerichten.'}),

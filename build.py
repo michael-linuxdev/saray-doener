@@ -1641,16 +1641,22 @@ ZETTEL_JS = r'''
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
     var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,
-      test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
+      test:document.body.classList.contains('vorschau')||TESTMODUS?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];}),
       w:zettel.map(function(x){var y={k:x.k,q:x.q};if(x.g)y.g=x.g;if(x.o&&Object.keys(x.o).some(function(k){return x.o[k]&&x.o[k].length;}))y.o=x.o;if(x.notiz)y.notiz=x.notiz;return y;})};
     return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
   }
+  /* Allergie-Hinweis: steht im Wunschfeld etwas wie „Nussallergie“ oder „glutenfrei“, kommt eine Warnzeile oben in die Nachricht */
+  var ALLERGIE=new RegExp(%%ALLERGIE%%,'i');
+  /* Testbestellung aus der Chef-App (#testbestellung): Nachricht und Küche zeigen TEST */
+  var TESTMODUS=false;try{TESTMODUS=sessionStorage.getItem('saray-test')==='1';}catch(e){}
   function zettelText(mitKueche){
-    var test=document.body.classList.contains('vorschau')?['*TEST – Entwurf, keine echte Bestellung*','']:[];
+    var test=document.body.classList.contains('vorschau')||TESTMODUS?[TESTMODUS?'*TEST – bitte nicht zubereiten*':'*TEST – Entwurf, keine echte Bestellung*','']:[];
+    var al=zettel.filter(function(x){return x.notiz&&ALLERGIE.test(x.notiz);}).map(function(x){return x.notiz;});
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     z.push('Bestellnummer: '+BNR);
+    if(al.length)z.push('⚠ ALLERGIE / UNVERTRÄGLICHKEIT: '+al.join(' · '));
     if(abh.zeit)z.push('Abholung: '+abh.zeit+(abh.zug&&abh.laden===ZUG.laden?' (Zug '+abh.zug+')':''));
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
@@ -1759,6 +1765,12 @@ ZETTEL_JS = r'''
   document.getElementById('sammel-ende').addEventListener('click',function(){sammel=null;sammelSpeichern();sammelZeigen();waAktualisieren();});
   document.getElementById('sammel-einladen').addEventListener('click',einladen);
   function linkPruefen(){
+    if(location.hash==='#testbestellung'){history.replaceState(null,'',location.pathname+location.search);
+      TESTMODUS=true;try{sessionStorage.setItem('saray-test','1');}catch(e){}
+      var tl=gerichtLi('1');zettel=[];if(tl)zettel.push({k:'1',n:tl.dataset.n,d:tl.dataset.d,g:'',c:+tl.dataset.p.split('|')[0],q:1,t:tl.dataset.t||'',v:'',o:grund(tl.dataset.t),notiz:'Testbestellung',u:uidZ++});
+      abh.name='Test';eName.value='Test';abhSpeichern();getraenkGefragt=true;speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
+      dialog(L('Testbestellung','Test order'),[el('p',null,'So sieht eine Bestellung aus: 1. Laden wählen, 2. auf „Per WhatsApp bestellen“ tippen und an den Laden schicken, 3. im Laden in WhatsApp den Link „Für die Küche“ antippen – die Bestellung erscheint in der Küchenansicht mit „TEST“.')],[[L('Los geht’s','Let’s go'),dialogZu]]);
+      return;}
     if(location.hash==='#gemeinsam'){history.replaceState(null,'',location.pathname+location.search);if(!sammel)einladen();return;}
     var m=/^#(sammel|teil|nochmal)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;
     history.replaceState(null,'',location.pathname+location.search);
@@ -2614,7 +2626,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             .replace("%%ADR%%", json.dumps({st["id"]: f'Saray Döner, {st["strasse"]}, {st["plz"]} {st["ort"]}' for st in STANDORTE}, ensure_ascii=False))
             .replace("%%SPERR%%", json.dumps(SPERRGRUPPEN, ensure_ascii=False))
             .replace("%%REGELN%%", json.dumps(VERFUEGBARKEIT, ensure_ascii=False))
-            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%WINTER%%", json.dumps(WINTER)).replace("%%CODES%%", json.dumps(CODES, ensure_ascii=False)).replace("%%PAUSE%%", json.dumps(PAUSE))
+            .replace("%%VORBESTELL_TAGE%%", str(VORBESTELL_TAGE)).replace("%%ZUG%%", json.dumps(ZUG)).replace("%%ALLERGIE%%", json.dumps(__import__("laden_seiten").ALLERGIE_RE)).replace("%%WINTER%%", json.dumps(WINTER)).replace("%%CODES%%", json.dumps(CODES, ensure_ascii=False)).replace("%%PAUSE%%", json.dumps(PAUSE))
             .replace("%%SPRACHEN%%", json.dumps(SP.LISTE, ensure_ascii=False))
             .replace("%%DICTS%%", json.dumps(SP.woerterbuecher(), ensure_ascii=False) if einzeln else "{}")
             .replace("%%BEILAGEN%%", json.dumps(BEILAGEN)).replace("%%BEILAGE_RABATT%%", str(BEILAGE_RABATT))

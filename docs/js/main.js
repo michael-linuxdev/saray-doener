@@ -903,16 +903,22 @@
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
     var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,
-      test:document.body.classList.contains('vorschau')?1:0,a:Date.now(),
+      test:document.body.classList.contains('vorschau')||TESTMODUS?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];}),
       w:zettel.map(function(x){var y={k:x.k,q:x.q};if(x.g)y.g=x.g;if(x.o&&Object.keys(x.o).some(function(k){return x.o[k]&&x.o[k].length;}))y.o=x.o;if(x.notiz)y.notiz=x.notiz;return y;})};
     return new URL('kueche/#b='+b64url(JSON.stringify(o)),location.href).href;
   }
+  /* Allergie-Hinweis: steht im Wunschfeld etwas wie „Nussallergie“ oder „glutenfrei“, kommt eine Warnzeile oben in die Nachricht */
+  var ALLERGIE=new RegExp("allerg|unvertr[\u00e4a]g|intoleran|z[\u00f6o]liakie|gluten|laktose|lactose|milcheiwei|nuss|n[\u00fcu]sse|erdnuss|mandel|cashew|pistazie|sesam|soja|\\bei\\b|\\beier|eiwei|fisch|krebs|garnele|schalentier|weichtier|muschel|sellerie|senf|lupine|sulfit|schwefel|histamin|fru[ck]tose|glutamat|halal|schwein|celiac|coeliac|dairy|\\bnuts?\\b|peanut|almond|sesame|\\bsoy|\\begg|shellfish|mustard|celery|sulphite|sulfite|alerji|laktoz|f[\u0131i]st[\u0131i]k|f[\u0131i]nd[\u0131i]k|ceviz|susam|soya|yumurta|helal|domuz|alergi|lepek|lakt[\u00f3o]z|o[\u0159r]ech|ara[\u0161s][\u00edi]d|sezam|s[\u00f3o]ja|vejce|\u0430\u043b\u043b\u0435\u0440\u0433|\u0433\u043b\u044e\u0442\u0435\u043d|\u043b\u0430\u043a\u0442\u043e\u0437|\u043e\u0440\u0435\u0445|\u0430\u0440\u0430\u0445\u0438\u0441|\u043a\u0443\u043d\u0436\u0443\u0442|\u0441\u043e\u044f|\u044f\u0439\u0446|\u062d\u0633\u0627\u0633\u064a\u0629|\u062c\u0644\u0648\u062a\u064a\u0646|\u0644\u0627\u0643\u062a\u0648\u0632|\u0645\u0643\u0633\u0631\u0627\u062a|\u0633\u0645\u0633\u0645|\u0635\u0648\u064a\u0627|\u0628\u064a\u0636|\u062d\u0644\u0627\u0644",'i');
+  /* Testbestellung aus der Chef-App (#testbestellung): Nachricht und Küche zeigen TEST */
+  var TESTMODUS=false;try{TESTMODUS=sessionStorage.getItem('saray-test')==='1';}catch(e){}
   function zettelText(mitKueche){
-    var test=document.body.classList.contains('vorschau')?['*TEST – Entwurf, keine echte Bestellung*','']:[];
+    var test=document.body.classList.contains('vorschau')||TESTMODUS?[TESTMODUS?'*TEST – bitte nicht zubereiten*':'*TEST – Entwurf, keine echte Bestellung*','']:[];
+    var al=zettel.filter(function(x){return x.notiz&&ALLERGIE.test(x.notiz);}).map(function(x){return x.notiz;});
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
     z.push('Bestellnummer: '+BNR);
+    if(al.length)z.push('⚠ ALLERGIE / UNVERTRÄGLICHKEIT: '+al.join(' · '));
     if(abh.zeit)z.push('Abholung: '+abh.zeit+(abh.zug&&abh.laden===ZUG.laden?' (Zug '+abh.zug+')':''));
     if(abh.name)z.push('Name: '+abh.name);
     z.push('');
@@ -1021,6 +1027,12 @@
   document.getElementById('sammel-ende').addEventListener('click',function(){sammel=null;sammelSpeichern();sammelZeigen();waAktualisieren();});
   document.getElementById('sammel-einladen').addEventListener('click',einladen);
   function linkPruefen(){
+    if(location.hash==='#testbestellung'){history.replaceState(null,'',location.pathname+location.search);
+      TESTMODUS=true;try{sessionStorage.setItem('saray-test','1');}catch(e){}
+      var tl=gerichtLi('1');zettel=[];if(tl)zettel.push({k:'1',n:tl.dataset.n,d:tl.dataset.d,g:'',c:+tl.dataset.p.split('|')[0],q:1,t:tl.dataset.t||'',v:'',o:grund(tl.dataset.t),notiz:'Testbestellung',u:uidZ++});
+      abh.name='Test';eName.value='Test';abhSpeichern();getraenkGefragt=true;speichern();zeichnen();zeitenFuellen();waAktualisieren();oeffnen();
+      dialog(L('Testbestellung','Test order'),[el('p',null,'So sieht eine Bestellung aus: 1. Laden wählen, 2. auf „Per WhatsApp bestellen“ tippen und an den Laden schicken, 3. im Laden in WhatsApp den Link „Für die Küche“ antippen – die Bestellung erscheint in der Küchenansicht mit „TEST“.')],[[L('Los geht’s','Let’s go'),dialogZu]]);
+      return;}
     if(location.hash==='#gemeinsam'){history.replaceState(null,'',location.pathname+location.search);if(!sammel)einladen();return;}
     var m=/^#(sammel|teil|nochmal)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;
     history.replaceState(null,'',location.pathname+location.search);

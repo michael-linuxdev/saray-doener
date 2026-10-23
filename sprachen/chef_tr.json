@@ -498,5 +498,8 @@
 ". Der heutige Stand wird vorher gesichert.": ". Bugünkü durum önce kaydedilir.",
 "Speisekarte (bei Google unter „Speisekarte“ → „Speisekarte bearbeiten“)": "Menü (Google'da „Menü“ → „Menüyü düzenle“)",
 "Gericht des Tages automatisch": "Otomatik günün yemeği",
-"Jeden Tag ein anderes Gericht aus einer festen Liste oben auf der Seite, mit kleinem Rabatt – ohne tägliches Einstellen.": "Her gün sabit bir listeden başka bir yemek sitenin üstünde, küçük indirimle – her gün ayar yapmadan."
+"Jeden Tag ein anderes Gericht aus einer festen Liste oben auf der Seite, mit kleinem Rabatt – ohne tägliches Einstellen.": "Her gün sabit bir listeden başka bir yemek sitenin üstünde, küçük indirimle – her gün ayar yapmadan.",
+"🧪 Testbestellung": "🧪 Test siparişi",
+"Zum Ausprobieren und Einweisen: öffnet die Seite mit einem Test-Döner im Bestellzettel. Laden wählen, per WhatsApp schicken, im Laden den Link „Für die Küche“ antippen. Alles ist als TEST markiert.": "Denemek ve eğitim için: siteyi sipariş listesinde test döneriyle açar. Şube seçin, WhatsApp ile gönderin, dükkânda „Für die Küche“ bağlantısına dokunun. Her şey TEST olarak işaretlidir.",
+"Testbestellung starten": "Test siparişini başlat"
 }

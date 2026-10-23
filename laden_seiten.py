@@ -9,6 +9,9 @@ docs/kueche/  Küchenansicht: Bestellungen aus dem Link „Für die Küche“ in
 """
 import json
 
+# Wörter, die auf eine Allergie oder Unverträglichkeit hindeuten (Deutsch, Englisch, Türkisch, Tschechisch, Russisch, Arabisch)
+ALLERGIE_RE = 'allerg|unvertr[äa]g|intoleran|z[öo]liakie|gluten|laktose|lactose|milcheiwei|nuss|n[üu]sse|erdnuss|mandel|cashew|pistazie|sesam|soja|\\bei\\b|\\beier|eiwei|fisch|krebs|garnele|schalentier|weichtier|muschel|sellerie|senf|lupine|sulfit|schwefel|histamin|fru[ck]tose|glutamat|halal|schwein|celiac|coeliac|dairy|\\bnuts?\\b|peanut|almond|sesame|\\bsoy|\\begg|shellfish|mustard|celery|sulphite|sulfite|alerji|laktoz|f[ıi]st[ıi]k|f[ıi]nd[ıi]k|ceviz|susam|soya|yumurta|helal|domuz|alergi|lepek|lakt[óo]z|o[řr]ech|ara[šs][íi]d|sezam|s[óo]ja|vejce|аллерг|глютен|лактоз|орех|арахис|кунжут|соя|яйц|حساسية|جلوتين|لاكتوز|مكسرات|سمسم|صويا|بيض|حلال'
+
 from qr import qr_svg
 
 KOPF = r"""<!doctype html>
@@ -256,6 +259,11 @@ details.erledigt{margin:8px 16px}
 .zahlen{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.zahlen div{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:10px 14px;min-width:130px}
 .zahlen b{display:block;font:700 1.6rem "Saray Slab",serif}.zahlen span{font-size:.9rem;color:var(--tinte-weich)}
 .klein{font-size:.85rem;color:var(--tinte-weich)}
+.allergie-band{background:var(--paprika);color:#fff;font-weight:700;border-radius:10px;padding:8px 10px;font-size:1.05rem}
+.bon.allergie{border-color:var(--paprika);border-width:4px}.pos li .n.al{background:#FFE1D9;padding:2px 6px;border-radius:6px}
+#plan table{border-collapse:collapse;width:100%}#plan th,#plan td{border-bottom:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top;font-size:11pt}
+#plan h1{font:700 18pt "Saray Slab",serif;margin:0 0 8px}#plan .al{color:#C8381E;font-weight:700}
+body.plan-druck>*:not(#plan){display:none!important}body.plan-druck #plan{display:block!important}
 .tel{margin:12px 16px;padding:14px 16px;background:#fff;border:3px solid var(--tinte);border-radius:18px;max-width:640px}
 .tel h2{font:700 1.3rem "Saray Slab",serif;margin:0 0 10px}.tel label{display:block;font-weight:700;margin:8px 0 4px}
 .tel input{display:block;width:100%;min-height:46px;border:2px solid var(--tinte);border-radius:12px;padding:0 12px;font:inherit;margin-top:4px}
@@ -298,7 +306,7 @@ details.erledigt .bon{opacity:.6}
 </style>
 </head>
 <body>
-<header class="kopf"><h1>Küche · Saray Döner</h1><button class="chip" type="button" id="tel-neu">📞 Telefonbestellung</button><div class="chips" id="filter"></div></header>
+<header class="kopf"><h1>Küche · Saray Döner</h1><button class="chip" type="button" id="tel-neu">📞 Telefonbestellung</button><button class="chip" type="button" id="plan-knopf">🖨 Tagesplan</button><button class="chip" type="button" id="sync-knopf">📲 An anderes Gerät</button><div class="chips" id="filter"></div></header>
 <section class="tel" id="tel" hidden aria-label="Telefonbestellung"><h2>📞 Telefonbestellung</h2>
 <div class="chips hell" id="tel-laden"></div>
 <div class="tel-reihe"><label>Name<input id="tel-name" type="text" maxlength="40" autocomplete="off"></label><label>Abholung<input id="tel-zeit" type="time" step="300"></label></div>
@@ -322,6 +330,7 @@ details.erledigt .bon{opacity:.6}
 <div class="chips hell" id="jahr-wahl"></div><div id="jahr-inhalt"></div>
 <p class="klein">Zählt jede Bestellung, die auf diesem Gerät geöffnet wurde (ohne Testbestellungen), ab dem ersten Öffnen. Bleibt gut ein Jahr auf dem Gerät.</p>
 <div class="knoepfe" style="max-width:320px"><button class="knopf" type="button" id="jahr-drucken">Rückblick drucken</button></div></details>
+<section id="plan" hidden></section>
 <p class="gesendet" id="gesendet" role="status" hidden></p>
 <script>
 (function(){
@@ -348,6 +357,12 @@ function jahrZaehlen(x){if(x.test)return;var d=x.t?x.t.slice(0,10):new Date(x.a)
   try{localStorage.setItem(JK,JSON.stringify(JAHR));}catch(e){}}
 function aufnehmen(o){if(o&&!liste.some(function(x){return x.id===o.id;})){liste.push(o);jahrZaehlen(o);}}
 if(m){aufnehmen(lesen(m[1]));speichern();history.replaceState(null,'',location.pathname+location.search);}
+/* Bestellungen von einem anderen Gerät übernehmen (#sync=…): doppelte werden erkannt */
+function syncLesen(){var s2=/[#&]sync=([A-Za-z0-9_-]+)/.exec(location.hash);if(!s2)return 0;var n=0;
+  try{var d=JSON.parse(decodeURIComponent(escape(atob(s2[1].replace(/-/g,'+').replace(/_/g,'/')))));(d.o||[]).forEach(function(o){
+    if(!o||typeof o.id!=='string'||!Array.isArray(o.p)||liste.some(function(x){return x.id===o.id;}))return;o.neu=0;aufnehmen(o);n++;});}catch(e){}
+  speichern();history.replaceState(null,'',location.pathname+location.search);return n;}
+var syncN=syncLesen();
 /* alte Bestellungen (älter als 3 Tage) aufräumen */
 liste=liste.filter(function(x){return x&&Array.isArray(x.p)&&Date.now()-x.a<7*864e5;});speichern();
 /* Antworten an den Gast in seiner Sprache (Sprache der Website beim Bestellen) */
@@ -378,16 +393,19 @@ function rest(x){return Math.round((zeitpunkt(x)-Date.now())/60000);}
 function filterZeigen(){var f=document.getElementById('filter');f.textContent='';[['','Alle']].concat(Object.keys(LAEDEN).map(function(k){return [k,LAEDEN[k]];})).forEach(function(o){
   var b=el('button','chip',o[1]);b.type='button';b.setAttribute('aria-pressed',String(filter===o[0]));
   b.addEventListener('click',function(){filter=o[0];try{localStorage.setItem(F,filter);}catch(e){}filterZeigen();zeichnen();});f.appendChild(b);});}
+var ALLERGIE=new RegExp(%%ALLERGIE%%,'i');
+function allergien(x){return x.p.map(function(p){return p.x;}).filter(function(t){return t&&ALLERGIE.test(t);});}
 function bon(x){
-  var b=el('article','bon'),r=rest(x);if(!x.fertig){if(r<0)b.classList.add('spaet');else if(r<=15)b.classList.add('bald');}if(x.neu)b.classList.add('neu');
+  var b=el('article','bon'),r=rest(x),al=allergien(x);if(al.length)b.classList.add('allergie');if(!x.fertig){if(r<0)b.classList.add('spaet');else if(r<=15)b.classList.add('bald');}if(x.neu)b.classList.add('neu');
   b.dataset.id=x.id;
   var k=el('div','bon-kopf'),nr=el('span','bnr',x.nr);if(x.test)nr.appendChild(el('span','test','TEST'));k.appendChild(nr);
   var z=el('span','zeit',x.t?x.t.slice(11):'sofort');
   z.appendChild(el('small',null,x.fertig?'erledigt':r<0?'seit '+(-r)+' Min. fällig':r===0?'jetzt':'in '+(r>=120?Math.round(r/60)+' Std.':r+' Min.')));k.appendChild(z);b.appendChild(k);
   if(x.tel)nr.appendChild(el('span','tel-marke','📞 Telefon'));
+  if(al.length)b.appendChild(el('div','allergie-band','⚠ Allergie / Unverträglichkeit beachten: '+al.join(' · ')));
   b.appendChild(el('div','meta',[x.m||'ohne Name',LAEDEN[x.l]||'',x.zug?'Zug '+x.zug:'',x.z].filter(Boolean).join(' · ')));
   var ul=el('ul','pos');x.p.forEach(function(p){var li=el('li',p.ok?'ok':'');li.appendChild(el('span','m',p.q+'×'));
-    var t=el('span',null,p.n);if(p.w)t.appendChild(el('span','w',p.w));if(p.f)t.appendChild(el('span','w','für '+p.f));if(p.x)t.appendChild(el('span','n','Wunsch: '+p.x));li.appendChild(t);
+    var t=el('span',null,p.n);if(p.w)t.appendChild(el('span','w',p.w));if(p.f)t.appendChild(el('span','w','für '+p.f));if(p.x)t.appendChild(el('span','n'+(ALLERGIE.test(p.x)?' al':''),(ALLERGIE.test(p.x)?'⚠ ':'')+'Wunsch: '+p.x));li.appendChild(t);
     li.appendChild(el('span','hk'));li.setAttribute('role','checkbox');li.setAttribute('aria-checked',String(p.ok));li.tabIndex=0;
     function um(){p.ok=!p.ok;x.neu=0;speichern();zeichnen();}
     li.addEventListener('click',um);li.addEventListener('keydown',function(ev){if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();um();}});ul.appendChild(li);});
@@ -572,7 +590,27 @@ window.addEventListener('hashchange',function(){var m2=/[#&]b=([A-Za-z0-9_-]+)/.
   aufnehmen(o2);speichern();history.replaceState(null,'',location.pathname+location.search);zeichnen();});
 setInterval(zeichnen,30000);
 setTimeout(function(){var neu=liste.some(function(x){return x.neu;});liste.forEach(function(x){x.neu=0;});if(neu)speichern();},4000);
-filterZeigen();zeichnen();
+filterZeigen();zeichnen();if(syncN)melden(syncN+' Bestellung'+(syncN===1?'':'en')+' vom anderen Gerät übernommen.');
+document.getElementById('sync-knopf').addEventListener('click',function(){
+  var o=liste.map(function(x){var y=JSON.parse(JSON.stringify(x));delete y.neu;delete y.w;return y;});
+  if(!o.length){melden('Keine Bestellungen auf diesem Gerät.');return;}
+  var link=location.origin+location.pathname+'#sync='+b64url(JSON.stringify({o:o}));
+  var t='Bestellungen der letzten 7 Tage aus der Küchenansicht ('+o.length+'). Auf dem anderen Gerät öffnen:\n'+link;
+  window._syncText=t;
+  if(navigator.share&&matchMedia('(pointer:coarse)').matches)navigator.share({text:t}).catch(function(){});else window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');});
+window.addEventListener('hashchange',function(){var n=syncLesen();if(n){zeichnen();melden(n+' Bestellung'+(n===1?'':'en')+' vom anderen Gerät übernommen.');}});
+/* Tagesplan: alle Bestellungen für heute nach Uhrzeit, zum Aufhängen in der Küche */
+document.getElementById('plan-knopf').addEventListener('click',function(){
+  var h=heuteISO(),pl=document.getElementById('plan'),heute=liste.filter(function(x){return tagVon(x)===h&&(!filter||x.l===filter);}).sort(function(a,b){return zeitpunkt(a)-zeitpunkt(b);});
+  pl.textContent='';pl.appendChild(el('h1',null,'Tagesplan '+h.slice(8)+'.'+h.slice(5,7)+'.'+h.slice(0,4)+(filter?' · '+LAEDEN[filter]:'')+' · '+heute.length+' Bestellungen'));
+  var tb=el('table'),kopf=el('tr');['Zeit','Nr.','Name','Laden','Gerichte','Summe'].forEach(function(t){kopf.appendChild(el('th',null,t));});tb.appendChild(kopf);
+  heute.forEach(function(x){var tr=el('tr');tr.appendChild(el('td',null,x.t?x.t.slice(11):'sofort'));tr.appendChild(el('td',null,x.nr+(x.tel?' 📞':'')+(x.fertig?' ✓':'')));
+    tr.appendChild(el('td',null,x.m||''));tr.appendChild(el('td',null,LAEDEN[x.l]||''));
+    var g=el('td');x.p.forEach(function(p){var d=el('div',null,p.q+'× '+p.n+(p.w?' – '+p.w:''));if(p.x){d.appendChild(el('span',ALLERGIE.test(p.x)?'al':'',' · '+(ALLERGIE.test(p.x)?'⚠ ':'')+p.x));}g.appendChild(d);});tr.appendChild(g);
+    tr.appendChild(el('td',null,euro(x.s)));tb.appendChild(tr);});
+  pl.appendChild(tb);if(!heute.length)pl.appendChild(el('p',null,'Für heute noch keine Bestellungen.'));
+  pl.hidden=false;document.body.classList.add('plan-druck');function weg(){document.body.classList.remove('plan-druck');pl.hidden=true;window.removeEventListener('afterprint',weg);}
+  window.addEventListener('afterprint',weg);window.print();});
 })();
 </script>
 </body>
@@ -589,5 +627,5 @@ def schreiben(aus, daten, laeden, seite_url, version, repo="", karte=(), zaehler
           .replace("%%QR%%", qr_svg(seite_url, ecl="M", farbe="#3A1531", rand=1))
           .replace("%%ADRESSE%%", anzeige), encoding="utf-8")
     (aus / "kueche").mkdir(exist_ok=True)
-    (aus / "kueche" / "index.html").write_text(KUECHE.replace("%%LAEDEN%%", json.dumps(laeden, ensure_ascii=False)).replace("%%REPO%%", json.dumps(repo)).replace("%%KARTE%%", json.dumps(list(karte), ensure_ascii=False)).replace("%%ZAEHLER%%", json.dumps(zaehler)), encoding="utf-8")
+    (aus / "kueche" / "index.html").write_text(KUECHE.replace("%%LAEDEN%%", json.dumps(laeden, ensure_ascii=False)).replace("%%REPO%%", json.dumps(repo)).replace("%%KARTE%%", json.dumps(list(karte), ensure_ascii=False)).replace("%%ZAEHLER%%", json.dumps(zaehler)).replace("%%ALLERGIE%%", json.dumps(ALLERGIE_RE)), encoding="utf-8")
     (aus / "version.json").write_text(json.dumps({"v": version}) + "\n")

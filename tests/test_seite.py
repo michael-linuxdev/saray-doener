@@ -1872,6 +1872,70 @@ def kueche_telefon_und_monat(b, url):
     ctx.close()
 
 
+
+@test
+def allergie_und_testbestellung(b, url):
+    s = Seite(b, url + "#testbestellung")
+    s.p.wait_for_selector("#sammel-dialog:not([hidden])")
+    assert "Testbestellung" in s.p.text_content("#sammel-titel")
+    s.p.click("#sammel-knoepfe >> text=Los geht’s")
+    assert "Döner Kebap" in s.zettel_zeilen()[0]
+    s.p.fill(".z-notiz", "Nussallergie, bitte aufpassen")
+    s.p.press(".z-notiz", "Tab")
+    s.p.click("[data-laden=freital]")
+    text = s.wa_text()
+    assert text.startswith("*TEST – bitte nicht zubereiten*"), text
+    assert "⚠ ALLERGIE / UNVERTRÄGLICHKEIT: Nussallergie, bitte aufpassen" in text, text
+    link = [z for z in text.split("\n") if z.startswith("Für die Küche: ")][0].split(": ", 1)[1]
+    k = s.ctx.new_page()
+    k.goto(link)
+    k.wait_for_selector("#offen .bon.allergie")
+    assert "Allergie / Unverträglichkeit beachten: Nussallergie" in k.text_content("#offen .bon") and "TEST" in k.text_content("#offen .bon .bnr")
+    sys.path.insert(0, str(REPO))
+    import laden_seiten
+    treffer = k.evaluate("['fıstık alerjisi var','glutenfrei bitte','без арахиса, аллергия','ohne Zwiebeln','extra scharf','no eggs please'].map(t=>new RegExp(" + json.dumps(laden_seiten.ALLERGIE_RE) + ",'i').test(t))")
+    assert treffer == [True, True, True, False, False, True], treffer
+    k.close()
+    s.schliessen()
+
+
+@test
+def kueche_sync_und_tagesplan(b, url):
+    a = b.new_context(viewport={"width": 1180, "height": 900}, locale="de-DE", timezone_id="Europe/Berlin")
+    k = a.new_page()
+    k.clock.set_fixed_time(ZEIT)
+    k.add_init_script("window.open=function(u){window._offen=u};window.print=function(){window._druck=(window._druck||0)+1}")
+    k.goto(url + "kueche/")
+    for name, zeit in (("Ali", "19:00"), ("Bea", "18:15")):
+        k.click("#tel-neu")
+        k.fill("#tel-name", name)
+        k.fill("#tel-such", "Dürüm")
+        k.click("#tel-treffer button >> nth=0")
+        k.fill("#tel-zeit", zeit)
+        k.click("#tel-ok")
+    k.click("#plan-knopf")
+    zeilen = k.evaluate("[...document.querySelectorAll('#plan tr')].slice(1).map(r=>r.children[0].textContent+' '+r.children[2].textContent)")
+    assert zeilen == ["18:15 Bea", "19:00 Ali"] and k.evaluate("window._druck") == 1, zeilen
+    k.evaluate("window.dispatchEvent(new Event('afterprint'))")
+    k.click("#sync-knopf")
+    text = k.evaluate("window._syncText")
+    link = text.split("\n")[1]
+    assert "#sync=" in link
+    a.close()
+    c = b.new_context(viewport={"width": 1180, "height": 900}, locale="de-DE", timezone_id="Europe/Berlin")
+    k2 = c.new_page()
+    k2.clock.set_fixed_time(ZEIT)
+    k2.goto(link)
+    k2.wait_for_selector("#offen .bon")
+    assert k2.locator("#offen .bon").count() == 2 and "#sync" not in k2.url
+    k2.goto(link)
+    k2.wait_for_timeout(400)
+    assert k2.locator("#offen .bon").count() == 2, "doppelt übernommen"
+    k2.evaluate("document.getElementById('jahr').open=true")
+    assert k2.evaluate("document.querySelector('#jahr .zahlen b').textContent") == "2"
+    c.close()
+
+
 @test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""
