@@ -206,6 +206,19 @@ def weitere_sprachen(b, url):
 
 
 @test
+def sprachen_chips_unter_einleitung(b, url):
+    s = Seite(b, url)
+    assert s.js("[...document.querySelectorAll('#sprachen-zeile [data-sp-chip]')].map(b=>b.dataset.spChip).join()") == "en,cs,tr,ru,ar"
+    assert s.p.text_content("#sprache .sp-code") == "DE" and s.p.locator("#sprache .globus").count() == 1
+    s.p.click("[data-sp-chip=tr]")
+    s.p.wait_for_function("document.documentElement.lang==='tr'")
+    assert s.p.text_content("#sprache .sp-code") == "TR"
+    assert "Deutsch" in s.p.text_content("#sprachen-zeile") and "Türkçe" not in s.p.text_content("#sprachen-zeile")
+    assert s.js("localStorage.getItem('saray-sprache')") == "tr"
+    s.schliessen()
+
+
+@test
 def vorbestellung_nach_ladenschluss(b, url):
     s = Seite(b, url, zeit=datetime.datetime.fromisoformat("2026-10-21T22:30:00+02:00"))
     s.p.click("#nr-1 .plus")
@@ -1444,10 +1457,12 @@ def chef_app_gutscheine_mittag_winter(b, url):
 @test
 def chef_app_tuerkisch(b, url):
     ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[])
-    assert p.text_content("#sprache") == "TR"
-    p.click("#sprache")
+    assert p.get_attribute("[data-ue-sp=de]", "aria-pressed") == "true" and p.get_attribute("[data-ue-sp=tr]", "aria-pressed") == "false"
+    assert p.locator("#sprache svg").count() == 2, "Flaggen fehlen"
+    p.click("[data-ue-sp=tr]")
     p.wait_for_selector("nav.tabs:not([hidden])")
-    assert p.text_content("#sprache") == "DE"
+    assert p.get_attribute("[data-ue-sp=tr]", "aria-pressed") == "true"
+    assert p.text_content("#sprache") == "DETR", "Sprachwahl darf nicht übersetzt werden"
     assert "Bugün" in p.text_content("nav.tabs") and "Diğer" in p.text_content("nav.tabs")
     assert "Bugün ne yok?" in p.text_content("#app")
     p.click('nav.tabs [data-tab="karte"]')
@@ -1457,7 +1472,7 @@ def chef_app_tuerkisch(b, url):
     p.click('nav.tabs [data-tab="mehr"]')
     p.click('[data-seite="checkliste"]')
     assert "39 / 39 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
-    p.click("#sprache")
+    p.click("[data-ue-sp=de]")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
     assert not fehler, fehler

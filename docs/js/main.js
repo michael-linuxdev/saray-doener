@@ -1161,7 +1161,7 @@
     document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');
       var en=x.dataset.enAria,m=/^Add (.+) to my order$/.exec(en),v=m&&l!=='de'&&l!=='en'?fuell(T('Add {x} to my order'),{x:T(m[1])}):textFuer(l,x._dea,en);x.setAttribute('aria-label',v);});
     document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',textFuer(l,x._det,x.dataset.enTitle));});
-    spKnopf.textContent=l.toUpperCase();
+    spKnopf.querySelector('.sp-code').textContent=l.toUpperCase();sprachenZeile();
     spKnopf.setAttribute('aria-label','Sprache / Language: '+(SPRACHEN.filter(function(x){return x[0]===l;})[0]||['',''])[1]);
     spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp===l?'true':'false');});
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
@@ -1170,6 +1170,12 @@
     zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{grossZeigen();}catch(e){}try{aktionenZeigen();}catch(e){}
     try{verfZeigen();}catch(e){}
   }
+  /* Unter dem Einleitungstext: die anderen Sprachen als Chips (jede in ihrer eigenen Schrift) – damit Gäste die Sprachwahl finden */
+  function sprachenZeile(){var z=document.getElementById('sprachen-zeile');if(!z)return;z.textContent='';
+    z.insertAdjacentHTML('beforeend','<svg class="globus" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5s1.3-6.8 3.9-9.5z"/></svg>');
+    SPRACHEN.forEach(function(x){if(x[0]===SP)return;var b=document.createElement('button');b.type='button';b.className='sp-chip';b.lang=x[0];b.dataset.spChip=x[0];b.textContent=x[1];
+      if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){sprache(x[0],true);window.scrollTo(0,0);});z.appendChild(b);});}
+  sprachenZeile();
   /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */
   SPRACHEN.forEach(function(x){var b=document.createElement('button');b.type='button';b.dataset.sp=x[0];b.lang=x[0];b.textContent=x[1];
     if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){menueZu();sprache(x[0],true);spKnopf.focus();});var li=document.createElement('li');li.appendChild(b);spMenue.appendChild(li);});

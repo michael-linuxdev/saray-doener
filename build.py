@@ -575,6 +575,10 @@ p{margin:0}
 .sprache{min-width:44px;min-height:40px;margin-left:4px;border:2px solid var(--tinte);border-radius:999px;background:transparent;color:var(--tinte);
   font:700 .85rem var(--text);letter-spacing:.06em;cursor:pointer}
 .sprache:hover{background:rgba(255,255,255,.55)}
+.sprache{display:inline-flex;align-items:center;gap:5px;padding:0 10px}.sprache .globus{width:18px;height:18px}.sp-pfeil{font-size:.7rem}
+.sprachen-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0 8px}.sprachen-zeile .globus{width:20px;height:20px;color:var(--tinte);margin-inline-end:2px}
+.sp-chip{min-height:36px;padding:0 12px;border:2px solid var(--tinte);border-radius:999px;background:rgba(255,255,255,.6);color:var(--tinte);font:700 .9rem var(--text);cursor:pointer}
+.sp-chip:hover{background:#fff}
 .hinweis-band{background:var(--paprika);color:#fff;font-weight:700;text-align:center}
 .hinweis-band p{margin:0 auto;padding:10px 16px;line-height:1.4}
 .letzte{margin:0 0 22px;padding:18px 20px;border:2px dashed var(--tinte);border-radius:14px;background:var(--gelb-blass)}
@@ -2191,7 +2195,7 @@ JS = r"""
     document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');
       var en=x.dataset.enAria,m=/^Add (.+) to my order$/.exec(en),v=m&&l!=='de'&&l!=='en'?fuell(T('Add {x} to my order'),{x:T(m[1])}):textFuer(l,x._dea,en);x.setAttribute('aria-label',v);});
     document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',textFuer(l,x._det,x.dataset.enTitle));});
-    spKnopf.textContent=l.toUpperCase();
+    spKnopf.querySelector('.sp-code').textContent=l.toUpperCase();sprachenZeile();
     spKnopf.setAttribute('aria-label','Sprache / Language: '+(SPRACHEN.filter(function(x){return x[0]===l;})[0]||['',''])[1]);
     spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp===l?'true':'false');});
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
@@ -2200,6 +2204,12 @@ JS = r"""
     zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{grossZeigen();}catch(e){}try{aktionenZeigen();}catch(e){}
     try{verfZeigen();}catch(e){}
   }
+  /* Unter dem Einleitungstext: die anderen Sprachen als Chips (jede in ihrer eigenen Schrift) – damit Gäste die Sprachwahl finden */
+  function sprachenZeile(){var z=document.getElementById('sprachen-zeile');if(!z)return;z.textContent='';
+    z.insertAdjacentHTML('beforeend','<svg class="globus" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5s1.3-6.8 3.9-9.5z"/></svg>');
+    SPRACHEN.forEach(function(x){if(x[0]===SP)return;var b=document.createElement('button');b.type='button';b.className='sp-chip';b.lang=x[0];b.dataset.spChip=x[0];b.textContent=x[1];
+      if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){sprache(x[0],true);window.scrollTo(0,0);});z.appendChild(b);});}
+  sprachenZeile();
   /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */
   SPRACHEN.forEach(function(x){var b=document.createElement('button');b.type='button';b.dataset.sp=x[0];b.lang=x[0];b.textContent=x[1];
     if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){menueZu();sprache(x[0],true);spKnopf.focus();});var li=document.createElement('li');li.appendChild(b);spMenue.appendChild(li);});
@@ -2255,7 +2265,7 @@ SEITE = r"""<!doctype html>
     </a>
     <nav class="kopf-nav" aria-label="Hauptmenü">
       <a href="#speisekarte" data-en="Menu">Speisekarte</a><a href="#standorte" data-en="Opening hours">Öffnungszeiten</a>
-      <span class="sprache-wahl"><button type="button" class="sprache" id="sprache" aria-label="Sprache / Language" aria-haspopup="true" aria-expanded="false" aria-controls="sprachen-menu">DE</button>
+      <span class="sprache-wahl"><button type="button" class="sprache" id="sprache" aria-label="Sprache / Language" aria-haspopup="true" aria-expanded="false" aria-controls="sprachen-menu"><svg class="globus" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5s1.3-6.8 3.9-9.5z"/></svg><span class="sp-code">DE</span><span class="sp-pfeil" aria-hidden="true">▾</span></button>
       <ul class="sprachen-menu" id="sprachen-menu" hidden></ul></span>
     </nav>
   </div>
@@ -2269,6 +2279,7 @@ SEITE = r"""<!doctype html>
       <img class="koch-klein" src="%%IMG_KOCH%%" width="430" height="470" alt="">
       <h1 id="titel" data-en-html="Fresh off the skewer.&lt;br&gt; Since 1997.">Frisch vom Spieß.<br> Seit 1997.</h1>
       <p class="lead" data-en="Döner, dürüm, pizza and salads – in Freital on Dresdner Straße and in Altenberg right by the station.">Döner, Dürüm, Pizza und Salate – in Freital an der Dresdner Straße und in Altenberg direkt am Bahnhof.</p>
+      <p class="sprachen-zeile" id="sprachen-zeile" aria-label="Sprache / Language"></p>
       <ul class="schilder" aria-label="Unsere Läden">
 %%SCHILDER%%
       </ul>

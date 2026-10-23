@@ -22,7 +22,10 @@ header{position:sticky;top:0;z-index:20;background:var(--tinte);color:#fff;paddi
   display:flex;align-items:center;gap:10px}
 header img{width:38px;height:38px}
 header h1{margin:0;font-size:1.15rem}
-.sprache-knopf{min-width:48px;min-height:40px;border-radius:999px;border:2px solid var(--gelb);background:none;color:var(--gelb);font-weight:700;cursor:pointer}
+.sprache-wahl{display:flex;border:2px solid var(--gelb);border-radius:999px;overflow:hidden;flex:none}
+.sprache-wahl button{display:flex;align-items:center;gap:6px;min-height:42px;padding:0 10px;border:0;background:none;color:var(--gelb);font-weight:700;cursor:pointer;opacity:.6}
+.sprache-wahl button svg{width:26px;height:18px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35);flex:none}
+.sprache-wahl button[aria-pressed=true]{background:var(--gelb);color:var(--tinte);opacity:1}
 header small{display:block;opacity:.75;font-size:.8rem}
 main{max-width:720px;margin:0 auto;padding:14px 14px 0}
 h2{font-size:1.3rem;margin:18px 4px 10px}
@@ -135,7 +138,7 @@ a.knopf{color:inherit}
 </style>
 </head>
 <body>
-<header><img src="../img/saray-koch-kopf.svg" alt=""><div style="flex:1"><h1>Saray Chef</h1><small id="stand">Lädt …</small></div><button class="sprache-knopf" id="sprache" type="button" aria-label="Sprache / Dil">TR</button></header>
+<header><img src="../img/saray-koch-kopf.svg" alt=""><div style="flex:1"><h1>Saray Chef</h1><small id="stand">Lädt …</small></div><div class="sprache-wahl" id="sprache" role="group" aria-label="Sprache / Dil" data-kein-ue><button type="button" data-ue-sp="de" title="Deutsch"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="7" fill="#000"/><rect y="6.67" width="30" height="6.67" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/></svg><span>DE</span></button><button type="button" data-ue-sp="tr" title="Türkçe"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#E30A17"/><circle cx="11" cy="10" r="5" fill="#fff"/><circle cx="12.25" cy="10" r="4" fill="#E30A17"/><polygon fill="#fff" points="14.20,10.00 15.83,9.44 15.86,7.72 16.89,9.10 18.54,8.59 17.55,10.00 18.54,11.41 16.89,10.90 15.86,12.28 15.83,10.56"/></svg><span>TR</span></button></div></header>
 <main id="app"></main>
 <div class="speichern" id="speichern" hidden><p id="speichern-text"></p>
   <button class="knopf klein" id="verwerfen">Verwerfen</button><button class="knopf voll" id="speichern-knopf">Speichern</button></div>
@@ -672,7 +675,7 @@ var UE={
 " ab heute": " bugünden itibaren",
 "Aushang A5 „Hier vorbestellen“ (6 Sprachen)": "A5 afiş „Burada ön sipariş“ (6 dil)",
 "Preise": "Fiyatlar",
-"‹ Mehr": "‹ Daha fazla",
+"‹ Mehr": "‹ Diğer",
 "Springen zu": "Git",
 "Suchen: Urlaub, Preis, Gutschein …": "Ara: tatil, fiyat, hediye çeki …",
 "Was möchten Sie tun?": "Ne yapmak istiyorsunuz?",
@@ -754,10 +757,10 @@ if(UE_SP==='tr'){document.documentElement.lang='tr';
   new MutationObserver(function(ms){ms.forEach(function(m){if(m.type==='characterData')ueKnoten(m.target);else if(m.type==='attributes')ueKnoten(m.target);
     else m.addedNodes.forEach(ueKnoten);});}).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','title']});
   ueKnoten(document.body);}
-(function(){var b=document.getElementById('sprache');b.textContent=UE_SP==='tr'?'DE':'TR';
-  b.setAttribute('title',UE_SP==='tr'?'Deutsch':'Türkçe');
-  b.addEventListener('click',function(){if(STD&&geaendert()){status('Bitte zuerst speichern oder verwerfen.','rot',3000);return;}
-    try{localStorage.setItem('saray-chef-sprache',UE_SP==='tr'?'de':'tr');}catch(e){}location.reload();});})();
+/* Sprachwahl mit Flaggen: 🇩🇪 DE | 🇹🇷 TR, die aktive ist hervorgehoben */
+[].forEach.call(document.querySelectorAll('[data-ue-sp]'),function(b){var l=b.dataset.ueSp;b.setAttribute('aria-pressed',String(UE_SP===l));
+  b.addEventListener('click',function(){if(UE_SP===l)return;if(STD&&geaendert()){status(UE_SP==='tr'?'Lütfen önce kaydedin veya iptal edin.':'Bitte zuerst speichern oder verwerfen.','rot',3000);return;}
+    try{localStorage.setItem('saray-chef-sprache',l);}catch(e){}location.reload();});});
 
 /* ---------- Hilfen ---------- */
 function el(tag,attrs,kinder){var e=document.createElement(tag);attrs=attrs||{};

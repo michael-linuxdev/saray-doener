@@ -73,6 +73,10 @@ p{margin:0}
 .sprache{min-width:44px;min-height:40px;margin-left:4px;border:2px solid var(--tinte);border-radius:999px;background:transparent;color:var(--tinte);
   font:700 .85rem var(--text);letter-spacing:.06em;cursor:pointer}
 .sprache:hover{background:rgba(255,255,255,.55)}
+.sprache{display:inline-flex;align-items:center;gap:5px;padding:0 10px}.sprache .globus{width:18px;height:18px}.sp-pfeil{font-size:.7rem}
+.sprachen-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0 8px}.sprachen-zeile .globus{width:20px;height:20px;color:var(--tinte);margin-inline-end:2px}
+.sp-chip{min-height:36px;padding:0 12px;border:2px solid var(--tinte);border-radius:999px;background:rgba(255,255,255,.6);color:var(--tinte);font:700 .9rem var(--text);cursor:pointer}
+.sp-chip:hover{background:#fff}
 .hinweis-band{background:var(--paprika);color:#fff;font-weight:700;text-align:center}
 .hinweis-band p{margin:0 auto;padding:10px 16px;line-height:1.4}
 .letzte{margin:0 0 22px;padding:18px 20px;border:2px dashed var(--tinte);border-radius:14px;background:var(--gelb-blass)}
