@@ -294,6 +294,52 @@ document.fonts.ready.then(function(){{while(zuViel()&&f>1.9){{f-=.05;sp.style.fo
 </body></html>"""
 
 
+VORBESTELLEN = [  # (Sprache, Überschrift, Schritte, Zusatz) – für den Aushang „Hier vorbestellen“
+    ("de", "Hier vorbestellen –<br>ohne Warten abholen", ["Code scannen", "Essen wählen", "per WhatsApp schicken", "abholen und bar bezahlen"], "Döner, Dürüm, Pizza und Salate"),
+    ("en", "Order ahead here –<br>pick up without waiting", ["Scan the code", "Choose your food", "Send via WhatsApp", "Pick up and pay cash"], "Döner, dürüm, pizza and salads"),
+    ("cs", "Objednejte předem –<br>vyzvedněte bez čekání", ["Naskenujte kód", "Vyberte jídlo", "Pošlete přes WhatsApp", "Vyzvedněte a zaplaťte hotově"], "Döner, dürüm, pizza a saláty"),
+    ("tr", "Önceden sipariş verin –<br>beklemeden alın", ["Kodu tarayın", "Yemeğinizi seçin", "WhatsApp ile gönderin", "Teslim alın, nakit ödeyin"], "Döner, dürüm, pizza ve salatalar"),
+    ("ru", "Закажите заранее –<br>заберите без ожидания", ["Сканируйте код", "Выберите еду", "Отправьте через WhatsApp", "Заберите и оплатите наличными"], "Дёнер, дюрюм, пицца и салаты"),
+    ("ar", "اطلب مسبقًا هنا –<br>واستلم دون انتظار", ["امسح الرمز", "اختر طعامك", "أرسل عبر واتساب", "استلم وادفع نقدًا"], "دونر، دوروم، بيتزا وسلطات"),
+]
+
+
+def vorbestellen_html():
+    """A5-Aushang „Hier vorbestellen“ für Fenster, Bushaltestelle und Bahnhof: Seite 1 alle Sprachen, danach je Sprache eine Seite
+    mit eigenem QR-Code (öffnet die Seite gleich in dieser Sprache)."""
+    kopf = uri("maskottchen", "saray-koch-kopf.svg")
+    orte = " · ".join(f'{e(st["name"])}: {e(st["strasse"])}' for st in build.STANDORTE)
+    seiten = []
+    qr_alle = qr_svg(f"https://{build.CNAME}/#speisekarte", "M", "#3A1531")
+    zeilen = "".join(f'<li lang="{c}" dir="{"rtl" if c == "ar" else "ltr"}"><b>{u.replace("<br>", " ")}</b></li>' for c, u, _, _ in VORBESTELLEN[1:])
+    seiten.append(f'<section class="s alle"><div class="k"><img src="{kopf}" alt=""><b>Saray Döner</b></div><h1>{VORBESTELLEN[0][1]}</h1>'
+                  f'<div class="qr">{qr_alle}</div><ul>{zeilen}</ul><p class="f">{e(build.CNAME)} · {orte}</p></section>')
+    for c, ueber, schritte, zusatz in VORBESTELLEN:
+        qr = qr_svg(f"https://{build.CNAME}/?sp={c}#speisekarte", "M", "#3A1531")
+        liste = "".join(f"<li><span>{i + 1}</span>{e(x)}</li>" for i, x in enumerate(schritte))
+        seiten.append(f'<section class="s" lang="{c}" dir="{"rtl" if c == "ar" else "ltr"}"><div class="k" dir="ltr"><img src="{kopf}" alt=""><b>Saray Döner</b></div>'
+                      f'<h1>{ueber}</h1><p class="z">{e(zusatz)}</p><div class="qr">{qr}</div><ol>{liste}</ol>'
+                      f'<p class="f" dir="ltr">{e(build.CNAME)} · {orte}</p></section>')
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>
+@font-face{{font-family:Slab;src:url({uri("assets", "Roboto-Slab-Bold.sub.woff")});font-weight:700}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-normal.sub.woff")});font-weight:400}}
+@font-face{{font-family:Text;src:url({uri("assets", "lato-bold.sub.woff")});font-weight:700}}
+@page{{size:A5;margin:0}}*{{box-sizing:border-box}}html,body{{margin:0}}
+body{{font-family:Text,"Noto Sans","DejaVu Sans",sans-serif;color:#3A1531;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.s{{width:148mm;height:210mm;background:#FFD21F;padding:10mm 11mm;display:flex;flex-direction:column;align-items:center;text-align:center;break-after:page;overflow:hidden}}
+.k{{display:flex;align-items:center;gap:3mm}}.k img{{width:14mm}}.k b{{font:700 9mm/1 Slab}}
+h1{{font:700 10mm/1.12 Slab,"Noto Sans","DejaVu Sans",sans-serif;margin:7mm 0 0}}
+[lang=ar] h1,[lang=ru] h1{{font-family:"Noto Sans","DejaVu Sans",sans-serif}}
+.z{{margin:2mm 0 0;font-size:4.4mm}}
+.qr{{background:#fff;border-radius:4mm;padding:3mm;margin-top:6mm;width:62mm;height:62mm}}.qr svg{{width:100%;height:100%;display:block}}
+ol{{list-style:none;padding:0;margin:6mm 0 0;width:100%;text-align:start}}
+ol li{{display:flex;align-items:center;gap:3mm;background:#fff;border-radius:3mm;padding:2.2mm 3.5mm;margin-bottom:2mm;font:700 5mm/1.2 Text,"Noto Sans","DejaVu Sans",sans-serif}}
+ol li span{{flex:none;width:8mm;height:8mm;border-radius:50%;background:#3A1531;color:#FFD21F;display:grid;place-items:center;font:700 4.5mm Slab}}
+.alle ul{{list-style:none;padding:0;margin:5mm 0 0;width:100%}}.alle li{{background:#fff;border-radius:3mm;padding:1.8mm 3mm;margin-bottom:1.6mm;font-size:4mm}}
+.f{{margin-top:auto;font-size:3.2mm}}
+</style></head><body>{"".join(seiten)}</body></html>"""
+
+
 def allergenmappe_html():
     """Allergenmappe für die Theke: jedes Gericht mit Inhaltsstoffen und Allergenen (A4 hoch, mehrere Seiten)."""
     heute = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Berlin")).strftime("%d.%m.%Y")
@@ -488,6 +534,17 @@ async def main(ziel):
                 await pg.screenshot(path=str(HIER / "druck" / f"{name}-vorschau.png"))
             await pg.close()
             tmp.unlink()
+        # A5 „Hier vorbestellen“ in allen Sprachen
+        tmp = HIER / "_vorbestellen.html"
+        tmp.write_text(vorbestellen_html(), encoding="utf-8")
+        pg = await b.new_page(viewport={"width": 559, "height": 794})
+        await pg.goto(tmp.as_uri())
+        await pg.wait_for_timeout(500)
+        await pg.pdf(path=str(ziel / "aushang-vorbestellen.pdf"), format="A5", print_background=True, prefer_css_page_size=True)
+        if "--vorschau" in sys.argv:
+            await pg.screenshot(path=str(HIER / "druck" / "vorbestellen-vorschau.png"), full_page=True)
+        await pg.close()
+        tmp.unlink()
         # Aushang A3 mit der ganzen Karte
         tmp = HIER / "_aushang.html"
         tmp.write_text(aushang_html(), encoding="utf-8")

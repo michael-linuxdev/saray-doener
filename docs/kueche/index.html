@@ -69,7 +69,7 @@ body.plan-druck>*:not(#plan){display:none!important}body.plan-druck #plan{displa
 .tel .pos li{cursor:default;align-items:center}.tel .pos input{min-height:38px;margin:4px 0 0;font-size:.95rem}
 .tel .menge{display:flex;gap:6px;align-items:center}.tel .menge button{width:36px;height:36px;border-radius:50%;border:2px solid var(--tinte);background:#fff;font-weight:700;cursor:pointer}
 .fehler{color:var(--paprika);font-weight:700}
-.tel-marke{display:inline-block;background:var(--tinte);color:var(--gelb);border-radius:99px;padding:1px 8px;font-size:.8rem;margin-left:6px}
+.tel-marke.stamm{background:#E8A317;color:var(--tinte)}.tel-marke{display:inline-block;background:var(--tinte);color:var(--gelb);border-radius:99px;padding:1px 8px;font-size:.8rem;margin-left:6px}
 .monat{background:#fff;border:2px solid var(--tinte);border-radius:14px;padding:12px 14px;margin:10px 0;max-width:620px}
 body.monat-druck>*:not(#jahr){display:none!important}
 .warte-vorschlag{margin:12px 16px 0;padding:12px 14px;border-radius:14px;background:var(--paprika);color:#fff;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:700}
@@ -142,7 +142,7 @@ function lesen(b){try{var t=decodeURIComponent(escape(atob(b.replace(/-/g,'+').r
   if(!o||typeof o.nr!=='string'||!Array.isArray(o.p))return null;
   o.p=o.p.filter(Array.isArray).slice(0,60).map(function(x){return {q:Math.max(1,Math.min(99,+x[0]||1)),n:String(x[1]||'').slice(0,120),w:String(x[2]||'').slice(0,300),f:String(x[3]||'').slice(0,40),x:String(x[4]||'').slice(0,200),c:+x[5]||0,ok:false};});
   return {id:o.nr+'-'+(+o.a||0),nr:o.nr.slice(0,8),l:LAEDEN[o.l]?o.l:'',z:String(o.z||'').slice(0,60),t:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(o.t||'')?o.t:'',
-    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,w:Array.isArray(o.w)?o.w.slice(0,60):[],sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
+    m:String(o.m||'').slice(0,40),s:+o.s||0,r:+o.r||0,rc:String(o.rc||'').slice(0,60),p:o.p,w:Array.isArray(o.w)?o.w.slice(0,60):[],g:String(o.g||'').slice(0,12),c:Math.max(0,Math.min(9999,+o.c||0)),sp:/^(de|en|cs|tr|ru|ar)$/.test(o.sp||'')?o.sp:'de',zug:String(o.zug||'').slice(0,5),test:!!o.test,a:+o.a||Date.now(),fertig:0,neu:1};}catch(e){return null;}}
 /* Link aus WhatsApp: Bestellung übernehmen (doppelt geöffnet = einmal gespeichert) */
 var m=/[#&]b=([A-Za-z0-9_-]+)/.exec(location.hash);
 /* Jahresstatistik: pro Tag Bestellungen, Summe, Gerichte, Uhrzeiten, Sprachen, Laden (ohne Tests) */
@@ -199,6 +199,7 @@ function bon(x){
   var z=el('span','zeit',x.t?x.t.slice(11):'sofort');
   z.appendChild(el('small',null,x.fertig?'erledigt':r<0?'seit '+(-r)+' Min. fällig':r===0?'jetzt':'in '+(r>=120?Math.round(r/60)+' Std.':r+' Min.')));k.appendChild(z);b.appendChild(k);
   if(x.tel)nr.appendChild(el('span','tel-marke','📞 Telefon'));
+  if(x.c>1)nr.appendChild(el('span','tel-marke'+(x.c>=5?' stamm':''),(x.c>=5?'⭐ Stammgast · ':'')+x.c+'. Bestellung'));
   if(al.length)b.appendChild(el('div','allergie-band','⚠ Allergie / Unverträglichkeit beachten: '+al.join(' · ')));
   b.appendChild(el('div','meta',[x.m||'ohne Name',LAEDEN[x.l]||'',x.zug?'Zug '+x.zug:'',x.z].filter(Boolean).join(' · ')));
   var ul=el('ul','pos');x.p.forEach(function(p){var li=el('li',p.ok?'ok':'');li.appendChild(el('span','m',p.q+'×'));

@@ -587,7 +587,29 @@ function aktionBearbeiten(index,vorlage){
    el('label',{text:'Gerichte und Aktionspreise'}),liste,such,treffer,fehler,el('div',{class:'reihe'},knoepfe)].forEach(function(n){inhalt.appendChild(n);});
   tageZeichnen();ladenZeichnen();zeitZeichnen();artZeichnen();listeZeichnen();name.focus();
 }
+/* „Was kommt“: die nächsten 4 Wochen auf einen Blick – Feiertage, besondere Tage, Urlaub, Aktionen, Boxen, Hinweise, Wintersaison */
+function wasKommtKarte(){
+  var k=el('div',{class:'karte'},[el('h3',{text:'📅 Was kommt (4 Wochen)'})]),t=heute(),bis=heute(27),tage={};
+  function dazu(d,txt,art){if(d<t||d>bis)return;(tage[d]=tage[d]||[]).push([txt,art||'']);}
+  var j=+t.slice(0,4);feiertage(j).concat(feiertage(j+1)).forEach(function(f){dazu(f[0],'🎉 '+f[1],'fest');});
+  var SZ=ANP.sonderzeiten||{};Object.keys(SZ).forEach(function(d){Object.keys(SZ[d]).forEach(function(l){var w=SZ[d][l],n=(STD.laeden.filter(function(x){return x.id===l;})[0]||{}).name||l;
+    dazu(d,w===null?'🚫 '+n+' geschlossen':'🕑 '+n+' '+w[0]+'–'+w[1]+' Uhr','zu');});});
+  (ANP.aktionen||[]).forEach(function(a){var n=(a.art==='mittag'?'🍽 ':'🏷 ')+a.name;
+    if(a.von>=t)dazu(a.von,'▶ '+n+' beginnt'+(a.bis!==a.von?' (bis '+datumDE(a.bis)+')':''));else if(a.bis>=t)dazu(t,'… '+n+' läuft bis '+datumDE(a.bis));
+    if(a.bis!==a.von||a.von<t)dazu(a.bis,'■ '+n+' letzter Tag');});
+  (ANP.pakete||[]).forEach(function(p){if(p.von&&p.von>=t)dazu(p.von,'📦 Box „'+p.name+'“ ab heute');if(p.bis)dazu(p.bis,'📦 Box „'+p.name+'“ letzter Tag');});
+  (ANP.hinweise||[]).forEach(function(h){if(h.von>=t)dazu(h.von,'📣 Hinweis: '+h.text);});
+  if((ANP.winter||'auto')==='auto'){[j,j+1].forEach(function(y){dazu(y+'-12-01','❄️ Wintersaison Altenberg beginnt');dazu(y+'-03-15','❄️ Wintersaison Altenberg endet');});}
+  if(STD.zug_bis){dazu(STD.zug_bis,'🚆 Zugzeiten Altenberg laufen aus – neuen Fahrplan eintragen lassen','zu');}
+  var ds=Object.keys(tage).sort();
+  if(!ds.length)k.appendChild(el('p',{class:'hinweis',text:'Nichts Besonderes geplant.'}));
+  ds.forEach(function(d){var wt=TAGE[new Date(d+'T12:00:00Z').getUTCDay()];
+    k.appendChild(el('div',{class:'tag','data-was-kommt':d},[el('strong',{style:'min-width:76px',text:wt+' '+datumDE(d)}),
+      el('div',{style:'flex:1'},tage[d].map(function(x){return el('div',{style:x[1]==='zu'?'color:var(--paprika);font-weight:700':'',text:x[0]});}))]));});
+  app.appendChild(k);
+}
 function zeitenTab(){
+  wasKommtKarte();
   app.appendChild(el('h2',{text:'Öffnungszeiten'}));
   var zeiten=zeitListe(6*60,24*60-30,30);
   STD.laeden.forEach(function(l){
@@ -986,7 +1008,7 @@ function mehrTab(){
   /* Drucken */
   app.appendChild(el('div',{class:'karte'},[el('h3',{text:'Drucken'}),el('p',{class:'hinweis',text:'Immer mit den aktuellen Preisen (nach dem Speichern ca. 3 Minuten warten). Für die Druckerei oder den eigenen Drucker.'}),
     el('div',{class:'reihe'},[['../druck/flyer.pdf','Flyer (A4, Wickelfalz)']].concat(STD.laeden.map(function(l){return ['../druck/aufsteller-'+l.id+'.pdf','Aufsteller '+l.name+' (A5)'];}),
-      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)'],['../druck/preisschilder.pdf','Preisschilder Getränke (8 je A4)'],['../druck/aushang-a3.pdf','Aushang A3 (ganze Karte)'],['../druck/status-empfehlung.png','WhatsApp-Status: Empfehlungen']],
+      [['../druck/flyer-gruppen.pdf','Flyer Firmen, Vereine, Feiern (A5)'],['../druck/allergenmappe.pdf','Allergenmappe für die Theke'],['../druck/aufkleber.pdf','Tüten-Aufkleber (24 × 70×37 mm)'],['../druck/preisschilder.pdf','Preisschilder Getränke (8 je A4)'],['../druck/aushang-a3.pdf','Aushang A3 (ganze Karte)'],['../druck/aushang-vorbestellen.pdf','Aushang A5 „Hier vorbestellen“ (6 Sprachen)'],['../druck/status-empfehlung.png','WhatsApp-Status: Empfehlungen']],
       [].concat.apply([],(JSON.parse(ALT).aktionen||[]).filter(function(a){return a.bis>=heute();}).map(function(a){return [['../druck/'+slug(a.name,a.von)+'.pdf','Plakat: '+a.name+' (A4)'],
         ['../druck/'+slug(a.name,a.von)+'.png','Bild zum Posten: '+a.name],['../druck/status-'+slug(a.name,a.von)+'.png','WhatsApp-Status: '+a.name]];})))
       .map(function(d){return el('a',{class:'knopf',href:d[0],target:'_blank',rel:'noopener',style:'display:inline-flex;align-items:center;text-decoration:none',text:d[1]});}))]));
@@ -1131,7 +1153,7 @@ CHECKLISTE = [
         ["gericht-des-tages", "Gericht des Tages automatisch", "Jeden Tag ein anderes Gericht aus einer festen Liste oben auf der Seite, mit kleinem Rabatt – ohne tägliches Einstellen.", 0],
         ["ohne-besteck", "Ohne Besteck, ohne Tüte", "Zwei Häkchen im Bestellzettel; spart Material, die Küche sieht es auf dem Bon.", 0],
         ["vorlauf-auto", "Vorlauf bei großen Bestellungen automatisch", "Ab z. B. 10 Gerichten bietet der Bestellzettel nur Abholzeiten mit genug Vorlauf an (z. B. 1 Stunde).", 0],
-        ["firmen-codes", "Firmen-Rabattcodes", "Vorerst abgeschaltet. Nur mit Kontrolle an der Theke sinnvoll (Bestellung auf Firmennamen oder Firmenausweis).", 0],
+        ["firmen-codes", "Firmen-Rabattcodes", "Vorerst abgeschaltet. Falls sie wiederkommen: als fester Firmenpreis pro Gericht (z. B. Döner 6 €, Dürüm 7 €) statt Prozent – für Barzahlung am einfachsten. Nur mit Kontrolle an der Theke (Bestellung auf Firmennamen oder Firmenausweis).", 0],
     ]],
     ["Laufende Kosten", [
         ["domain-kosten", "Domain", "Wer zahlt die Domain, auf wen läuft sie?", 0],
@@ -1140,7 +1162,7 @@ CHECKLISTE = [
 ]
 
 
-def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="", fotos=(), firmen_codes=False):
+def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="", fotos=(), firmen_codes=False, zug_bis=""):
     """Schreibt docs/chef/: index.html, standard.json, manifest.webmanifest."""
     import anpassungen as ANP
     from menu import GRUNDSTAND
@@ -1158,6 +1180,7 @@ def schreiben(aus, gruppen, standorte, sperrgruppen, repo, zaehler="", cname="",
         "seite": f"https://{cname}/",
         "fotos": sorted(fotos),
         "firmen_codes": bool(firmen_codes),
+        "zug_bis": zug_bis,
         "laeden": [{"id": s["id"], "name": s["name"], "strasse": s["strasse"], "plz": s["plz"], "ort": s["ort"], "tel": s["tel"],
                     "bar": bool(s.get("bar")), "extra": s.get("extra", ""),
                     "zeiten": {str(t): [zeit(v[0]), zeit(v[1])] for t, v in s["zeiten_standard"].items()}} for s in standorte],

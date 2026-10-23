@@ -122,6 +122,11 @@ Unter **/chef/** (z. B. https://saray.micana.de/chef/) – nicht verlinkt, für 
 - **Küche → 🖨 Tagesplan:** alle Bestellungen für heute nach Uhrzeit als A4-Liste zum Aufhängen.
 - **Küche → 📲 An anderes Gerät:** schickt die Bestellungen der letzten 7 Tage als Link (`#sync=…`) an ein anderes Gerät; dort werden sie übernommen, doppelte erkannt – so stimmen Tagesabschluss und Monatsbericht für beide Läden.
 - **Mehr → Testbestellung:** öffnet die Seite mit einem Test-Döner (`#testbestellung`); Nachricht und Küchenansicht zeigen „TEST – bitte nicht zubereiten“. Zum Einweisen neuer Mitarbeiter.
+- **Stammgäste:** Der Browser des Gastes zählt seine Bestellungen mit einer zufälligen Kennung (keine Nummer, kein Name). Ab der 2. Bestellung steht in der Nachricht „· 2. Bestellung von diesem Handy“, die Küche zeigt ab der 5. „⭐ Stammgast“. In der Datenschutzerklärung beschrieben.
+- **Sprache per Link:** `?sp=cs` (de, en, cs, tr, ru, ar) öffnet die Seite gleich in dieser Sprache – für QR-Codes auf Aushängen.
+- **Zeiten → Was kommt:** die nächsten 4 Wochen auf einen Blick: Feiertage, besondere Tage und Urlaub, Aktionen und Mittagstisch (Start/Ende), Boxen, Hinweise, Wintersaison, Ende der Zugzeiten.
+- **Drucken → Aushang A5 „Hier vorbestellen“:** Seite 1 alle sechs Sprachen, danach je Sprache eine Seite mit eigenem QR-Code (öffnet die Seite in dieser Sprache) – für Fenster, Bushaltestelle, Bahnhof Altenberg. Der Workflow installiert dafür Noto-Schriften (Arabisch, Kyrillisch).
+- **Firmen-Codes (abgeschaltet):** Falls sie wiederkommen, als fester Firmenpreis pro Gericht (z. B. Döner 6 €, Dürüm 7 €) statt Prozent umsetzen.
 - **„Hat alles gepasst?“:** Beim nächsten Besuch nach einer WhatsApp-Bestellung fragt die Seite einmal nach. „👍 Ja, lecker“ führt zur Google-Bewertung, „👎 Nicht ganz“ öffnet eine WhatsApp an den Laden („Rückmeldung zu meiner Bestellung K47 …“) – Kritik landet zuerst beim Laden statt öffentlich.
 - **Nochmal bestellen:** Die Bestätigung aus der Küchenansicht enthält einen Link (`#nochmal=…`), der genau diese Bestellung wieder in den Bestellzettel legt – auch auf einem anderen Handy.
 - **Fester Döner-Tag:** Im Abschnitt für Firmen „📅 Fester Döner-Tag“: Wochentag und Uhrzeit wählen, es kommt eine wöchentliche Kalender-Erinnerung (.ics) mit Link `#gemeinsam`, der direkt „Gemeinsam bestellen“ öffnet.

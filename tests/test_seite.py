@@ -1936,6 +1936,53 @@ def kueche_sync_und_tagesplan(b, url):
     c.close()
 
 
+
+@test
+def stammgast_und_sprache_per_link(b, url):
+    s = Seite(b, url)
+    s.p.click("#nr-1 .plus")
+    s.p.click("#zettel-leiste")
+    s.p.click("[data-laden=freital]")
+    assert "von diesem Handy" not in s.wa_text()
+    s.p.click(".zettel-zu")
+    s.js("document.getElementById('hand-tipp').hidden=true")
+    s.p.click("#nr-50 .plus")
+    s.p.click("#zettel-leiste")
+    text = s.wa_text()
+    assert "· 2. Bestellung von diesem Handy" in text, text
+    s.js("var g=JSON.parse(localStorage.getItem('saray-gast'));g.n=4;g.letzte='';localStorage.setItem('saray-gast',JSON.stringify(g))")
+    s.p.reload()
+    s.p.wait_for_timeout(400)
+    s.p.click("#zettel-leiste")
+    text = s.wa_text()
+    assert "· 5. Bestellung von diesem Handy" in text, text
+    link = [z for z in text.split("\n") if z.startswith("Für die Küche: ")][0].split(": ", 1)[1]
+    k = s.ctx.new_page()
+    k.goto(link)
+    k.wait_for_selector("#offen .bon")
+    assert "⭐ Stammgast · 5. Bestellung" in k.text_content("#offen .bon .bnr")
+    k.close()
+    s.schliessen()
+    s = Seite(b, url + "?sp=cs")
+    assert s.js("document.documentElement.lang") == "cs"
+    s.schliessen()
+
+
+@test
+def chef_app_was_kommt(b, url):
+    anp = {"aktionen": [{"name": "Döner 5 €", "von": "2026-10-26", "bis": "2026-10-30", "preise": {"1": ["5,00"]}}],
+           "sonderzeiten": {"2026-10-31": {"altenberg": None}}}
+    ctx, p, fehler = chef_oeffnen(b, url, anp=anp, gespeichert=[])
+    p.click('nav.tabs [data-tab="zeiten"]')
+    tage = p.evaluate("[...document.querySelectorAll('[data-was-kommt]')].map(d=>d.dataset.wasKommt+' '+d.textContent)")
+    alles = " | ".join(tage)
+    assert any(t.startswith("2026-10-26") and "Döner 5 € beginnt (bis 30.10.)" in t for t in tage), tage
+    assert any(t.startswith("2026-10-31") and "Reformationstag" in t and "Altenberg geschlossen" in t for t in tage), tage
+    assert "Buß- und Bettag" not in alles and "Wintersaison Altenberg beginnt" not in alles, alles   # 18.11. und 1.12. liegen außerhalb von 4 Wochen
+    assert not fehler, fehler
+    ctx.close()
+
+
 @test
 def echte_seite_laedt(b, url):
     """Für --echt: die Seite mit den aktuellen Chef-App-Änderungen lädt ohne Fehler."""

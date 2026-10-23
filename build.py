@@ -1544,7 +1544,7 @@ ZETTEL_JS = r'''
   ladenZeigen();
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
   var TEL=%%TEL%%,waGesendet=document.getElementById('wa-gesendet');
-  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
+  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();if(!TESTMODUS)gastGezaehlt();
     try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now(),nr:BNR}));}catch(e){}
     if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';bnrGesendet=true;
     var nrP=el('p','wa-nr');nrP.appendChild(document.createTextNode(L('Ihre Bestellnummer: ','Your order number: ')));nrP.appendChild(el('b',null,BNR));waGesendet.appendChild(nrP);
@@ -1640,7 +1640,7 @@ ZETTEL_JS = r'''
     if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
-    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,
+    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,g:GAST?GAST.id:'',c:gastNr(),
       test:document.body.classList.contains('vorschau')||TESTMODUS?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];}),
       w:zettel.map(function(x){var y={k:x.k,q:x.q};if(x.g)y.g=x.g;if(x.o&&Object.keys(x.o).some(function(k){return x.o[k]&&x.o[k].length;}))y.o=x.o;if(x.notiz)y.notiz=x.notiz;return y;})};
@@ -1648,6 +1648,11 @@ ZETTEL_JS = r'''
   }
   /* Allergie-Hinweis: steht im Wunschfeld etwas wie „Nussallergie“ oder „glutenfrei“, kommt eine Warnzeile oben in die Nachricht */
   var ALLERGIE=new RegExp(%%ALLERGIE%%,'i');
+  /* Stammgast: zufällige Kennung + Zähler auf diesem Handy (keine Telefonnummer, kein Name) */
+  var GAST={id:'',n:0,letzte:''};try{GAST=Object.assign(GAST,JSON.parse(localStorage.getItem('saray-gast')||'{}'));}catch(e){}
+  if(!GAST.id){var zs='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(var gi=0;gi<8;gi++)GAST.id+=zs.charAt(Math.floor(Math.random()*zs.length));}
+  function gastNr(){if(!GAST)return 1;return GAST.letzte===BNR?GAST.n:GAST.n+1;}
+  function gastGezaehlt(){if(!GAST||GAST.letzte===BNR)return;GAST.n++;GAST.letzte=BNR;try{localStorage.setItem('saray-gast',JSON.stringify(GAST));}catch(e){}}
   /* Testbestellung aus der Chef-App (#testbestellung): Nachricht und Küche zeigen TEST */
   var TESTMODUS=false;try{TESTMODUS=sessionStorage.getItem('saray-test')==='1';}catch(e){}
   function zettelText(mitKueche){
@@ -1655,7 +1660,7 @@ ZETTEL_JS = r'''
     var al=zettel.filter(function(x){return x.notiz&&ALLERGIE.test(x.notiz);}).map(function(x){return x.notiz;});
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
-    z.push('Bestellnummer: '+BNR);
+    z.push('Bestellnummer: '+BNR+(gastNr()>1?' · '+gastNr()+'. Bestellung von diesem Handy':''));
     if(al.length)z.push('⚠ ALLERGIE / UNVERTRÄGLICHKEIT: '+al.join(' · '));
     if(abh.zeit)z.push('Abholung: '+abh.zeit+(abh.zug&&abh.laden===ZUG.laden?' (Zug '+abh.zug+')':''));
     if(abh.name)z.push('Name: '+abh.name);
@@ -1828,6 +1833,8 @@ JS = r"""
   var SPRACHEN=%%SPRACHEN%%,DICT=%%DICTS%%,LOC={de:'de-DE',en:'en-GB',cs:'cs-CZ',ru:'ru-RU',tr:'tr-TR',ar:'ar-u-nu-latn'};
   var SPK='saray-sprache',SP='de';
   try{SP=localStorage.getItem(SPK)||'';}catch(e){SP='';}
+  /* ?sp=cs (z. B. vom QR-Code auf dem Aushang) wählt die Sprache */
+  try{var spQ=new URLSearchParams(location.search).get('sp');if(spQ&&SPRACHEN.some(function(x){return x[0]===spQ;})){SP=spQ;localStorage.setItem(SPK,spQ);}}catch(e){}
   if(!SPRACHEN.some(function(x){return x[0]===SP;})){
     var langs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'de']);
     SP='en';
@@ -2553,7 +2560,7 @@ def datenschutz_html():
         <h3>Speicherung auf Ihrem Gerät</h3>
         <p>Ihre Bestellung, die gewählte Abholung und Ihr Name, Ihre letzte abgeschickte Bestellung (für „Wie letztes Mal?“), die Angaben
         einer laufenden Sammelbestellung („Gemeinsam bestellen“), ob wir Sie nach einer Bestellung schon einmal um eine Bewertung gebeten haben,
-        die Sprache und die Einstellung für Linkshänder speichern wir nur in Ihrem
+        Ihre zuletzt gewählten Wünsche je Gericht („Wie immer?“), die Sprache, Schriftgröße und die Einstellung für Linkshänder speichern wir nur in Ihrem
         Browser (Local Storage), damit sie beim nächsten Besuch noch da sind. Diese Daten werden nicht an uns übertragen. Für die Nutzung
         ohne Internet legt Ihr Browser außerdem Seite, Schriften und Bilder in einem Zwischenspeicher ab. Sie können all das jederzeit
         in den Einstellungen Ihres Browsers löschen („Websitedaten löschen“). Rechtsgrundlage: § 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. f DSGVO.</p>
@@ -2563,6 +2570,9 @@ def datenschutz_html():
         Datenschutzerklärung von WhatsApp Ireland Ltd. (Meta). Wir nutzen Ihre Angaben nur, um die Bestellung zu bearbeiten
         (Art. 6 Abs. 1 lit. b DSGVO) und löschen den Chat, wenn er dafür nicht mehr gebraucht wird. Gleiches gilt für telefonische Bestellungen.
         „Bestellung teilen“ und „Gemeinsam bestellen“ nutzen das Teilen-Menü Ihres Geräts; was Sie wohin senden, entscheiden Sie selbst.</p>
+        <p>Damit wir Stammgäste erkennen, zählt Ihr Browser Ihre Bestellungen mit und vergibt dafür eine zufällige Kennung (keine Telefonnummer,
+        kein Name). Kennung und Zahl („5. Bestellung“) stehen in der Bestellnachricht und im Link für unsere Küche. Löschen Sie die Websitedaten,
+        beginnt die Zählung neu. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Stammgäste wiederzuerkennen).</p>
         {zaehlen}
         <h3>Links zu Google</h3>
         <p>„Route planen“ und „Bewerten“ öffnen Google Maps bzw. die Google-Bewertung erst, wenn Sie darauf tippen. Dann gilt die
@@ -2730,7 +2740,7 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         (aus / "CNAME").write_text(CNAME + "\n")
     (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\nDisallow: /kueche/\nDisallow: /tv/\n"))
     import chef_app
-    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS, FIRMEN_CODES)
+    chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS, FIRMEN_CODES, ZUG["gueltig_bis"])
     # Bildschirm im Laden (tv/) und Küchenansicht (kueche/)
     import laden_seiten
     tv_gruppen = [{"id": g["id"], "titel": g["titel"], "abschnitte": [{

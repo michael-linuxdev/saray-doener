@@ -8,6 +8,8 @@
   var SPRACHEN=[["de", "Deutsch"], ["en", "English"], ["cs", "Čeština"], ["tr", "Türkçe"], ["ru", "Русский"], ["ar", "العربية"]],DICT={},LOC={de:'de-DE',en:'en-GB',cs:'cs-CZ',ru:'ru-RU',tr:'tr-TR',ar:'ar-u-nu-latn'};
   var SPK='saray-sprache',SP='de';
   try{SP=localStorage.getItem(SPK)||'';}catch(e){SP='';}
+  /* ?sp=cs (z. B. vom QR-Code auf dem Aushang) wählt die Sprache */
+  try{var spQ=new URLSearchParams(location.search).get('sp');if(spQ&&SPRACHEN.some(function(x){return x[0]===spQ;})){SP=spQ;localStorage.setItem(SPK,spQ);}}catch(e){}
   if(!SPRACHEN.some(function(x){return x[0]===SP;})){
     var langs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'de']);
     SP='en';
@@ -806,7 +808,7 @@
   ladenZeigen();
   zl.addEventListener('click',function(){zeitenFuellen();waAktualisieren();});
   var TEL={"freital": ["0351 27676660", "+4935127676660"], "altenberg": ["035056 23674", "+493505623674"]},waGesendet=document.getElementById('wa-gesendet');
-  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();
+  waKnopf.addEventListener('click',function(){waAktualisieren();letzteMerken();if(!TESTMODUS)gastGezaehlt();
     try{var bw=JSON.parse(localStorage.getItem('saray-bewertung')||'null');if(!bw||!bw.fertig)localStorage.setItem('saray-bewertung',JSON.stringify({l:abh.laden,t:Date.now(),nr:BNR}));}catch(e){}
     if(waKnopf.hidden)return;var tl=TEL[abh.laden];waGesendet.textContent='';bnrGesendet=true;
     var nrP=el('p','wa-nr');nrP.appendChild(document.createTextNode(L('Ihre Bestellnummer: ','Your order number: ')));nrP.appendChild(el('b',null,BNR));waGesendet.appendChild(nrP);
@@ -902,7 +904,7 @@
     if(!/^https?:/.test(location.protocol)||!zettel.length)return '';
     var zi=ZINFO[abh.zeit],t='';
     if(zi){var hh=Math.floor(zi.min/60),mm=zi.min%60;t=isoTag(zi.off)+'T'+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;}
-    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,
+    var o={v:1,nr:BNR,l:abh.laden||'',z:abh.zeit||'',t:t,m:(abh.name||'').slice(0,40),s:summe(),r:rabatt(),rc:(codeAktiv()||{}).name||'',zug:abh.zug||'',sp:SP,g:GAST?GAST.id:'',c:gastNr(),
       test:document.body.classList.contains('vorschau')||TESTMODUS?1:0,a:Date.now(),
       p:zettel.map(function(x){var w=x.t||fehlend(x).length?wuensche(x):'';return [x.q,x.n+(x.g?' ('+x.g+')':''),w,x.fuer||'',x.notiz||'',stueck(x)*x.q];}),
       w:zettel.map(function(x){var y={k:x.k,q:x.q};if(x.g)y.g=x.g;if(x.o&&Object.keys(x.o).some(function(k){return x.o[k]&&x.o[k].length;}))y.o=x.o;if(x.notiz)y.notiz=x.notiz;return y;})};
@@ -910,6 +912,11 @@
   }
   /* Allergie-Hinweis: steht im Wunschfeld etwas wie „Nussallergie“ oder „glutenfrei“, kommt eine Warnzeile oben in die Nachricht */
   var ALLERGIE=new RegExp("allerg|unvertr[\u00e4a]g|intoleran|z[\u00f6o]liakie|gluten|laktose|lactose|milcheiwei|nuss|n[\u00fcu]sse|erdnuss|mandel|cashew|pistazie|sesam|soja|\\bei\\b|\\beier|eiwei|fisch|krebs|garnele|schalentier|weichtier|muschel|sellerie|senf|lupine|sulfit|schwefel|histamin|fru[ck]tose|glutamat|halal|schwein|celiac|coeliac|dairy|\\bnuts?\\b|peanut|almond|sesame|\\bsoy|\\begg|shellfish|mustard|celery|sulphite|sulfite|alerji|laktoz|f[\u0131i]st[\u0131i]k|f[\u0131i]nd[\u0131i]k|ceviz|susam|soya|yumurta|helal|domuz|alergi|lepek|lakt[\u00f3o]z|o[\u0159r]ech|ara[\u0161s][\u00edi]d|sezam|s[\u00f3o]ja|vejce|\u0430\u043b\u043b\u0435\u0440\u0433|\u0433\u043b\u044e\u0442\u0435\u043d|\u043b\u0430\u043a\u0442\u043e\u0437|\u043e\u0440\u0435\u0445|\u0430\u0440\u0430\u0445\u0438\u0441|\u043a\u0443\u043d\u0436\u0443\u0442|\u0441\u043e\u044f|\u044f\u0439\u0446|\u062d\u0633\u0627\u0633\u064a\u0629|\u062c\u0644\u0648\u062a\u064a\u0646|\u0644\u0627\u0643\u062a\u0648\u0632|\u0645\u0643\u0633\u0631\u0627\u062a|\u0633\u0645\u0633\u0645|\u0635\u0648\u064a\u0627|\u0628\u064a\u0636|\u062d\u0644\u0627\u0644",'i');
+  /* Stammgast: zufällige Kennung + Zähler auf diesem Handy (keine Telefonnummer, kein Name) */
+  var GAST={id:'',n:0,letzte:''};try{GAST=Object.assign(GAST,JSON.parse(localStorage.getItem('saray-gast')||'{}'));}catch(e){}
+  if(!GAST.id){var zs='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(var gi=0;gi<8;gi++)GAST.id+=zs.charAt(Math.floor(Math.random()*zs.length));}
+  function gastNr(){if(!GAST)return 1;return GAST.letzte===BNR?GAST.n:GAST.n+1;}
+  function gastGezaehlt(){if(!GAST||GAST.letzte===BNR)return;GAST.n++;GAST.letzte=BNR;try{localStorage.setItem('saray-gast',JSON.stringify(GAST));}catch(e){}}
   /* Testbestellung aus der Chef-App (#testbestellung): Nachricht und Küche zeigen TEST */
   var TESTMODUS=false;try{TESTMODUS=sessionStorage.getItem('saray-test')==='1';}catch(e){}
   function zettelText(mitKueche){
@@ -917,7 +924,7 @@
     var al=zettel.filter(function(x){return x.notiz&&ALLERGIE.test(x.notiz);}).map(function(x){return x.notiz;});
     var vb=ZINFO[abh.zeit]&&ZINFO[abh.zeit].off>0;
     var z=[(vb?'Vorbestellung':'Bestellung')+' Saray Döner'+(abh.laden?' '+(abh.laden==='freital'?'Freital':'Altenberg'):'')];
-    z.push('Bestellnummer: '+BNR);
+    z.push('Bestellnummer: '+BNR+(gastNr()>1?' · '+gastNr()+'. Bestellung von diesem Handy':''));
     if(al.length)z.push('⚠ ALLERGIE / UNVERTRÄGLICHKEIT: '+al.join(' · '));
     if(abh.zeit)z.push('Abholung: '+abh.zeit+(abh.zug&&abh.laden===ZUG.laden?' (Zug '+abh.zug+')':''));
     if(abh.name)z.push('Name: '+abh.name);

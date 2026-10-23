@@ -442,7 +442,6 @@
 "Stammkarte digital": "Dijital sadakat kartı",
 "Nach 10 Bestellungen über die Seite ein Getränk gratis – ohne Konto, gezählt auf dem Handy des Gastes; die Küchenansicht zeigt „10. Bestellung – Getränk gratis“. Machen wir das?": "Siteden 10 siparişten sonra bir içecek bedava – hesap olmadan, misafirin telefonunda sayılır; mutfak görünümü „10. sipariş – içecek bedava“ gösterir. Yapalım mı?",
 "Firmen-Rabattcodes": "Firma indirim kodları",
-"Vorerst abgeschaltet. Nur mit Kontrolle an der Theke sinnvoll (Bestellung auf Firmennamen oder Firmenausweis).": "Şimdilik kapalı. Sadece tezgâhta kontrolle anlamlı (firma adına sipariş veya firma kimliği).",
 "⏸ Bestell-Pause": "⏸ Sipariş molası",
 "Stoppt Online-Bestellungen für heute, wenn der Laden voll ist. Anrufen und Vorbestellen für andere Tage geht weiter. Wirkt nach dem Speichern in ca. 2–3 Minuten.": "Dükkân doluyken bugünkü online siparişleri durdurur. Telefonla sipariş ve başka günler için ön sipariş devam eder. Kaydettikten yakl. 2–3 dakika sonra etkili olur.",
 " · pausiert bis ": " · mola: ",
@@ -501,5 +500,18 @@
 "Jeden Tag ein anderes Gericht aus einer festen Liste oben auf der Seite, mit kleinem Rabatt – ohne tägliches Einstellen.": "Her gün sabit bir listeden başka bir yemek sitenin üstünde, küçük indirimle – her gün ayar yapmadan.",
 "🧪 Testbestellung": "🧪 Test siparişi",
 "Zum Ausprobieren und Einweisen: öffnet die Seite mit einem Test-Döner im Bestellzettel. Laden wählen, per WhatsApp schicken, im Laden den Link „Für die Küche“ antippen. Alles ist als TEST markiert.": "Denemek ve eğitim için: siteyi sipariş listesinde test döneriyle açar. Şube seçin, WhatsApp ile gönderin, dükkânda „Für die Küche“ bağlantısına dokunun. Her şey TEST olarak işaretlidir.",
-"Testbestellung starten": "Test siparişini başlat"
+"Testbestellung starten": "Test siparişini başlat",
+"Vorerst abgeschaltet. Falls sie wiederkommen: als fester Firmenpreis pro Gericht (z. B. Döner 6 €, Dürüm 7 €) statt Prozent – für Barzahlung am einfachsten. Nur mit Kontrolle an der Theke (Bestellung auf Firmennamen oder Firmenausweis).": "Şimdilik kapalı. Geri gelirse: yüzde yerine yemek başına sabit firma fiyatı (örn. Döner 6 €, Dürüm 7 €) – nakit ödeme için en kolayı. Sadece tezgâhta kontrolle (firma adına sipariş veya firma kimliği).",
+"📅 Was kommt (4 Wochen)": "📅 Neler geliyor (4 hafta)",
+"Nichts Besonderes geplant.": "Özel bir şey planlanmadı.",
+" geschlossen": " kapalı",
+" beginnt": " başlıyor",
+" letzter Tag": " son gün",
+" läuft bis ": " devam ediyor, bitiş: ",
+"❄️ Wintersaison Altenberg beginnt": "❄️ Altenberg kış sezonu başlıyor",
+"❄️ Wintersaison Altenberg endet": "❄️ Altenberg kış sezonu bitiyor",
+"🚆 Zugzeiten Altenberg laufen aus – neuen Fahrplan eintragen lassen": "🚆 Altenberg tren saatleri bitiyor – yeni tarifeyi girdirin",
+"📣 Hinweis: ": "📣 Duyuru: ",
+" ab heute": " bugünden itibaren",
+"Aushang A5 „Hier vorbestellen“ (6 Sprachen)": "A5 afiş „Burada ön sipariş“ (6 dil)"
 }
