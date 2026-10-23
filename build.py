@@ -477,6 +477,7 @@ LD = {
         "priceRange": "€",
         **({"paymentAccepted": "Cash", "currenciesAccepted": "EUR"} if s.get("bar") else {}),
         "hasMenu": DOMAIN + "#speisekarte",
+        "image": DOMAIN + "img/og-bild.jpg",
         "address": {"@type": "PostalAddress", "streetAddress": s["strasse"], "postalCode": s["plz"],
                     "addressLocality": s["ort"], "addressCountry": "DE"},
         "openingHoursSpecification": [{
@@ -576,9 +577,6 @@ p{margin:0}
   font:700 .85rem var(--text);letter-spacing:.06em;cursor:pointer}
 .sprache:hover{background:rgba(255,255,255,.55)}
 .sprache{display:inline-flex;align-items:center;gap:5px;padding:0 10px}.sprache .globus{width:18px;height:18px}.sp-pfeil{font-size:.7rem}
-.sprachen-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0 8px}.sprachen-zeile .globus{width:20px;height:20px;color:var(--tinte);margin-inline-end:2px}
-.sp-chip{min-height:36px;padding:0 12px;border:2px solid var(--tinte);border-radius:999px;background:rgba(255,255,255,.6);color:var(--tinte);font:700 .9rem var(--text);cursor:pointer}
-.sp-chip:hover{background:#fff}
 .hinweis-band{background:var(--paprika);color:#fff;font-weight:700;text-align:center}
 .hinweis-band p{margin:0 auto;padding:10px 16px;line-height:1.4}
 .letzte{margin:0 0 22px;padding:18px 20px;border:2px dashed var(--tinte);border-radius:14px;background:var(--gelb-blass)}
@@ -826,7 +824,7 @@ svg.veg{width:.95em;height:.95em;vertical-align:-.1em;margin-left:2px}
   font-weight:700;font-size:.82rem;color:var(--tinte-weich);text-align:right;padding-bottom:6px;border-bottom:2px solid var(--tinte)}
 .groessen-kopf .nur-breit{display:none}
 
-.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:-2px 0 8px;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.kennz abbr{text-decoration:none}.allergen-zusatz{font-size:.85em;font-weight:700;color:var(--tinte-weich)}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
+.allergene{margin-top:8px;background:var(--gelb-blass);border-radius:14px;padding:4px 18px;max-width:70ch;font-size:.97rem;scroll-margin-top:90px}.allergene summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}.allergene h4{margin:14px 0 4px;font-size:1rem}.allergene ul{margin:0;padding-left:1.1em}.allergene .leg{list-style:none;padding:0;columns:2 14em}.allergene .zut li{margin:0 0 6px;font-size:.92rem}.kennz{margin:-6px 0 4px;font-size:.85rem;color:var(--tinte-weich)}.kennz a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;display:inline-block;padding:5px 0;line-height:1.3}.kennz abbr{text-decoration:none}.allergen-zusatz{font-size:.85em;font-weight:700;color:var(--tinte-weich)}.marke-aktion{background:var(--paprika)!important;color:#fff!important}.preis-alt{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}.sonder{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:var(--gelb-blass)}.sonder p{margin:0 0 4px;font-weight:700}.sonder ul{margin:0;padding:0;list-style:none}.sonder li.heute{font-weight:700}
 
 @media (min-width:1100px){
   .karte-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:52px;align-items:start}
@@ -2195,7 +2193,7 @@ JS = r"""
     document.querySelectorAll('[data-en-aria]').forEach(function(x){if(x._dea==null)x._dea=x.getAttribute('aria-label');
       var en=x.dataset.enAria,m=/^Add (.+) to my order$/.exec(en),v=m&&l!=='de'&&l!=='en'?fuell(T('Add {x} to my order'),{x:T(m[1])}):textFuer(l,x._dea,en);x.setAttribute('aria-label',v);});
     document.querySelectorAll('[data-en-title]').forEach(function(x){if(x._det==null)x._det=x.getAttribute('title');x.setAttribute('title',textFuer(l,x._det,x.dataset.enTitle));});
-    spKnopf.querySelector('.sp-code').textContent=l.toUpperCase();sprachenZeile();
+    spKnopf.querySelector('.sp-code').textContent=l.toUpperCase();
     spKnopf.setAttribute('aria-label','Sprache / Language: '+(SPRACHEN.filter(function(x){return x[0]===l;})[0]||['',''])[1]);
     spMenue.querySelectorAll('[data-sp]').forEach(function(b){b.setAttribute('aria-current',b.dataset.sp===l?'true':'false');});
     if(merken){try{localStorage.setItem(SPK,l);}catch(e){}}
@@ -2204,12 +2202,6 @@ JS = r"""
     zeichnen();zeitenFuellen();waAktualisieren();handZeigen();try{grossZeigen();}catch(e){}try{aktionenZeigen();}catch(e){}
     try{verfZeigen();}catch(e){}
   }
-  /* Unter dem Einleitungstext: die anderen Sprachen als Chips (jede in ihrer eigenen Schrift) – damit Gäste die Sprachwahl finden */
-  function sprachenZeile(){var z=document.getElementById('sprachen-zeile');if(!z)return;z.textContent='';
-    z.insertAdjacentHTML('beforeend','<svg class="globus" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5s1.3-6.8 3.9-9.5z"/></svg>');
-    SPRACHEN.forEach(function(x){if(x[0]===SP)return;var b=document.createElement('button');b.type='button';b.className='sp-chip';b.lang=x[0];b.dataset.spChip=x[0];b.textContent=x[1];
-      if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){sprache(x[0],true);window.scrollTo(0,0);});z.appendChild(b);});}
-  sprachenZeile();
   /* Sprachwahl: Knopf mit Kürzel, darunter die Liste in der jeweiligen Sprache */
   SPRACHEN.forEach(function(x){var b=document.createElement('button');b.type='button';b.dataset.sp=x[0];b.lang=x[0];b.textContent=x[1];
     if(x[0]==='ar')b.dir='rtl';b.addEventListener('click',function(){menueZu();sprache(x[0],true);spKnopf.focus();});var li=document.createElement('li');li.appendChild(b);spMenue.appendChild(li);});
@@ -2247,7 +2239,7 @@ SEITE = r"""<!doctype html>
 <meta property="og:locale" content="de_DE">
 <meta property="og:title" content="Saray Döner – Freital &amp; Altenberg">
 <meta property="og:description" content="Döner, Dürüm, Pizza und Salate seit 1997. Speisekarte, Öffnungszeiten und Telefon.">
-<meta property="og:url" content="%%DOMAIN%%">
+<meta property="og:url" content="%%DOMAIN%%">%%OG_BILD%%
 <link rel="icon" href="%%FAVICON_PNG%%" type="image/png" sizes="96x96">
 <link rel="icon" href="%%IMG_KOPF%%" type="image/svg+xml">%%APP_KOPF%%
 %%ROBOTS%%%%CSS_EINBINDEN%%
@@ -2264,7 +2256,7 @@ SEITE = r"""<!doctype html>
       <span class="marke-text"><b>Saray Döner</b><small data-en="Döner &amp; pizza since 1997">Döner &amp; Pizza seit 1997</small></span>
     </a>
     <nav class="kopf-nav" aria-label="Hauptmenü">
-      <a href="#speisekarte" data-en="Menu">Speisekarte</a><a href="#standorte" data-en="Opening hours">Öffnungszeiten</a>
+      <a href="#speisekarte" data-en="Menu">Menü</a><a href="#standorte" data-en="Opening hours">Öffnungszeiten</a>
       <span class="sprache-wahl"><button type="button" class="sprache" id="sprache" aria-label="Sprache / Language" aria-haspopup="true" aria-expanded="false" aria-controls="sprachen-menu"><svg class="globus" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5s1.3-6.8 3.9-9.5z"/></svg><span class="sp-code">DE</span><span class="sp-pfeil" aria-hidden="true">▾</span></button>
       <ul class="sprachen-menu" id="sprachen-menu" hidden></ul></span>
     </nav>
@@ -2279,7 +2271,6 @@ SEITE = r"""<!doctype html>
       <img class="koch-klein" src="%%IMG_KOCH%%" width="430" height="470" alt="">
       <h1 id="titel" data-en-html="Fresh off the skewer.&lt;br&gt; Since 1997.">Frisch vom Spieß.<br> Seit 1997.</h1>
       <p class="lead" data-en="Döner, dürüm, pizza and salads – in Freital on Dresdner Straße and in Altenberg right by the station.">Döner, Dürüm, Pizza und Salate – in Freital an der Dresdner Straße und in Altenberg direkt am Bahnhof.</p>
-      <p class="sprachen-zeile" id="sprachen-zeile" aria-label="Sprache / Language"></p>
       <ul class="schilder" aria-label="Unsere Läden">
 %%SCHILDER%%
       </ul>
@@ -2749,6 +2740,12 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
             '\n<meta name="apple-mobile-web-app-title" content="Saray">'
             '\n<meta name="mobile-web-app-capable" content="yes">'
             '\n<meta name="apple-mobile-web-app-capable" content="yes">'),
+        # Vorschaubild für WhatsApp, Facebook & Co. (1200 × 630, assets/og-bild.jpg); braucht eine absolute Adresse
+        "%%OG_BILD%%": "" if einzeln else (
+            f'\n<meta property="og:image" content="{DOMAIN if not VORSCHAU else f"https://{CNAME}/"}%%DATEI:assets/og-bild.jpg|image/jpeg|img/og-bild.jpg%%">'
+            '\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">'
+            '\n<meta property="og:image:alt" content="Saray Döner: Laden in Freital mit dem Koch-Maskottchen – Frisch vom Spieß seit 1997">'
+            '\n<meta name="twitter:card" content="summary_large_image">'),
         "%%ROBOTS%%": '<meta name="robots" content="noindex">\n' if VORSCHAU and not einzeln else "",
     }
     if einzeln:
@@ -2759,7 +2756,10 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
         import hashlib
         v_css = hashlib.sha1(css.encode()).hexdigest()[:8]
         v_js = hashlib.sha1(js.encode()).hexdigest()[:8]
-        ersetzen["%%CSS_EINBINDEN%%"] = f'<link rel="stylesheet" href="css/style.css?v={v_css}">'
+        # Schriften für Überschrift und Text vorladen: sonst entdeckt der Browser sie erst nach dem CSS (spätere erste Anzeige auf dem Handy)
+        ersetzen["%%CSS_EINBINDEN%%"] = ('<link rel="preload" href="fonts/Roboto-Slab-Bold.sub.woff" as="font" type="font/woff" crossorigin>\n'
+                                         '<link rel="preload" href="fonts/lato-normal.sub.woff" as="font" type="font/woff" crossorigin>\n'
+                                         f'<link rel="stylesheet" href="css/style.css?v={v_css}">')
         ersetzen["%%JS_EINBINDEN%%"] = f'<script src="js/main.js?v={v_js}"></script>'
     seite = SEITE
     for k, v in ersetzen.items():
@@ -2805,7 +2805,11 @@ def bauen(hinweise=None, ziel=None, einzeln=False):
     (aus / "status.json").write_text(status or '{\n  "regeln": []\n}\n')
     if CNAME:
         (aus / "CNAME").write_text(CNAME + "\n")
-    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\nDisallow: /kueche/\nDisallow: /tv/\n"))
+    (aus / "robots.txt").write_text("User-agent: *\n" + ("Disallow: /\n" if VORSCHAU else "Disallow: /chef/\nDisallow: /druck/\nDisallow: /kueche/\nDisallow: /tv/\n"
+                                                           f"\nSitemap: {DOMAIN}sitemap.xml\n"))
+    if not VORSCHAU:   # eine Seite – die Sitemap sagt Google nur, wo sie liegt und wann sie sich geändert hat
+        (aus / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                                         f"<url><loc>{DOMAIN}</loc><lastmod>{HEUTE_ISO}</lastmod></url></urlset>\n")
     import chef_app
     chef_app.schreiben(aus, STANDARD_GRUPPEN, STANDORTE, SPERRGRUPPEN, REPO, ZAEHLER, CNAME, FOTOS, FIRMEN_CODES, ZUG["gueltig_bis"])
     # Bildschirm im Laden (tv/) und Küchenansicht (kueche/)

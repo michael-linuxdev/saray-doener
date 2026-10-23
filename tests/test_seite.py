@@ -205,16 +205,17 @@ def weitere_sprachen(b, url):
     s.schliessen()
 
 
+
 @test
-def sprachen_chips_unter_einleitung(b, url):
+def sprachknopf_mit_globus(b, url):
     s = Seite(b, url)
-    assert s.js("[...document.querySelectorAll('#sprachen-zeile [data-sp-chip]')].map(b=>b.dataset.spChip).join()") == "en,cs,tr,ru,ar"
+    assert s.p.text_content(".kopf-nav a[href='#speisekarte']") == "Menü"
     assert s.p.text_content("#sprache .sp-code") == "DE" and s.p.locator("#sprache .globus").count() == 1
-    s.p.click("[data-sp-chip=tr]")
+    assert s.p.locator("#sprachen-zeile").count() == 0
+    s.p.click("#sprache")
+    s.p.click("#sprachen-menu [data-sp=tr]")
     s.p.wait_for_function("document.documentElement.lang==='tr'")
     assert s.p.text_content("#sprache .sp-code") == "TR"
-    assert "Deutsch" in s.p.text_content("#sprachen-zeile") and "Türkçe" not in s.p.text_content("#sprachen-zeile")
-    assert s.js("localStorage.getItem('saray-sprache')") == "tr"
     s.schliessen()
 
 
@@ -502,7 +503,7 @@ def barrierefreiheit(b, url):
 FOTO_HOCHGELADEN = []
 
 
-def chef_oeffnen(b, url, anp=None, gespeichert=None, vorher=None):
+def chef_oeffnen(b, url, anp=None, gespeichert=None, vorher=None, tour=False):
     """Öffnet die Chef-App mit nachgebildeter GitHub-API (es wird nichts wirklich gespeichert)."""
     import base64
     ctx = b.new_context(viewport=HANDY, locale="de-DE", timezone_id="Europe/Berlin", is_mobile=True, has_touch=True)
@@ -536,6 +537,8 @@ def chef_oeffnen(b, url, anp=None, gespeichert=None, vorher=None):
         else:
             route.fulfill(status=200, json={"sha": "alt", "content": inhalt})
     p.route("https://api.github.com/**", github)
+    if not tour:
+        p.add_init_script("try{localStorage.setItem('saray-chef-tour','1')}catch(e){}")
     p.goto(url + "chef/#token=%20TESTTOKEN")   # Leerzeichen beim Kopieren wird entfernt
     p.wait_for_selector("nav.tabs:not([hidden])")
     return ctx, p, fehler
@@ -1097,7 +1100,7 @@ def chef_app_checkliste_und_gefahrenbereich(b, url):
     ctx, p, fehler = chef_oeffnen(b, url, anp={"geloescht": ["8"]}, gespeichert=gespeichert)
     p.click('nav.tabs [data-tab="mehr"]')
     p.click('[data-seite="checkliste"]')
-    assert "von 39 offen" in p.text_content(".checkliste summary")
+    assert "von 40 offen" in p.text_content(".checkliste summary")
     p.check("#cl-domain")
     p.fill("#cl-wa-altenberg-n", "0151 1234567")
     p.press("#cl-wa-altenberg-n", "Tab")
@@ -1471,7 +1474,7 @@ def chef_app_tuerkisch(b, url):
     assert "Hediye çekleri" in p.text_content("#app")
     p.click('nav.tabs [data-tab="mehr"]')
     p.click('[data-seite="checkliste"]')
-    assert "39 / 39 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
+    assert "40 / 40 açık" in p.text_content(".checkliste summary"), p.text_content(".checkliste summary")
     p.click("[data-ue-sp=de]")
     p.wait_for_selector("nav.tabs:not([hidden])")
     assert "Heute" in p.text_content("nav.tabs")
@@ -2057,7 +2060,7 @@ def chef_app_navigation_verlauf_slots(b, url):
     assert p.locator("#a-hinweis").count() == 1, "Hinweis gehört jetzt unter Heute"
     # Mehr: Menü, Unterseite, zurück; zweiter Tipp auf „Mehr“ zeigt wieder das Menü
     p.click('nav.tabs [data-tab="mehr"]')
-    assert p.locator(".menue-punkt[data-seite]").count() == 8
+    assert p.locator(".menue-punkt[data-seite]").count() == 10
     p.click('[data-seite="drucken"]')
     assert "aushang-fenster.pdf" in p.inner_html("#app")
     p.click('nav.tabs [data-tab="heute"]')
@@ -2188,6 +2191,51 @@ def abholbereit_per_ton(b, url):
     k.wait_for_timeout(300)
     assert ("https://ntfy.sh/saray-" + o["f"], "fertig") in gesendet, gesendet
     s.schliessen()
+
+
+@test
+def chef_app_einfuehrung_und_antworten(b, url):
+    ctx, p, fehler = chef_oeffnen(b, url, gespeichert=[], tour=True)
+    p.wait_for_selector("#tour")
+    assert "1 / 11" in p.text_content(".tour-karte") and "Willkommen" in p.text_content(".tour-karte")
+    p.click("#tour-weiter")
+    assert "Laden heute spontan zu" in p.text_content(".tour-karte")
+    p.wait_for_timeout(400)
+    assert p.evaluate("getComputedStyle(document.querySelector('.tour-loch')).width") != "0px", "nichts hervorgehoben"
+    for _ in range(6):
+        p.click("#tour-weiter")
+    assert "Speichern" in p.text_content(".tour-karte") and p.is_visible("#speichern")
+    p.click("#tour-zurueck")
+    assert "Zeiten" in p.text_content(".tour-karte h3")
+    p.click("#tour-ende")
+    assert p.locator("#tour").count() == 0 and p.is_hidden("#speichern")
+    assert p.evaluate("localStorage.getItem('saray-chef-tour')") == "1"
+    p.reload()
+    p.wait_for_selector("nav.tabs:not([hidden])")
+    p.wait_for_timeout(500)
+    assert p.locator("#tour").count() == 0, "Einführung darf nur beim ersten Mal von selbst kommen"
+    p.click("#hilfe")
+    p.wait_for_selector("#tour")
+    p.click("#tour-ende")
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="einfuehrung"]')
+    p.wait_for_selector("#tour")
+    p.click("#tour-ende")
+    # WhatsApp-Antworten
+    p.click('nav.tabs [data-tab="mehr"]')
+    p.click('[data-seite="antworten"]')
+    t = p.text_content("#antw-karte")
+    assert "Mo–" in t and "/fertig" in t and "Dresdner Str. 87, 01705 Freital" in t, t
+    assert "#speisekarte" in t
+    p.click('[data-antw-laden="altenberg"]')
+    p.click('[data-antw-sp="tr"]')
+    t = p.text_content("#antw-karte")
+    assert "Altenberg şubemize hoş geldiniz" in t and "Pzt" in t, t
+    ctx.grant_permissions(["clipboard-read", "clipboard-write"])
+    p.click("#antw-karte .antw >> nth=0 >> text=Kopieren")
+    assert "hoş geldiniz" in p.evaluate("navigator.clipboard.readText()")
+    assert not fehler, fehler
+    ctx.close()
 
 
 def main():

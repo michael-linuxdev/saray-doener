@@ -34,7 +34,23 @@ button,input,select,textarea{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:20;background:var(--tinte);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
   display:flex;align-items:center;gap:10px}
 header img{width:38px;height:38px}
+header>div{min-width:0}header h1{white-space:nowrap}header small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:400px){.sprache-wahl button{padding:0 7px;gap:4px}.hilfe-knopf{width:38px;height:38px}}
 header h1{margin:0;font-size:1.15rem}
+.hilfe-knopf{flex:none;width:42px;height:42px;border-radius:50%;border:2px solid var(--gelb);background:none;color:var(--gelb);font:700 1.2rem/1 inherit;cursor:pointer}
+.tour{position:fixed;inset:0;z-index:80}
+.tour-loch{position:fixed;border-radius:14px;box-shadow:0 0 0 4px var(--gelb),0 0 0 9999px rgba(30,10,25,.62);pointer-events:none;transition:all .25s}
+.tour-loch.ohne{box-shadow:0 0 0 9999px rgba(30,10,25,.62);width:0;height:0;left:50%;top:50%}
+.tour-karte{position:fixed;left:12px;right:12px;max-width:520px;margin:0 auto;background:#fff;color:var(--tinte);border-radius:18px;padding:16px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.tour-karte h3{margin:0 0 6px;font-size:1.15rem}.tour-karte p{margin:0 0 12px;line-height:1.4}
+.tour-karte .tour-zahl{font-size:.8rem;font-weight:700;opacity:.6;margin-bottom:4px}
+.tour-karte .reihe{display:flex;gap:8px;align-items:center}.tour-karte .reihe .knopf.voll{margin-left:auto}
+@media (prefers-reduced-motion:reduce){.tour-loch{transition:none}}
+.antw{border-bottom:1px solid var(--linie);padding:10px 0}.antw:last-child{border-bottom:0}
+.antw-kopf{display:flex;align-items:center;gap:8px;justify-content:space-between}.antw-kopf code{background:var(--blass);padding:2px 6px;border-radius:6px;font-weight:700}
+.antw-text{white-space:pre-wrap;margin:6px 0 0;padding:8px 10px;background:#faf6f8;border-radius:10px;font-size:.95rem}
+@media print{body.antw-druck header,body.antw-druck nav.tabs,body.antw-druck .speichern,body.antw-druck .status,body.antw-druck #app>*:not(#antw-karte),body.antw-druck #antw-karte button,body.antw-druck #antw-karte .wahl{display:none!important}
+  body.antw-druck .antw{break-inside:avoid}}
 .sprache-wahl{display:flex;border:2px solid var(--gelb);border-radius:999px;overflow:hidden;flex:none}
 .sprache-wahl button{display:flex;align-items:center;gap:6px;min-height:42px;padding:0 10px;border:0;background:none;color:var(--gelb);font-weight:700;cursor:pointer;opacity:.6}
 .sprache-wahl button svg{width:26px;height:18px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35);flex:none}
@@ -151,7 +167,7 @@ a.knopf{color:inherit}
 </style>
 </head>
 <body>
-<header><img src="../img/saray-koch-kopf.svg" alt=""><div style="flex:1"><h1>Saray Chef</h1><small id="stand">Lädt …</small></div><div class="sprache-wahl" id="sprache" role="group" aria-label="Sprache / Dil" data-kein-ue><button type="button" data-ue-sp="de" title="Deutsch"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="7" fill="#000"/><rect y="6.67" width="30" height="6.67" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/></svg><span>DE</span></button><button type="button" data-ue-sp="tr" title="Türkçe"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#E30A17"/><circle cx="11" cy="10" r="5" fill="#fff"/><circle cx="12.25" cy="10" r="4" fill="#E30A17"/><polygon fill="#fff" points="14.20,10.00 15.83,9.44 15.86,7.72 16.89,9.10 18.54,8.59 17.55,10.00 18.54,11.41 16.89,10.90 15.86,12.28 15.83,10.56"/></svg><span>TR</span></button></div></header>
+<header><img src="../img/saray-koch-kopf.svg" alt=""><div style="flex:1"><h1>Saray Chef</h1><small id="stand">Lädt …</small></div><button class="hilfe-knopf" id="hilfe" type="button" aria-label="Einführung starten" title="Einführung">?</button><div class="sprache-wahl" id="sprache" role="group" aria-label="Sprache / Dil" data-kein-ue><button type="button" data-ue-sp="de" title="Deutsch"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="7" fill="#000"/><rect y="6.67" width="30" height="6.67" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/></svg><span>DE</span></button><button type="button" data-ue-sp="tr" title="Türkçe"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#E30A17"/><circle cx="11" cy="10" r="5" fill="#fff"/><circle cx="12.25" cy="10" r="4" fill="#E30A17"/><polygon fill="#fff" points="14.20,10.00 15.83,9.44 15.86,7.72 16.89,9.10 18.54,8.59 17.55,10.00 18.54,11.41 16.89,10.90 15.86,12.28 15.83,10.56"/></svg><span>TR</span></button></div></header>
 <main id="app"></main>
 <div class="speichern" id="speichern" hidden><p id="speichern-text"></p>
   <button class="knopf klein" id="verwerfen">Verwerfen</button><button class="knopf voll" id="speichern-knopf">Speichern</button></div>
@@ -285,7 +301,7 @@ function laden(){
     return r.json().then(function(d){SHA=d.sha;return JSON.parse(b64dec(d.content)||'{}');});
   }).then(function(d){ANP=d&&typeof d==='object'?d:{};ALT=JSON.stringify(aufraeumen(kopie(ANP)));
     document.getElementById('status').hidden=true;document.getElementById('tabs').hidden=false;
-    document.getElementById('stand').textContent='Änderungen: '+(Object.keys(ANP).length?'vorhanden':'keine (Standard)');zeichnen();});
+    document.getElementById('stand').textContent='Änderungen: '+(Object.keys(ANP).length?'vorhanden':'keine (Standard)');zeichnen();tourAutomatisch();});
 }
 /* Preis-Verlauf: beim Speichern jede Preisänderung mit Datum festhalten (höchstens 300 Einträge, 2 Jahre) */
 function preisMap(a){var m={},ae=a.gerichte||{},weg=a.geloescht||[];
@@ -349,6 +365,8 @@ var MEHR=[
     ['laden','📺','Bildschirm, Schaufenster, Küche','Links für die Geräte im Laden, Testbestellung',ladenSeitenKarte]]],
   ['Zahlen',[['zahlen','📊','Zahlen','Besucher und Bestellungen',zahlenKarte]]],
   ['Einrichtung',[
+    ['einfuehrung','🎓','Einführung','Die wichtigsten Knöpfe in 2 Minuten – jederzeit wieder',null,true],
+    ['antworten','💬','WhatsApp-Antworten','Begrüßung, Abwesenheit, Kurzantworten zum Kopieren',antwortenKarte],
     ['checkliste','✅','Checkliste','Vor dem Freischalten',checklisteKarte],
     ['website','🌐','Website ansehen','So sehen Gäste die Seite',seiteAnsehenKarte]]],
   ['Notfall',[
@@ -375,7 +393,7 @@ var ZIELE=[
   ['Wintersaison Altenberg','winter saison ski altenberg kış sezon','zeiten','','a-winter'],
   ['Vorbestellungen je Viertelstunde','viertelstunde slot slots ausgebucht voll vorbestellung grenze dolu ön sipariş','zeiten','','a-slots']];
 MEHR.forEach(function(g){g[1].forEach(function(x){ZIELE.push([x[2],x[2].toLowerCase()+' '+x[3].toLowerCase()+' '+({drucken:'flyer plakat aushang aufsteller status pdf yazdır afiş',google:'google maps profil harita',laden:'tv fernseher bildschirm schaufenster küche bon test ekran mutfak vitrin',
-  zahlen:'zahlen statistik besucher umsatz istatistik ziyaretçi',checkliste:'checkliste fragen offen freischalten liste kontrol',website:'website seite ansehen web site',rueckgaengig:'rückgängig zurück fehler geri al',gefahr:'standard zurücksetzen abmelden token sıfırla çıkış'}[x[0]]||''),'mehr',x[0],'']);});});
+  zahlen:'zahlen statistik besucher umsatz istatistik ziyaretçi',checkliste:'checkliste fragen offen freischalten liste kontrol',einfuehrung:'einführung tutorial hilfe anleitung erklärung tur yardım eğitim',antworten:'whatsapp business antwort begrüßung abwesenheit kurzantwort schnellantwort mesaj cevap karşılama',website:'website seite ansehen web site',rueckgaengig:'rückgängig zurück fehler geri al',gefahr:'standard zurücksetzen abmelden token sıfırla çıkış'}[x[0]]||''),'mehr',x[0],'']);});});
 function sucheMehr(){
   var q=el('input',{type:'search',id:'mehr-suche',placeholder:'Suchen: Urlaub, Preis, Gutschein …','aria-label':'Was möchten Sie tun?',autocomplete:'off'}),erg=el('div',{class:'such-treffer'});
   function zeigen(){erg.textContent='';var w=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!w.length)return;
@@ -388,14 +406,105 @@ function sucheMehr(){
 }
 function mehrTab(){
   var e=null;MEHR.forEach(function(g){g[1].forEach(function(x){if(x[0]===SEITE)e=x;});});
+  if(e&&e[5]){SEITE='';e=null;setTimeout(tourStarten,0);}
   if(e){app.appendChild(el('div',{class:'zurueck-zeile'},[el('button',{class:'knopf klein',id:'zurueck',text:'‹ Mehr',onclick:function(){SEITE='';zeichnen();window.scrollTo(0,0);}})]));e[4]();return;}
   app.appendChild(el('h2',{text:'Mehr'}));
   sucheMehr();
   MEHR.forEach(function(g){app.appendChild(el('p',{class:'abschnitt',text:g[0]}));var k=el('div',{class:'karte menue'});
     g[1].forEach(function(x){var info=x[3];if(x[0]==='checkliste'){var o=clOffen();info=o?o+' Fragen offen':'alles erledigt ✓';}
-      k.appendChild(el('button',{class:'menue-punkt','data-seite':x[0],onclick:function(){SEITE=x[0];zeichnen();window.scrollTo(0,0);}},
+      k.appendChild(el('button',{class:'menue-punkt','data-seite':x[0],onclick:function(){if(x[5]){tourStarten();return;}SEITE=x[0];zeichnen();window.scrollTo(0,0);}},
         [el('span',{class:'mp-symbol',text:x[1]}),el('span',{class:'mp-text'},[el('b',{text:x[2]}),el('small',{text:info})]),el('span',{class:'mp-pfeil',text:'›'})]));});
     app.appendChild(k);});
+}
+/* ---------- Einführung (Tutorial): beim ersten Öffnen, danach über „?“ oben oder Mehr → Einführung ---------- */
+var TOUR=[
+  {t:'heute',h:'Willkommen in der Chef-App!',x:'In 2 Minuten zeigen wir die wichtigsten Knöpfe. Sie können die Einführung jederzeit wieder starten: oben mit „?“.'},
+  {t:'heute',z:'#a-zu + *',h:'Laden heute spontan zu',x:'Krank, Wasserschaden, Stromausfall? Ein Tipp – auf der Website steht dann „heute geschlossen“. Ein zweiter Tipp nimmt es zurück.'},
+  {t:'heute',z:'#a-warte + *',h:'Viel los?',x:'Wartezeit +15, +30 oder +45 Minuten für heute – oder eine Bestell-Pause bis zu einer Uhrzeit.'},
+  {t:'heute',z:'.sperr-karte',h:'Etwas ist aus',x:'Kein Hähnchen mehr? Bei dem Gericht „Heute aus“ tippen. Morgen ist es von selbst wieder da.'},
+  {t:'heute',z:'nav.tabs [data-tab="karte"]',h:'Karte',x:'Gerichte, Preise und Fotos ändern, Sonderaktionen und Mittagstisch anlegen.'},
+  {t:'heute',z:'nav.tabs [data-tab="preise"]',h:'Preise',x:'Alle Preise auf einmal erhöhen, frühere Preise zurückholen, Gutscheine drucken.'},
+  {t:'heute',z:'nav.tabs [data-tab="zeiten"]',h:'Zeiten',x:'Öffnungszeiten, Feiertage und Urlaub. Oben steht, was in den nächsten 4 Wochen kommt.'},
+  {t:'heute',z:'#speichern',zeige:'speichern',h:'Ganz wichtig: Speichern',x:'Jede Änderung erscheint erst hier unten. Erst mit „Speichern“ kommt sie auf die Website – nach 2–3 Minuten ist sie online.'},
+  {t:'heute',z:'nav.tabs [data-tab="mehr"]',h:'Mehr',x:'Drucken, Zahlen, WhatsApp-Antworten, Checkliste – und oben ein Suchfeld: einfach „Urlaub“ oder „Gutschein“ eintippen.'},
+  {t:'heute',z:'#sprache',h:'Deutsch oder Türkisch',x:'Hier die Sprache der App umschalten. Die Website und die Gerichtsnamen bleiben davon unberührt.'},
+  {t:'heute',h:'Fertig!',x:'Mehr braucht es für den Alltag nicht. Bei Fragen: Michael anrufen. Die Einführung finden Sie wieder oben unter „?“.'}];
+var TOUR_K='saray-chef-tour';
+function tourStarten(){var i=0,box=el('div',{class:'tour',id:'tour',role:'dialog','aria-modal':'true','aria-label':'Einführung'}),loch=el('div',{class:'tour-loch'}),karte=el('div',{class:'tour-karte'});
+  box.appendChild(loch);box.appendChild(karte);document.body.appendChild(box);
+  function ende(){try{localStorage.setItem(TOUR_K,'1');}catch(e){}box.remove();window.removeEventListener('resize',lage);leiste();zuTab('heute');}
+  function lage(){var s=TOUR[i],z=s.z&&document.querySelector(s.z);
+    if(!z||z.hidden||!z.getClientRects().length){loch.className='tour-loch ohne';loch.removeAttribute('style');karte.style.top='';karte.style.bottom='';karte.style.top='30%';return;}
+    var r=z.getBoundingClientRect(),p=6;loch.className='tour-loch';
+    loch.style.left=(r.left-p)+'px';loch.style.top=(r.top-p)+'px';loch.style.width=(r.width+2*p)+'px';loch.style.height=(r.height+2*p)+'px';
+    if(r.top+r.height/2>window.innerHeight/2){karte.style.bottom='';karte.style.top=Math.max(12,r.top-p-12-karte.offsetHeight)+'px';}
+    else{karte.style.bottom='';karte.style.top=Math.min(window.innerHeight-karte.offsetHeight-12,r.bottom+p+12)+'px';}}
+  function zeigen(){var s=TOUR[i];if(TAB!==s.t)zuTab(s.t);leiste();
+    if(s.zeige==='speichern'){document.getElementById('speichern').hidden=false;if(!geaendert())document.getElementById('speichern-text').textContent='1 Änderung – noch nicht gespeichert';}
+    karte.textContent='';
+    karte.appendChild(el('div',{class:'tour-zahl',text:(i+1)+' / '+TOUR.length}));
+    karte.appendChild(el('h3',{text:s.h}));karte.appendChild(el('p',{text:s.x}));
+    var r=el('div',{class:'reihe'});
+    if(i<TOUR.length-1)r.appendChild(el('button',{class:'knopf klein',id:'tour-ende',text:'Beenden',onclick:ende}));
+    if(i>0)r.appendChild(el('button',{class:'knopf klein',id:'tour-zurueck',text:'‹ Zurück',onclick:function(){i--;zeigen();}}));
+    r.appendChild(el('button',{class:'knopf voll',id:'tour-weiter',text:i<TOUR.length-1?'Weiter ›':'Los geht’s',onclick:function(){if(i<TOUR.length-1){i++;zeigen();}else ende();}}));
+    karte.appendChild(r);
+    var z=s.z&&document.querySelector(s.z);if(z&&z.scrollIntoView&&!z.closest('nav.tabs,header,.speichern'))z.scrollIntoView({block:'center'});
+    setTimeout(lage,30);var w=document.getElementById('tour-weiter');if(w)w.focus();}
+  window.addEventListener('resize',lage);zeigen();}
+function tourAutomatisch(){var g='';try{g=localStorage.getItem(TOUR_K)||'';}catch(e){}if(!g)setTimeout(tourStarten,300);}
+
+/* ---------- WhatsApp-Business-Antworten (Deutsch/Türkisch) zum Kopieren ---------- */
+var ANTW_LADEN='',ANTW_SP='de';
+var ANTW={
+  de:{tage:['So','Mo','Di','Mi','Do','Fr','Sa'],zu:'geschlossen',
+    gruss:['Begrüßungsnachricht','Hallo und willkommen bei Saray Döner {ort}! 🥙 Am schnellsten bestellen Sie über unsere Seite: {url} – dort Essen wählen und die Bestellung hier per WhatsApp schicken. Wir bestätigen sie kurz.'],
+    weg:['Abwesenheitsnachricht','Danke für Ihre Nachricht! Gerade haben wir geschlossen. Unsere Öffnungszeiten: {zeiten}. Vorbestellen geht jederzeit über {url} – wir bestätigen, sobald wir wieder da sind. Ihr Saray Döner {ort}'],
+    kurz:[['danke','Bestellung angenommen','Danke, Ihre Bestellung ist angenommen! Wir sagen Bescheid, wenn sie fertig ist. Bitte bar bezahlen.'],
+      ['fertig','Bestellung fertig','Ihre Bestellung ist fertig und liegt für Sie bereit. Bis gleich!'],
+      ['aus','Ausverkauft','Das ist heute leider aus. Möchten Sie etwas anderes dafür? Zum Beispiel: '],
+      ['warten','Viel los','Gerade ist viel los – Ihre Bestellung ist in ca. 30 Minuten fertig. Passt das für Sie?'],
+      ['zu','Heute geschlossen','Heute haben wir leider geschlossen. Morgen sind wir gern wieder für Sie da! Vorbestellen: {url}'],
+      ['adresse','Adresse','Saray Döner {ort}: {adresse}. Route: {maps}'],
+      ['zeiten','Öffnungszeiten','Unsere Öffnungszeiten in {ort}: {zeiten}'],
+      ['karte','Speisekarte','Unsere Speisekarte mit allen Preisen: {url}'],
+      ['gruppe','Große Bestellung','Sehr gern! Für größere Bestellungen bitte etwas Vorlauf – schicken Sie uns Uhrzeit und Anzahl, wir melden uns.']]},
+  tr:{tage:['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'],zu:'kapalı',
+    gruss:['Karşılama mesajı','Merhaba, Saray Döner {ort} şubemize hoş geldiniz! 🥙 En hızlı sipariş sayfamızdan: {url} – yemeğinizi seçin ve siparişi buradan WhatsApp ile gönderin. Kısa sürede onaylıyoruz.'],
+    weg:['Uzakta mesajı','Mesajınız için teşekkürler! Şu anda kapalıyız. Çalışma saatlerimiz: {zeiten}. {url} üzerinden her zaman ön sipariş verebilirsiniz – açılır açılmaz onaylıyoruz. Saray Döner {ort}'],
+    kurz:[['danke','Sipariş alındı','Teşekkürler, siparişiniz alındı! Hazır olunca haber veriyoruz. Lütfen nakit ödeyin.'],
+      ['fertig','Sipariş hazır','Siparişiniz hazır, sizi bekliyor. Görüşmek üzere!'],
+      ['aus','Tükendi','Bu ürün bugün maalesef tükendi. Yerine başka bir şey ister misiniz? Örneğin: '],
+      ['warten','Çok yoğun','Şu an çok yoğunuz – siparişiniz yaklaşık 30 dakika içinde hazır olur. Sizin için uygun mu?'],
+      ['zu','Bugün kapalı','Bugün maalesef kapalıyız. Yarın yine hizmetinizdeyiz! Ön sipariş: {url}'],
+      ['adresse','Adres','Saray Döner {ort}: {adresse}. Yol tarifi: {maps}'],
+      ['zeiten','Çalışma saatleri','{ort} şubemizin çalışma saatleri: {zeiten}'],
+      ['karte','Menü','Tüm fiyatlarıyla menümüz: {url}'],
+      ['gruppe','Büyük sipariş','Memnuniyetle! Büyük siparişler için lütfen biraz önceden haber verin – saati ve kişi sayısını yazın, size dönüş yapalım.']]}};
+function antwZeiten(l,sp){var z=Object.assign({},l.zeiten,((ANP.zeiten||{})[l.id])||{}),T=ANTW[sp].tage,teile=[],W=[1,2,3,4,5,6,0],start=0;
+  function wert(t){var v=z[String(t)];return v?v[0]+'–'+v[1]:ANTW[sp].zu;}
+  for(var i=1;i<=W.length;i++){if(i<W.length&&wert(W[i])===wert(W[start]))continue;
+    teile.push((i-1>start?T[W[start]]+'–'+T[W[i-1]]:T[W[start]])+' '+wert(W[start]));start=i;}
+  return teile.join(', ');}
+function kopieren(t,knopf){function ok(){var alt=knopf.textContent;knopf.textContent='✓ Kopiert';setTimeout(function(){knopf.textContent=alt;},1500);}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,function(){window.prompt('Kopieren:',t);});else{window.prompt('Kopieren:',t);}}
+function antwortenKarte(){
+  if(!ANTW_LADEN)ANTW_LADEN=STD.laeden[0].id;var l=STD.laeden.filter(function(x){return x.id===ANTW_LADEN;})[0]||STD.laeden[0],A=ANTW[ANTW_SP];
+  var url=STD.seite+'#speisekarte',adr=l.strasse+', '+l.plz+' '+l.ort,w={ort:l.name,url:url,zeiten:antwZeiten(l,ANTW_SP),adresse:adr,maps:'https://maps.google.com/?q='+encodeURIComponent('Saray Döner, '+adr)};
+  function f(t){return t.replace(/\{(\w+)\}/g,function(_,k){return w[k]!=null?w[k]:'';});}
+  var k=el('div',{class:'karte',id:'antw-karte'},[el('h3',{text:'💬 WhatsApp-Antworten'}),
+    el('p',{class:'hinweis',text:'Fertige Texte für WhatsApp Business auf dem Laden-Handy. Einrichten unter WhatsApp Business → Einstellungen → Unternehmenstools: Begrüßungsnachricht, Abwesenheitsnachricht (Zeitplan: „Außerhalb der Geschäftszeiten“) und Schnellantworten. Bei Schnellantworten das Kürzel eintragen – im Chat dann „/“ tippen.'})]);
+  k.appendChild(el('div',{class:'wahl'},STD.laeden.map(function(x){return el('button',{'aria-pressed':String(x.id===l.id),'data-antw-laden':x.id,text:x.name,onclick:function(){ANTW_LADEN=x.id;zeichnen();}});})));
+  k.appendChild(el('div',{class:'wahl'},[['de','Deutsch'],['tr','Türkçe']].map(function(x){return el('button',{'aria-pressed':String(x[0]===ANTW_SP),'data-antw-sp':x[0],'data-kein-ue':'',text:x[1],onclick:function(){ANTW_SP=x[0];zeichnen();}});})));
+  function eintrag(kurz,titel,text){var t=f(text),kn=el('button',{class:'knopf klein',text:'Kopieren',onclick:function(){kopieren(t,kn);}});
+    k.appendChild(el('div',{class:'antw'},[el('div',{class:'antw-kopf'},[el('b',{'data-kein-ue':'',text:titel}),kurz?el('code',{'data-kein-ue':'',text:'/'+kurz}):null,kn]),el('p',{class:'antw-text','data-kein-ue':'',text:t})]));}
+  eintrag('',A.gruss[0],A.gruss[1]);eintrag('',A.weg[0],A.weg[1]);
+  k.appendChild(el('p',{class:'abschnitt',text:'Schnellantworten'}));
+  A.kurz.forEach(function(x){eintrag(x[0],x[1],x[2]);});
+  k.appendChild(el('p',{class:'hinweis',text:'Öffnungszeiten und Link kommen aus der Chef-App. Ändern sie sich (oder kommt die neue Domain), die Texte hier neu kopieren.'}));
+  k.appendChild(el('div',{class:'reihe'},[el('button',{class:'knopf',text:'🖨 Als Blatt drucken',onclick:function(){document.body.classList.add('antw-druck');
+    function weg(){document.body.classList.remove('antw-druck');window.removeEventListener('afterprint',weg);}window.addEventListener('afterprint',weg);window.print();}})]));
+  app.appendChild(k);
 }
 function preiseTab(){
   sprung([['Anpassen','a-anpassen'],['Verlauf','a-verlauf'],['Stände','a-staende'],['Gutscheine','a-gutscheine']].concat(STD.firmen_codes?[['Firmen-Codes','a-codes']]:[]));
@@ -469,7 +578,7 @@ function heuteTab(){
   var t=heute();
   STD.sperren.forEach(function(g){
     var regeln=(ANP.verfuegbarkeit||[]).map(function(r,i){return {r:r,i:i};}).filter(function(x){return x.r.was===g.id&&(!x.r.datum||x.r.datum>=t);});
-    var k=el('div',{class:'karte'},[el('h3',{text:g.name}),
+    var k=el('div',{class:'karte sperr-karte'},[el('h3',{text:g.name}),
       regeln.length?el('div',{class:'reihe'},regeln.map(function(x){return el('span',{class:'chip aus'},[regelText(x.r),
         el('button',{'aria-label':'Regel entfernen',text:'✕',onclick:function(){ANP.verfuegbarkeit.splice(x.i,1);zeichnen();}})]);})):el('p',{class:'hinweis',text:'Verfügbar'}),
       el('div',{class:'reihe',style:'margin-top:10px'},[
@@ -1225,6 +1334,7 @@ function start(){
 document.getElementById('tabs').addEventListener('click',function(ev){var b=ev.target.closest('[data-tab]');if(!b)return;
   if(b.dataset.tab==='mehr'&&TAB==='mehr')SEITE='';zuTab(b.dataset.tab);});
 document.getElementById('speichern-knopf').addEventListener('click',function(){speichern();});
+document.getElementById('hilfe').addEventListener('click',function(){if(STD&&!document.getElementById('tour'))tourStarten();});
 document.getElementById('verwerfen').addEventListener('click',function(){frage('Ungespeicherte Änderungen verwerfen?','Verwerfen').then(function(j){if(j){ANP=JSON.parse(ALT);zeichnen();}});});
 window.addEventListener('beforeunload',function(e){if(STD&&geaendert()){e.preventDefault();e.returnValue='';}});
 var m=/[#&]token=([^&]+)/.exec(location.hash);
@@ -1281,6 +1391,7 @@ CHECKLISTE = [
         ["bildschirm", "Bildschirm im Laden", "Fernseher mit HDMI und Fire-TV-Stick (ca. 40 €), Adresse unter Mehr → Bildschirm im Laden als Startseite einstellen.", 0],
         ["kueche", "Küchenansicht", "Auf welchem Gerät im Laden öffnen wir die Bestellungen? Bondrucker gewünscht (ca. 40 €)?", 0],
         ["gutscheine", "Geschenkgutscheine", "Welche Werte? Restbetrag als neuer Gutschein? Gültig 3 Jahre bis Jahresende (gesetzlich).", 0],
+        ["whatsapp-business", "WhatsApp Business einrichten", "Begrüßung, Abwesenheitsnachricht und Schnellantworten auf dem Laden-Handy – fertige Texte (Deutsch und Türkisch) unter Mehr → WhatsApp-Antworten zum Kopieren.", 0],
         ["slots", "Vorbestellungen je Viertelstunde", "Wie viele Vorbestellungen schafft die Küche pro Viertelstunde? Eingestellt sind 5 je Laden (Zeiten → Vorbestellungen je Viertelstunde). Ist die Zahl erreicht, sperrt die Küchenansicht die Zeit online – dafür braucht das Küchen-Gerät den Chef-App-Zugang.", 0],
         ["ton", "„Abholbereit per Ton“", "Drückt die Küche „Fertig ✓“, hört der Gast einen Ton, wenn die Seite offen ist. Läuft über den Dienst ntfy.sh – mit in die Prüfung der Datenschutzerklärung nehmen. Später auch auf eigenem Server möglich.", 0],
         ["fahrplan", "Zugzeiten Altenberg", "Die Abfahrten gelten bis 12.12.2026. Danach trägt Michael den neuen Fahrplan ein.", 0],
