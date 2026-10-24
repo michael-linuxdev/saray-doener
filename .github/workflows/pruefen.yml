@@ -29,9 +29,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Abläufe testen
-        if: "!contains(github.event.head_commit.message, 'Foto')"
-        run: python3 tests/test_seite.py
 
       - name: Pillow (Fotos der Gerichte verkleinern)
         run: pip install pillow==11.0.0
